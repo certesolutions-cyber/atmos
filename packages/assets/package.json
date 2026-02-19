@@ -1,0 +1,16 @@
+{
+  "name": "@atmos/assets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@atmos/core": "*",
+    "@atmos/math": "*",
+    "@atmos/renderer": "*"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

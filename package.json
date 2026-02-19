@@ -1,0 +1,21 @@
+{
+  "name": "atmos-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WebGPU-first, web-native game engine with Unity-style component workflow",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@webgpu/types": "^0.1.52"
+  }
+}

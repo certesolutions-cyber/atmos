@@ -1,0 +1,13 @@
+{
+  "name": "Material.001",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5,
+  "albedoTexture": "textures/monkey_texture_0.png"
+}

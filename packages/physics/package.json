@@ -1,0 +1,16 @@
+{
+  "name": "@atmos/physics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@atmos/core": "*",
+    "@atmos/math": "*",
+    "@dimforge/rapier3d-compat": "^0.14.0"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
