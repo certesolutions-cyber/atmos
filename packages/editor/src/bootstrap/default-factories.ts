@@ -1,7 +1,15 @@
 import { GameObject, getAllRegisteredComponents, applyComponentData } from '@atmos/core';
 import type { Component, DeserializeContext } from '@atmos/core';
-import type { MeshRendererContext } from '@atmos/renderer';
-import { MeshRenderer, Camera, DirectionalLight, PointLight, SpotLight, createMaterial } from '@atmos/renderer';
+import type { MeshRendererContext, SkinnedRendererContext } from '@atmos/renderer';
+import {
+  MeshRenderer, SkinnedMeshRenderer, Camera,
+  DirectionalLight, PointLight, SpotLight, createMaterial,
+} from '@atmos/renderer';
+import {
+  AnimationMixer, AnimationHandler, createSkeleton, createAnimationClip,
+} from '@atmos/animation';
+import type { Joint, KeyframeTrack, AnimationChannel } from '@atmos/animation';
+import type { ModelAsset } from '@atmos/assets';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
@@ -19,7 +27,12 @@ export interface FactoryDeps {
   /** Lazy ref — set after mountEditor returns, before any callback fires. */
   editorState: { current: EditorState | null };
   materialManager: { current: MaterialManager | null };
-  loadModelMesh?: (source: string) => Promise<{ mesh: Mesh } | null>;
+  loadModelMesh?: (source: string) => Promise<{
+    mesh: Mesh; skinned: boolean; skinIndex?: number;
+  } | null>;
+  loadModelData?: (source: string) => Promise<{
+    mesh: Mesh; asset: ModelAsset; meshIndex: number;
+  } | null>;
 }
 
 // ---- Primitive factory ---- //
@@ -159,6 +172,57 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
           }
           break;
         }
+        case 'SkinnedMeshRenderer': {
+          const source = (data['meshSource'] as string) ?? '';
+          if (source.startsWith('model:') && deps.loadModelData) {
+            asyncLoads.push(
+              deps.loadModelData(source).then((result) => {
+                if (!result) return;
+                const { mesh, asset, meshIndex } = result;
+                const modelMesh = asset.meshes[meshIndex];
+                if (!modelMesh?.skinned) return;
+                const skinIdx = modelMesh.skinIndex ?? 0;
+                const skin = asset.skins[skinIdx];
+                if (!skin) return;
+
+                // Resolve material
+                const rawMat = data['materialSource'] as string | undefined;
+                const matPath = rawMat?.endsWith('.mat.json') ? rawMat : DEFAULT_MAT_PATH;
+                const mat = createMaterial(DEFAULT_MAT);
+
+                const smr = go.addComponent(SkinnedMeshRenderer);
+                smr.init(
+                  deps.rendererCtx as MeshRendererContext & SkinnedRendererContext,
+                  mesh, skin.jointNodeIndices.length, mat,
+                );
+                smr.meshSource = source;
+                smr.materialSource = matPath;
+                applyComponentData(smr, data);
+
+                // Set up skeleton + AnimationMixer (mirrors model-instantiate setupSkinning)
+                setupSkeletonFromSkin(go, asset, skin, skinIdx);
+
+                // Add AnimationHandler on root to aggregate child mixers
+                const root = findRoot(go);
+                if (!root.getComponent(AnimationHandler)) {
+                  const handler = root.addComponent(AnimationHandler);
+                  const mixer = go.getComponent(AnimationMixer);
+                  if (mixer?.initialClip) handler.initialClip = mixer.initialClip;
+                }
+
+                // Async material load
+                const mm = deps.materialManager.current;
+                if (mm && matPath) {
+                  mm.getMaterial(matPath).then((m) => {
+                    smr.material = m;
+                    smr.materialBindGroup = null;
+                  }).catch(() => {});
+                }
+              }).catch(() => {}),
+            );
+          }
+          break;
+        }
         case 'Camera': {
           const cam = go.addComponent(Camera);
           applyComponentData(cam, data);
@@ -197,4 +261,61 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
       nameToCtors = null; // invalidate so next deserialize picks up newly registered scripts
     },
   };
+}
+
+// ---- Skinning helpers ---- //
+
+import type { ModelSkin } from '@atmos/assets';
+
+function findRoot(go: GameObject): GameObject {
+  let current = go;
+  while (current.parent) current = current.parent;
+  return current;
+}
+
+function setupSkeletonFromSkin(
+  go: GameObject,
+  asset: ModelAsset,
+  skin: ModelSkin,
+  _skinIdx: number,
+): void {
+  const joints: Joint[] = skin.jointParents.map((parentIdx, i) => ({
+    name: skin.jointNames[i] ?? `joint_${i}`,
+    parentIndex: parentIdx,
+  }));
+
+  const skeleton = createSkeleton(joints, skin.inverseBindMatrices, skin.restT, skin.restR, skin.restS);
+  const mixer = go.addComponent(AnimationMixer);
+  mixer.skeleton = skeleton;
+
+  // Build node→joint mapping for animation track remapping
+  const nodeToJoint = new Map<number, number>();
+  for (let ji = 0; ji < skin.jointNodeIndices.length; ji++) {
+    nodeToJoint.set(skin.jointNodeIndices[ji]!, ji);
+  }
+
+  for (const anim of asset.animations) {
+    const tracks: KeyframeTrack[] = [];
+    for (const track of anim.tracks) {
+      const jointIndex = nodeToJoint.get(track.targetNode);
+      if (jointIndex === undefined) continue;
+      tracks.push({
+        jointIndex,
+        channel: track.path as AnimationChannel,
+        interpolation: track.interpolation,
+        times: track.times,
+        values: track.values,
+      });
+    }
+    if (tracks.length > 0) {
+      const clip = createAnimationClip(anim.name, tracks);
+      mixer.addClip(clip);
+      if (!mixer.initialClip) {
+        mixer.initialClip = clip.name;
+      }
+      if (mixer.layers.length === 0) {
+        mixer.play(clip);
+      }
+    }
+  }
 }

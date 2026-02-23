@@ -33,6 +33,8 @@ export interface EnumPropertyDef extends PropertyDefBase {
   key: string;
   type: 'enum';
   options: string[];
+  /** When present, inspector uses this instead of static `options` for dynamic enum values. */
+  optionsFrom?: (target: unknown) => string[];
 }
 
 export interface StringPropertyDef extends PropertyDefBase {

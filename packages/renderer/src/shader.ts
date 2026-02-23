@@ -43,7 +43,7 @@ struct MaterialUniforms {
   metallic: f32,
   roughness: f32,
   _pad0: f32,
-  _pad1: f32,
+  alphaCutoff: f32,
   emissive: vec4<f32>,  // rgb + intensity in w
 };
 
@@ -301,6 +301,10 @@ fn computeTBN(worldPos: vec3<f32>, worldNormal: vec3<f32>, uv: vec2<f32>) -> mat
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   let texColor = textureSample(albedoTexture, albedoSampler, input.uv);
+  let alpha = texColor.a * material.albedo.a;
+  if (material.alphaCutoff > 0.0 && alpha < material.alphaCutoff) {
+    discard;
+  }
   let albedo = material.albedo.rgb * texColor.rgb;
 
   // Sample metallic-roughness map (G=roughness, B=metallic per glTF convention)
@@ -410,6 +414,6 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   }
 
   // Output linear HDR (tonemapping done in post-process)
-  return vec4<f32>(color, material.albedo.a);
+  return vec4<f32>(color, alpha);
 }
 `;

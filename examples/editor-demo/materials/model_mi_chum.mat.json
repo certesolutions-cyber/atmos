@@ -1,0 +1,13 @@
+{
+  "name": "MI_Chum",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5,
+  "albedoTexture": "textures/model_texture_0.png"
+}

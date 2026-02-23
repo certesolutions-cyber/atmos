@@ -10,6 +10,7 @@ import { InspectorPanel } from './inspector-panel.js';
 import { AssetBrowserPanel } from './asset-browser-panel.js';
 import { ProjectGate } from './project-gate.js';
 import { PostProcessPanel } from './post-process-panel.js';
+import { useSplitter } from './use-splitter.js';
 import type { GizmoMode } from '../gizmo-state.js';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { ScriptAsset, AssetEntry } from '../asset-types.js';
@@ -28,6 +29,7 @@ interface EditorShellProps {
   showAssetBrowser?: boolean;
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
   onLoadModel?: (entry: AssetEntry) => void;
+  onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
   renderSystem?: import('@atmos/renderer').RenderSystem;
 }
@@ -149,12 +151,29 @@ const HIDE_SPINNERS_CSS = `
 export function EditorShell({
   editorState, projectFs, onOpenProject, deserializeContext, componentFactory, componentFilter, componentRemover,
   primitiveFactory, orbitCamera, canvas,
-  showAssetBrowser, onAttachScript, onLoadModel, onDropModel, renderSystem,
+  showAssetBrowser, onAttachScript, onLoadModel, onLoadScene, onDropModel, renderSystem,
 }: EditorShellProps) {
   const [, setTick] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const viewportRef = useRef<HTMLDivElement>(null);
+
+  // Resizable panel sizes
+  const [hierarchyWidth, setHierarchyWidth] = useState(200);
+  const [inspectorWidth, setInspectorWidth] = useState(260);
+  const [assetBrowserHeight, setAssetBrowserHeight] = useState(180);
+
+  const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+  const hierarchySplitter = useSplitter('horizontal', useCallback((d: number) => {
+    setHierarchyWidth((w) => clamp(w + d, 120, 400));
+  }, []));
+  const inspectorSplitter = useSplitter('horizontal', useCallback((d: number) => {
+    setInspectorWidth((w) => clamp(w - d, 180, 500));
+  }, []));
+  const assetSplitter = useSplitter('vertical', useCallback((d: number) => {
+    setAssetBrowserHeight((h) => clamp(h - d, 80, 400));
+  }, []));
 
   const showToast = useCallback((msg: string) => {
     clearTimeout(toastTimer.current);
@@ -271,9 +290,11 @@ export function EditorShell({
         const file = input.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
           const data = JSON.parse(reader.result as string);
-          const scene = deserializeScene(data, deserializeContext);
+          const ctx = deserializeContext;
+          const scene = deserializeScene(data, ctx);
+          if (ctx?.onComplete) await ctx.onComplete();
           editorState.setScene(scene);
           if (data.postProcess && renderSystem) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
         };
@@ -318,6 +339,13 @@ export function EditorShell({
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#888', marginRight: '8px', letterSpacing: '0.5px' }}>
           ATMOS
         </span>
+
+        {/* Active scene name */}
+        <span style={{ fontSize: '11px', color: '#6ab0d6', marginRight: '4px', fontWeight: 500 }}>
+          {editorState.sceneName || 'Untitled'}
+        </span>
+
+        <div style={sepStyle} />
 
         {/* Scene controls */}
         <button
@@ -400,7 +428,7 @@ export function EditorShell({
         )}
       </div>
 
-      {/* ── Body: Hierarchy | Viewport+Assets | Inspector ── */}
+      {/* ── Body: Hierarchy | Splitter | Viewport+Assets | Splitter | Inspector ── */}
       <div style={bodyStyle}>
         <HierarchyPanel
           editorState={editorState}
@@ -412,6 +440,13 @@ export function EditorShell({
             const pos = new Float32Array([wm[12]!, wm[13]!, wm[14]!]);
             orbitCamera!.focusOn(pos);
           } : undefined}
+          style={{ width: `${hierarchyWidth}px`, minWidth: `${hierarchyWidth}px` }}
+        />
+        <div
+          onMouseDown={hierarchySplitter.onMouseDown}
+          style={{ width: '5px', cursor: 'col-resize', background: 'transparent', flexShrink: 0 }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#3a3a3a'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         />
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           <div ref={viewportRef} style={viewportStyle}>
@@ -425,14 +460,30 @@ export function EditorShell({
             )}
           </div>
           {showAssetBrowser && (
-            <AssetBrowserPanel
-              editorState={editorState}
-              onAttachScript={onAttachScript}
-              onLoadModel={onLoadModel}
-            />
+            <>
+              <div
+                onMouseDown={assetSplitter.onMouseDown}
+                style={{ height: '5px', cursor: 'row-resize', background: 'transparent', flexShrink: 0 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#3a3a3a'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+              />
+              <AssetBrowserPanel
+                editorState={editorState}
+                onAttachScript={onAttachScript}
+                onLoadModel={onLoadModel}
+                onLoadScene={onLoadScene}
+                style={{ height: `${assetBrowserHeight}px`, minHeight: `${assetBrowserHeight}px` }}
+              />
+            </>
           )}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', width: '260px', minWidth: '260px', borderLeft: '1px solid #2a2a2a', overflow: 'hidden' }}>
+        <div
+          onMouseDown={inspectorSplitter.onMouseDown}
+          style={{ width: '5px', cursor: 'col-resize', background: 'transparent', flexShrink: 0 }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#3a3a3a'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', width: `${inspectorWidth}px`, minWidth: `${inspectorWidth}px`, borderLeft: '1px solid #2a2a2a', overflow: 'hidden' }}>
           <InspectorPanel
             editorState={editorState}
             materialManager={materialManager}

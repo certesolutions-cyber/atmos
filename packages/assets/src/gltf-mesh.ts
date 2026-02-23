@@ -128,8 +128,8 @@ function extractPrimitive(
 }
 
 /**
- * Interleave skinned vertex data into 52-byte format.
- * Layout: pos(3f) + normal(3f) + uv(2f) + joints_u8x4(packed as 1 u32/float) + weights(4f)
+ * Interleave skinned vertex data into 56-byte format.
+ * Layout: pos(3f) + normal(3f) + uv(2f) + joints_u16x4(2f) + weights(4f)
  */
 function interleaveSkinnedVertices(
   doc: GltfDocument,
@@ -140,13 +140,13 @@ function interleaveSkinnedVertices(
   jointsAccessorIdx: number,
   weightsAccessorIdx: number,
 ): Float32Array {
-  const stride = SKINNED_VERTEX_STRIDE_FLOATS; // 13
+  const stride = SKINNED_VERTEX_STRIDE_FLOATS; // 14
   const jointsRaw = readAccessor(doc, jointsAccessorIdx);
   const weightsRaw = readAccessor(doc, weightsAccessorIdx) as Float32Array;
 
   const vertices = new Float32Array(vertexCount * stride);
-  // Create a Uint8Array view overlaid on the same buffer for packing joint indices
-  const verticesU8 = new Uint8Array(vertices.buffer);
+  // Uint16 view overlaid on same buffer for packing joint indices
+  const verticesU16 = new Uint16Array(vertices.buffer);
 
   for (let i = 0; i < vertexCount; i++) {
     const vo = i * stride;
@@ -166,18 +166,18 @@ function interleaveSkinnedVertices(
     vertices[vo + 6] = uvs[u]!;
     vertices[vo + 7] = uvs[u + 1]!;
 
-    // Joint indices: pack 4 × u8 at byte offset 32 from vertex start
-    const byteOffset = vo * 4 + 32; // 8 floats * 4 bytes = 32 bytes
-    verticesU8[byteOffset] = jointsRaw[j]! & 0xFF;
-    verticesU8[byteOffset + 1] = jointsRaw[j + 1]! & 0xFF;
-    verticesU8[byteOffset + 2] = jointsRaw[j + 2]! & 0xFF;
-    verticesU8[byteOffset + 3] = jointsRaw[j + 3]! & 0xFF;
+    // Joint indices: 4 × u16 at byte offset 32 (= float offset 8 × 4 bytes)
+    const u16Offset = (vo * 4 + 32) / 2; // byte offset → u16 index
+    verticesU16[u16Offset] = jointsRaw[j]! & 0xFFFF;
+    verticesU16[u16Offset + 1] = jointsRaw[j + 1]! & 0xFFFF;
+    verticesU16[u16Offset + 2] = jointsRaw[j + 2]! & 0xFFFF;
+    verticesU16[u16Offset + 3] = jointsRaw[j + 3]! & 0xFFFF;
 
-    // Weights: 4 × f32 at float offset 9 (byte offset 36)
-    vertices[vo + 9] = weightsRaw[j]!;
-    vertices[vo + 10] = weightsRaw[j + 1]!;
-    vertices[vo + 11] = weightsRaw[j + 2]!;
-    vertices[vo + 12] = weightsRaw[j + 3]!;
+    // Weights: 4 × f32 at float offset 10 (byte offset 40)
+    vertices[vo + 10] = weightsRaw[j]!;
+    vertices[vo + 11] = weightsRaw[j + 1]!;
+    vertices[vo + 12] = weightsRaw[j + 2]!;
+    vertices[vo + 13] = weightsRaw[j + 3]!;
   }
 
   return vertices;

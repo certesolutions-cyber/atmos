@@ -17,6 +17,7 @@ import {
 import type { Mesh, Material, GPUTextureHandle, MeshRendererContext, SkinnedRendererContext } from '@atmos/renderer';
 import {
   AnimationMixer,
+  AnimationHandler,
   createSkeleton,
   createAnimationClip,
 } from '@atmos/animation';
@@ -185,7 +186,7 @@ function setupSkinning(root: GameObject, asset: ModelAsset, ctx: BuildContext): 
       parentIndex: parentIdx,
     }));
 
-    const skeleton = createSkeleton(joints, skin.inverseBindMatrices);
+    const skeleton = createSkeleton(joints, skin.inverseBindMatrices, skin.restT, skin.restR, skin.restS);
 
     const mixer = go.addComponent(AnimationMixer);
     mixer.skeleton = skeleton;
@@ -211,9 +212,28 @@ function setupSkinning(root: GameObject, asset: ModelAsset, ctx: BuildContext): 
       }
       if (tracks.length > 0) {
         const clip = createAnimationClip(anim.name, tracks);
+        mixer.addClip(clip);
+        if (!mixer.initialClip) {
+          mixer.initialClip = clip.name;
+        }
         if (mixer.layers.length === 0) {
           mixer.play(clip);
         }
+      }
+    }
+  }
+
+  // Add AnimationHandler on root to aggregate all child mixers
+  if (!root.getComponent(AnimationHandler)) {
+    const handler = root.addComponent(AnimationHandler);
+    // Pick first clip name found across all mixers
+    const allMixers = collectAllObjects(root)
+      .map(go => go.getComponent(AnimationMixer))
+      .filter((m): m is AnimationMixer => m !== null);
+    for (const mixer of allMixers) {
+      if (mixer.initialClip) {
+        handler.initialClip = mixer.initialClip;
+        break;
       }
     }
   }

@@ -10,6 +10,8 @@ export interface MaterialParams {
   normalTexture?: GPUTextureHandle;
   metallicRoughnessTexture?: GPUTextureHandle;
   splatSharpness?: number;
+  /** Fragments with alpha below this value are discarded. 0 = no cutoff. */
+  alphaCutoff?: number;
 }
 
 export interface Material {
@@ -20,6 +22,8 @@ export interface Material {
   emissiveIntensity: number;
   /** Terrain splat sharpness exponent (1 = linear, higher = sharper). Default 1. */
   splatSharpness: number;
+  /** Fragments with alpha below this value are discarded. 0 = no cutoff. */
+  alphaCutoff: number;
   dirty: boolean;
   uniformBuffer: GPUBuffer | null;
   bindGroup: GPUBindGroup | null;
@@ -43,6 +47,7 @@ export function createMaterial(params?: MaterialParams): Material {
     emissive: new Float32Array(params?.emissive ?? [0, 0, 0]),
     emissiveIntensity: params?.emissiveIntensity ?? 0,
     splatSharpness: params?.splatSharpness ?? 1,
+    alphaCutoff: params?.alphaCutoff ?? 0,
     dirty: true,
     uniformBuffer: null,
     bindGroup: null,
@@ -65,7 +70,7 @@ export function writeMaterialUniforms(out: Float32Array, mat: Material): void {
   out[4] = mat.metallic;
   out[5] = mat.roughness;
   out[6] = mat.splatSharpness ?? 1;
-  out[7] = 0;
+  out[7] = mat.alphaCutoff;
   out[8] = mat.emissive[0]!;
   out[9] = mat.emissive[1]!;
   out[10] = mat.emissive[2]!;

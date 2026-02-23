@@ -1,7 +1,11 @@
-import { Component } from '@atmos/core';
-import type { Scene } from '@atmos/core';
+import { Component, Scene } from '@atmos/core';
 import { Mat4 } from '@atmos/math';
 import type { Mat4Type } from '@atmos/math';
+
+/** Loose interface to avoid circular import with RenderSystem. */
+export interface ScreenToWorldProvider {
+  screenToWorldPoint(x: number, y: number, nearClip?: number): Promise<Float32Array | null>;
+}
 
 export class Camera extends Component {
   fovY = Math.PI / 4;
@@ -9,6 +13,9 @@ export class Camera extends Component {
   far = 100;
   isMainCamera = false;
   clearColor = new Float32Array([0.05, 0.05, 0.1, 1.0]);
+
+  /** Set by RenderSystem when it activates a camera. */
+  static _renderSystem: ScreenToWorldProvider | null = null;
 
   private readonly _viewMatrix: Mat4Type = Mat4.create();
 
@@ -28,6 +35,21 @@ export class Camera extends Component {
     out[1] = m[13]!;
     out[2] = m[14]!;
     return out;
+  }
+
+  /**
+   * Convert screen pixel coordinates to a world-space point using GPU depth readback.
+   * Returns null if the pixel is sky (depth >= 1.0) or closer than nearClip.
+   */
+  async screenToWorldPoint(x: number, y: number, nearClip?: number): Promise<Float32Array | null> {
+    if (!Camera._renderSystem) return null;
+    return Camera._renderSystem.screenToWorldPoint(x, y, nearClip);
+  }
+
+  /** Shortcut: get the main camera from the currently active scene. */
+  static get main(): Camera | null {
+    if (!Scene.current) return null;
+    return Camera.getMain(Scene.current);
   }
 
   /** Find the first enabled Camera with isMainCamera=true in the scene. */

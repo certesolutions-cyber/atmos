@@ -52,12 +52,39 @@ export function extractSkins(doc: GltfDocument): ModelSkin[] {
     // Build a set for quick lookup: which glTF node indices are joints in this skin
     const jointNodeSet = new Set(skin.joints);
 
-    // Compute parent joint index for each joint by walking up the glTF node tree
+    // Compute parent joint index and rest-pose TRS for each joint
     const jointParents: number[] = [];
     const jointNames: string[] = [];
+    const restT = new Float32Array(jointCount * 3);
+    const restR = new Float32Array(jointCount * 4);
+    const restS = new Float32Array(jointCount * 3);
+
     for (let ji = 0; ji < jointCount; ji++) {
       const nodeIdx = skin.joints[ji]!;
-      jointNames.push(gltfNodes[nodeIdx]?.name ?? `joint_${ji}`);
+      const node = gltfNodes[nodeIdx];
+      jointNames.push(node?.name ?? `joint_${ji}`);
+
+      // Rest-pose TRS from node
+      if (node?.translation) {
+        restT[ji * 3] = node.translation[0] ?? 0;
+        restT[ji * 3 + 1] = node.translation[1] ?? 0;
+        restT[ji * 3 + 2] = node.translation[2] ?? 0;
+      }
+      if (node?.rotation) {
+        restR[ji * 4] = node.rotation[0] ?? 0;
+        restR[ji * 4 + 1] = node.rotation[1] ?? 0;
+        restR[ji * 4 + 2] = node.rotation[2] ?? 0;
+        restR[ji * 4 + 3] = node.rotation[3] ?? 1;
+      } else {
+        restR[ji * 4 + 3] = 1; // identity quaternion
+      }
+      if (node?.scale) {
+        restS[ji * 3] = node.scale[0] ?? 1;
+        restS[ji * 3 + 1] = node.scale[1] ?? 1;
+        restS[ji * 3 + 2] = node.scale[2] ?? 1;
+      } else {
+        restS[ji * 3] = 1; restS[ji * 3 + 1] = 1; restS[ji * 3 + 2] = 1;
+      }
 
       // Walk up the node hierarchy to find the first ancestor that's also a joint
       let current = nodeParentMap.get(nodeIdx);
@@ -78,6 +105,9 @@ export function extractSkins(doc: GltfDocument): ModelSkin[] {
       inverseBindMatrices,
       jointParents,
       jointNames,
+      restT,
+      restR,
+      restS,
     });
   }
 

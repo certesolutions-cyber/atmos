@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Camera } from '../camera.js';
 import { GameObject, resetGameObjectIds, Scene } from '@atmos/core';
 import { Mat4 } from '@atmos/math';
 
 describe('Camera', () => {
   beforeEach(() => resetGameObjectIds());
+  afterEach(() => { Camera._renderSystem = null; });
 
   it('has correct default values', () => {
     const go = new GameObject('Cam');
@@ -97,6 +98,45 @@ describe('Camera', () => {
       scene.add(go);
 
       expect(Camera.getMain(scene)).toBeNull();
+    });
+  });
+
+  describe('Camera.main', () => {
+    it('returns the main camera from Scene.current', () => {
+      const scene = new Scene();
+      Scene.current = scene;
+      const go = new GameObject('Main');
+      const cam = go.addComponent(Camera);
+      cam.isMainCamera = true;
+      scene.add(go);
+
+      expect(Camera.main).toBe(cam);
+      Scene.current = null;
+    });
+
+    it('returns null when Scene.current is null', () => {
+      Scene.current = null;
+      expect(Camera.main).toBeNull();
+    });
+  });
+
+  describe('screenToWorldPoint', () => {
+    it('returns null when no render system is wired', async () => {
+      const go = new GameObject('Cam');
+      const cam = go.addComponent(Camera);
+      const result = await cam.screenToWorldPoint(100, 200);
+      expect(result).toBeNull();
+    });
+
+    it('delegates to Camera._renderSystem', async () => {
+      const expected = new Float32Array([1, 2, 3]);
+      Camera._renderSystem = {
+        screenToWorldPoint: async () => expected,
+      };
+      const go = new GameObject('Cam');
+      const cam = go.addComponent(Camera);
+      const result = await cam.screenToWorldPoint(100, 200, 0.5);
+      expect(result).toBe(expected);
     });
   });
 });

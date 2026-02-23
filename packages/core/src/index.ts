@@ -2,6 +2,7 @@ export { Component } from './component.js';
 export { GameObject, resetGameObjectIds } from './game-object.js';
 export { Transform } from './transform.js';
 export { Scene } from './scene.js';
+export type { SceneLoader } from './scene.js';
 export { Time } from './time.js';
 export { Input } from './input.js';
 export { Engine } from './engine.js';

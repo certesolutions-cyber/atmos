@@ -1,6 +1,31 @@
 import { GameObject } from './game-object.js';
+import { _setSceneClass } from './component.js';
+
+export type SceneLoader = (name: string) => void;
 
 export class Scene {
+  /** The currently active scene, set automatically by Engine. */
+  static current: Scene | null = null;
+
+  private static _sceneLoader: SceneLoader | null = null;
+
+  /** Register a callback that handles scene loading by name. */
+  static setSceneLoader(loader: SceneLoader | null): void {
+    Scene._sceneLoader = loader;
+  }
+
+  /**
+   * Request loading a scene by name (e.g. 'level2').
+   * The registered loader will handle deserialization and scene swap.
+   */
+  static loadScene(name: string): void {
+    if (!Scene._sceneLoader) {
+      console.warn(`[Scene] No scene loader registered, cannot load "${name}"`);
+      return;
+    }
+    Scene._sceneLoader(name);
+  }
+
   private readonly _roots: GameObject[] = [];
   private readonly _allObjects: Set<GameObject> = new Set();
   private _started = false;
@@ -108,4 +133,19 @@ export class Scene {
   getAllObjects(): ReadonlySet<GameObject> {
     return this._allObjects;
   }
+
+  /** Find all components of a given type across the entire scene. */
+  findAll<T extends import('./component.js').Component>(
+    Ctor: new (...args: never[]) => T,
+  ): T[] {
+    const results: T[] = [];
+    for (const obj of this._allObjects) {
+      const comp = obj.getComponent(Ctor);
+      if (comp) results.push(comp);
+    }
+    return results;
+  }
 }
+
+// Break circular dependency: component.ts needs Scene.current but can't import Scene directly.
+_setSceneClass(Scene);

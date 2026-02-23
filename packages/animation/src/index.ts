@@ -10,4 +10,6 @@ export { computeBoneMatrices } from './pose.js';
 export { AnimationMixer } from './animation-mixer.js';
 export type { AnimationLayer } from './animation-mixer.js';
 
+export { AnimationHandler } from './animation-handler.js';
+
 export { registerAnimationBuiltins } from './register-builtins.js';

@@ -104,6 +104,21 @@ const dropdownItemStyle: React.CSSProperties = {
   color: '#b8b8b8',
 };
 
+/** After a material.* property changes on a component, persist it to the .mat.json file. */
+function syncMaterialToDisk(
+  component: Component | Record<string, unknown>,
+  def: PropertyDef,
+  value: unknown,
+  materialManager?: MaterialManager,
+): void {
+  if (!materialManager || !def.key.startsWith('material.')) return;
+  const comp = component as Record<string, unknown>;
+  const matSource = comp['materialSource'] as string | undefined;
+  if (!matSource || !matSource.endsWith('.mat.json')) return;
+  const assetKey = def.key.slice('material.'.length); // e.g. 'albedo', 'metallic'
+  materialManager.updateMaterial(matSource, { [assetKey]: value });
+}
+
 function renderField(
   component: Component | { position: unknown; rotation: unknown; scale: unknown },
   def: PropertyDef,
@@ -111,6 +126,7 @@ function renderField(
   scene: Scene,
   selfId: number,
   materialManager?: MaterialManager,
+  target?: Component,
 ) {
   const value = getProperty(component, def);
   const label = def.key.split('.').pop()!;
@@ -125,6 +141,7 @@ function renderField(
           def={def as NumberPropertyDef}
           onChange={(v) => {
             setProperty(component, def, v);
+            syncMaterialToDisk(component, def, v, materialManager);
             refresh();
           }}
         />
@@ -137,6 +154,7 @@ function renderField(
           value={(value as number[]) ?? [0, 0, 0]}
           onChange={(v) => {
             setProperty(component, def, v);
+            syncMaterialToDisk(component, def, v, materialManager);
             refresh();
           }}
         />
@@ -161,6 +179,7 @@ function renderField(
           value={(value as number[]) ?? [1, 1, 1, 1]}
           onChange={(v) => {
             setProperty(component, def, v);
+            syncMaterialToDisk(component, def, v, materialManager);
             refresh();
           }}
         />
@@ -172,6 +191,7 @@ function renderField(
           label={label}
           value={(value as string) ?? ''}
           def={def as EnumPropertyDef}
+          target={target}
           onChange={(v) => {
             setProperty(component, def, v);
             refresh();
@@ -423,7 +443,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
             </div>
             {entry.properties
               .filter((prop) => !prop.visibleWhen || prop.visibleWhen(entry.target))
-              .map((prop) => renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager))}
+              .map((prop) => renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager, entry.component))}
           </div>
         ))}
 

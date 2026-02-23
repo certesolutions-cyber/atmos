@@ -51,6 +51,12 @@ export interface ModelSkin {
   jointParents: number[];
   /** Node names for each joint, indexed same as jointNodeIndices. */
   jointNames: string[];
+  /** Rest-pose local translations: jointCount * 3 floats. */
+  restT: Float32Array;
+  /** Rest-pose local rotations (quaternions): jointCount * 4 floats. */
+  restR: Float32Array;
+  /** Rest-pose local scales: jointCount * 3 floats. */
+  restS: Float32Array;
 }
 
 /** A single animation track targeting one node's T/R/S channel. */

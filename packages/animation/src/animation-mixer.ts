@@ -31,16 +31,63 @@ const _sampledS = new Float32Array(3);
 const _blendR = new Float32Array(4);
 
 export class AnimationMixer extends Component {
-  skeleton: Skeleton | null = null;
   /** Final bone matrices (jointCount * 16 floats), uploaded to GPU each frame. */
   boneMatrices: Float32Array | null = null;
 
+  /** Which clip to auto-play on start. */
+  initialClip = '';
+  /** Default playback speed multiplier. */
+  speed = 1;
+  /** Whether clips loop by default. */
+  loop = true;
+  /** Whether to auto-play initialClip on start. */
+  autoplay = true;
+
+  private _skeleton: Skeleton | null = null;
   private _layers: AnimationLayer[] = [];
+  private _clips = new Map<string, AnimationClip>();
 
   // Per-joint blended T/R/S (allocated when skeleton is set)
   private _blendedT: Float32Array | null = null;
   private _blendedR: Float32Array | null = null;
   private _blendedS: Float32Array | null = null;
+
+  // Accumulated rotation weight per joint (for rest-pose fill after blending)
+  private _accumWeightR: Float32Array | null = null;
+
+  get skeleton(): Skeleton | null { return this._skeleton; }
+
+  set skeleton(sk: Skeleton | null) {
+    this._skeleton = sk;
+    if (sk) {
+      const jc = sk.jointCount;
+      this._blendedT = new Float32Array(jc * 3);
+      this._blendedR = new Float32Array(jc * 4);
+      this._blendedS = new Float32Array(jc * 3);
+      this.boneMatrices = new Float32Array(jc * 16);
+      // Compute rest-pose bone matrices immediately so GPU has valid data before first update
+      this._blendedT.set(sk.restT);
+      this._blendedR.set(sk.restR);
+      this._blendedS.set(sk.restS);
+      computeBoneMatrices(this.boneMatrices, sk, this._blendedT, this._blendedR, this._blendedS);
+    } else {
+      this.boneMatrices = null;
+      this._blendedT = null;
+      this._blendedR = null;
+      this._blendedS = null;
+    }
+  }
+
+  /** Reset bone matrices to rest pose and stop all layers. */
+  resetToRestPose(): void {
+    const sk = this._skeleton;
+    if (!sk || !this.boneMatrices || !this._blendedT) return;
+    this._layers.length = 0;
+    this._blendedT.set(sk.restT);
+    this._blendedR!.set(sk.restR);
+    this._blendedS!.set(sk.restS);
+    computeBoneMatrices(this.boneMatrices, sk, this._blendedT, this._blendedR!, this._blendedS!);
+  }
 
   /** Play a clip, returning the layer handle. */
   play(clip: AnimationClip, opts?: {
@@ -70,8 +117,9 @@ export class AnimationMixer extends Component {
     const d = Math.max(duration, 0.001);
     from._fadeTarget = 0;
     from._fadeSpeed = from.weight / d;
+    to.weight = 0;
     to._fadeTarget = 1;
-    to._fadeSpeed = (1 - to.weight) / d;
+    to._fadeSpeed = 1 / d;
   }
 
   /** Stop and remove a layer. */
@@ -86,70 +134,105 @@ export class AnimationMixer extends Component {
     return this._layers;
   }
 
-  onUpdate(dt: number): void {
-    if (!this.skeleton) return;
+  /** Register a clip by name. */
+  addClip(clip: AnimationClip): void {
+    this._clips.set(clip.name, clip);
+  }
 
-    const jc = this.skeleton.jointCount;
+  /** Sorted list of registered clip names. */
+  get clipNames(): string[] {
+    return [...this._clips.keys()].sort();
+  }
 
-    // Lazy-allocate blending arrays
-    if (!this._blendedT || this._blendedT.length !== jc * 3) {
-      this._blendedT = new Float32Array(jc * 3);
-      this._blendedR = new Float32Array(jc * 4);
-      this._blendedS = new Float32Array(jc * 3);
-      this.boneMatrices = new Float32Array(jc * 16);
+  /** Name of the currently playing clip (first layer), or empty string. */
+  get currentClip(): string {
+    const first = this._layers[0];
+    return first ? first.clip.name : '';
+  }
+
+  /** Play a clip by name, with optional crossfade from the current clip. */
+  playByName(name: string, opts?: {
+    speed?: number;
+    loop?: boolean;
+    crossFadeDuration?: number;
+  }): AnimationLayer | null {
+    const clip = this._clips.get(name);
+    if (!clip) return null;
+    const layer = this.play(clip, {
+      speed: opts?.speed ?? this.speed,
+      loop: opts?.loop ?? this.loop,
+    });
+    if (opts?.crossFadeDuration && this._layers.length > 1) {
+      const from = this._layers[this._layers.length - 2]!;
+      this.crossFade(from, layer, opts.crossFadeDuration);
     }
+    return layer;
+  }
+
+  onStart(): void {
+    if (this.autoplay && this.initialClip) {
+      this.playByName(this.initialClip, { speed: this.speed, loop: this.loop });
+    }
+  }
+
+  onUpdate(dt: number): void {
+    if (!this._skeleton || !this._blendedT) return;
+
+    const jc = this._skeleton.jointCount;
 
     // Advance layers and handle fades
     this._advanceLayers(dt);
 
-    // Clear blended pose to identity
-    this._resetBlendedPose(jc);
+    // Start from rest pose (T/S stay as rest, R zeroed for accumulation)
+    const sk = this._skeleton;
+    this._blendedT!.set(sk.restT);
+    this._blendedS!.set(sk.restS);
+    this._blendedR!.fill(0);
 
-    // Accumulate weighted samples from each layer
-    let totalWeight = 0;
+    // Track accumulated rotation weight per joint
+    if (!this._accumWeightR || this._accumWeightR.length !== jc) {
+      this._accumWeightR = new Float32Array(jc);
+    }
+    this._accumWeightR.fill(0);
+
+    // Accumulate weighted samples
     for (const layer of this._layers) {
       if (!layer.playing || layer.weight <= 0) continue;
       this._accumulateLayer(layer, jc);
-      totalWeight += layer.weight;
     }
 
-    // Fix up joints: normalize rotations, default uncovered joints to identity
+    // Fill in rest-pose quaternion for joints not fully covered by animations
+    const br = this._blendedR!;
     for (let j = 0; j < jc; j++) {
+      const aw = this._accumWeightR![j]!;
       const rOff = j * 4;
-      const rx = this._blendedR![rOff] ?? 0;
-      const ry = this._blendedR![rOff + 1] ?? 0;
-      const rz = this._blendedR![rOff + 2] ?? 0;
-      const rw = this._blendedR![rOff + 3] ?? 0;
-      const lenSq = rx * rx + ry * ry + rz * rz + rw * rw;
-      if (lenSq > 1e-8) {
-        // Normalize accumulated quaternion
-        Quat.normalize(
-          this._blendedR!.subarray(rOff, rOff + 4),
-          this._blendedR!.subarray(rOff, rOff + 4),
-        );
-      } else {
-        // No rotation tracks → identity quaternion
-        this._blendedR![rOff] = 0;
-        this._blendedR![rOff + 1] = 0;
-        this._blendedR![rOff + 2] = 0;
-        this._blendedR![rOff + 3] = 1;
+      if (aw < 0.001) {
+        // No animation touched this joint — use rest pose directly
+        br[rOff] = sk.restR[rOff]!;
+        br[rOff + 1] = sk.restR[rOff + 1]!;
+        br[rOff + 2] = sk.restR[rOff + 2]!;
+        br[rOff + 3] = sk.restR[rOff + 3]!;
+      } else if (aw < 0.999) {
+        // Partially covered — blend in rest pose for remaining weight
+        const restW = 1 - aw;
+        const dot = br[rOff]! * sk.restR[rOff]! + br[rOff + 1]! * sk.restR[rOff + 1]! +
+                    br[rOff + 2]! * sk.restR[rOff + 2]! + br[rOff + 3]! * sk.restR[rOff + 3]!;
+        const sign = dot < 0 ? -1 : 1;
+        br[rOff] += sk.restR[rOff]! * restW * sign;
+        br[rOff + 1] += sk.restR[rOff + 1]! * restW * sign;
+        br[rOff + 2] += sk.restR[rOff + 2]! * restW * sign;
+        br[rOff + 3] += sk.restR[rOff + 3]! * restW * sign;
       }
-      // Default uncovered scale joints to (1,1,1)
-      const sOff = j * 3;
-      const sx = this._blendedS![sOff] ?? 0;
-      const sy = this._blendedS![sOff + 1] ?? 0;
-      const sz = this._blendedS![sOff + 2] ?? 0;
-      if (sx === 0 && sy === 0 && sz === 0) {
-        this._blendedS![sOff] = 1;
-        this._blendedS![sOff + 1] = 1;
-        this._blendedS![sOff + 2] = 1;
-      }
+      Quat.normalize(
+        br.subarray(rOff, rOff + 4),
+        br.subarray(rOff, rOff + 4),
+      );
     }
 
     // Compute final bone matrices
     computeBoneMatrices(
       this.boneMatrices!,
-      this.skeleton,
+      this._skeleton,
       this._blendedT!,
       this._blendedR!,
       this._blendedS!,
@@ -190,21 +273,15 @@ export class AnimationMixer extends Component {
     }
   }
 
-  private _resetBlendedPose(jointCount: number): void {
-    // Zero everything for additive weighted accumulation.
-    // Joints with no track contributions get fixed up after accumulation.
-    this._blendedT!.fill(0);
-    this._blendedR!.fill(0);
-    this._blendedS!.fill(0);
-  }
-
   private _accumulateLayer(layer: AnimationLayer, jointCount: number): void {
     const w = layer.weight;
     const bt = this._blendedT!;
     const br = this._blendedR!;
     const bs = this._blendedS!;
+    const sk = this._skeleton!;
 
-    // Sample each track and blend
+    // Sample each track and blend using delta-from-rest for T/S,
+    // weighted accumulation + rest fill for R (done in onUpdate post-pass).
     for (const track of layer.clip.tracks) {
       const ji = track.jointIndex;
       if (ji < 0 || ji >= jointCount) continue;
@@ -213,45 +290,40 @@ export class AnimationMixer extends Component {
         case 'translation': {
           sampleTrack(_sampledT, track, layer.time);
           const off = ji * 3;
-          bt[off] = (bt[off] ?? 0) + _sampledT[0]! * w;
-          bt[off + 1] = (bt[off + 1] ?? 0) + _sampledT[1]! * w;
-          bt[off + 2] = (bt[off + 2] ?? 0) + _sampledT[2]! * w;
+          // Delta from rest: bt starts at restT, add (sampled - rest) * weight
+          bt[off] += (_sampledT[0]! - sk.restT[off]!) * w;
+          bt[off + 1] += (_sampledT[1]! - sk.restT[off + 1]!) * w;
+          bt[off + 2] += (_sampledT[2]! - sk.restT[off + 2]!) * w;
           break;
         }
         case 'rotation': {
           sampleTrack(_sampledR, track, layer.time);
           const rOff = ji * 4;
+          this._accumWeightR![ji] += w;
           // Weighted quaternion accumulation (shortest path)
-          _blendR[0] = br[rOff] ?? 0;
-          _blendR[1] = br[rOff + 1] ?? 0;
-          _blendR[2] = br[rOff + 2] ?? 0;
-          _blendR[3] = br[rOff + 3] ?? 0;
-          // Ensure shortest path (dot product check)
+          _blendR[0] = br[rOff]!;
+          _blendR[1] = br[rOff + 1]!;
+          _blendR[2] = br[rOff + 2]!;
+          _blendR[3] = br[rOff + 3]!;
           const dot = _blendR[0]! * _sampledR[0]! + _blendR[1]! * _sampledR[1]! +
                       _blendR[2]! * _sampledR[2]! + _blendR[3]! * _sampledR[3]!;
           const sign = dot < 0 ? -1 : 1;
-          br[rOff] = (br[rOff] ?? 0) + _sampledR[0]! * w * sign;
-          br[rOff + 1] = (br[rOff + 1] ?? 0) + _sampledR[1]! * w * sign;
-          br[rOff + 2] = (br[rOff + 2] ?? 0) + _sampledR[2]! * w * sign;
-          br[rOff + 3] = (br[rOff + 3] ?? 0) + _sampledR[3]! * w * sign;
+          br[rOff] += _sampledR[0]! * w * sign;
+          br[rOff + 1] += _sampledR[1]! * w * sign;
+          br[rOff + 2] += _sampledR[2]! * w * sign;
+          br[rOff + 3] += _sampledR[3]! * w * sign;
           break;
         }
         case 'scale': {
           sampleTrack(_sampledS, track, layer.time);
           const sOff = ji * 3;
-          bs[sOff] = (bs[sOff] ?? 0) + _sampledS[0]! * w;
-          bs[sOff + 1] = (bs[sOff + 1] ?? 0) + _sampledS[1]! * w;
-          bs[sOff + 2] = (bs[sOff + 2] ?? 0) + _sampledS[2]! * w;
+          // Delta from rest: bs starts at restS, add (sampled - rest) * weight
+          bs[sOff] += (_sampledS[0]! - sk.restS[sOff]!) * w;
+          bs[sOff + 1] += (_sampledS[1]! - sk.restS[sOff + 1]!) * w;
+          bs[sOff + 2] += (_sampledS[2]! - sk.restS[sOff + 2]!) * w;
           break;
         }
       }
     }
-
-    // For joints not covered by this layer's tracks, we need to add identity contributions.
-    // But since we only add tracks that exist, uncovered joints get zero contribution.
-    // We handle this by setting default identity in _resetBlendedPose and only accumulating
-    // tracks that exist. Joints without tracks in any layer keep the identity pose.
-    // However, scale needs special handling: zero scale would collapse the mesh.
-    // We fix this after all layers accumulate by checking for zero-weight joints.
   }
 }

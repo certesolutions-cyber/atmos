@@ -22,3 +22,5 @@ export {
 } from './physics-hierarchy.js';
 export { computeColliderOffset } from './collider-offset.js';
 export type { ColliderOffset } from './collider-offset.js';
+export { Physics } from './physics-query.js';
+export type { HitResult } from './physics-query.js';

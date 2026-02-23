@@ -1,5 +1,5 @@
-import { Engine, Scene, GameObject, registerCoreBuiltins } from '@atmos/core';
-import { Vec3, Quat } from '@atmos/math';
+import { Engine, Scene, GameObject, registerCoreBuiltins } from "@atmos/core";
+import { Vec3, Quat } from "@atmos/math";
 import {
   initWebGPU,
   createRenderPipeline,
@@ -12,16 +12,26 @@ import {
   RenderSystem,
   createDefaultCamera,
   registerRendererBuiltins,
-} from '@atmos/renderer';
-import { parseGltfModel, instantiateModel } from '@atmos/assets';
-import { registerAnimationBuiltins } from '@atmos/animation';
+} from "@atmos/renderer";
+import { parseGltfModel, instantiateModel } from "@atmos/assets";
+import {
+  registerAnimationBuiltins,
+  AnimationMixer,
+  createAnimationClip,
+} from "@atmos/animation";
+import type {
+  AnimationClip,
+  AnimationLayer,
+  AnimationChannel,
+  KeyframeTrack,
+} from "@atmos/animation";
 
 async function main() {
   registerCoreBuiltins();
   registerRendererBuiltins();
   registerAnimationBuiltins();
 
-  const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+  const canvas = document.getElementById("canvas") as HTMLCanvasElement;
   const gpu = await initWebGPU(canvas);
   const pipeline = createRenderPipeline(gpu.device, gpu.format);
   const scene = new Scene();
@@ -35,10 +45,14 @@ async function main() {
   const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
 
   // Ground plane
-  const ground = new GameObject('Ground');
+  const ground = new GameObject("Ground");
   const cubeGeo = createCubeGeometry();
   const groundMesh = createMesh(gpu.device, cubeGeo.vertices, cubeGeo.indices);
-  const groundMat = createMaterial({ albedo: [0.25, 0.25, 0.25, 1], metallic: 0, roughness: 0.9 });
+  const groundMat = createMaterial({
+    albedo: [0.25, 0.25, 0.25, 1],
+    metallic: 0,
+    roughness: 0.9,
+  });
   const groundMr = ground.addComponent(MeshRenderer);
   groundMr.init(renderSystem, groundMesh, groundMat);
   ground.transform.setPosition(0, -0.01, 0);
@@ -46,7 +60,7 @@ async function main() {
   scene.add(ground);
 
   // Directional light with shadows
-  const lightGo = new GameObject('DirectionalLight');
+  const lightGo = new GameObject("DirectionalLight");
   const dl = lightGo.addComponent(DirectionalLight);
   dl.color.set([1, 1, 1]);
   dl.intensity = 1.5;
@@ -80,14 +94,18 @@ async function main() {
     Vec3.set(camera.eye, x, y, z);
     Vec3.set(camera.target, 0, 1, 0);
   };
-  canvas.addEventListener('wheel', (e) => {
+  canvas.addEventListener("wheel", (e) => {
     dist = Math.max(1, dist + e.deltaY * 0.01);
     updateCamera();
   });
   let dragging = false;
-  canvas.addEventListener('mousedown', () => { dragging = true; });
-  window.addEventListener('mouseup', () => { dragging = false; });
-  canvas.addEventListener('mousemove', (e) => {
+  canvas.addEventListener("mousedown", () => {
+    dragging = true;
+  });
+  window.addEventListener("mouseup", () => {
+    dragging = false;
+  });
+  canvas.addEventListener("mousemove", (e) => {
     if (!dragging) return;
     theta -= e.movementX * 0.005;
     phi = Math.max(-1.5, Math.min(1.5, phi + e.movementY * 0.005));
@@ -95,7 +113,29 @@ async function main() {
   });
 
   // Status UI
-  const statusEl = document.getElementById('status')!;
+  const statusEl = document.getElementById("status")!;
+  const animSelect = document.getElementById(
+    "anim-select",
+  ) as HTMLSelectElement;
+
+  // Animation state for the current model (all mixers in the hierarchy)
+  let activeMixers: AnimationMixer[] = [];
+  let activeLayers: AnimationLayer[] = [];
+  let availableClips: AnimationClip[] = [];
+
+  animSelect.addEventListener("change", () => {
+    if (activeMixers.length === 0) return;
+    const clip = availableClips[animSelect.selectedIndex];
+    if (!clip) return;
+    const newLayers: AnimationLayer[] = [];
+    for (let i = 0; i < activeMixers.length; i++) {
+      const mixer = activeMixers[i]!;
+      const newLayer = mixer.play(clip);
+      if (activeLayers[i]) mixer.crossFade(activeLayers[i]!, newLayer, 0.3);
+      newLayers.push(newLayer);
+    }
+    activeLayers = newLayers;
+  });
 
   // Load a .glb (skinning + animation auto-detected by instantiateModel)
   async function loadGlb(buffer: ArrayBuffer, name: string) {
@@ -103,23 +143,93 @@ async function main() {
     try {
       const asset = parseGltfModel(buffer, name);
       const root = await instantiateModel(asset, { renderSystem });
+      //root.transform.setScale(100, 100, 100);
       scene.add(root);
+
+      // Find all AnimationMixers and build clips for the dropdown
+      activeMixers = findAllMixers(root);
+      activeLayers = activeMixers.map(
+        (m) => (m.layers[0] as AnimationLayer | undefined) ?? null!,
+      ).filter(Boolean);
+      availableClips = buildClips(asset, activeMixers[0] ?? null);
+      populateAnimSelect(availableClips);
 
       const parts: string[] = [`${asset.meshes.length} mesh(es)`];
       if (asset.skins.length > 0) parts.push(`${asset.skins.length} skin(s)`);
-      if (asset.animations.length > 0) parts.push(`${asset.animations.length} animation(s)`);
-      statusEl.textContent = `${name}: ${parts.join(', ')}`;
+      if (asset.animations.length > 0)
+        parts.push(`${asset.animations.length} animation(s)`);
+      statusEl.textContent = `${name}: ${parts.join(", ")}`;
     } catch (err) {
       statusEl.textContent = `Error: ${err}`;
       console.error(err);
     }
   }
 
+  function findAllMixers(root: GameObject): AnimationMixer[] {
+    const result: AnimationMixer[] = [];
+    const mixer = root.getComponent(AnimationMixer);
+    if (mixer) result.push(mixer);
+    for (const child of root.children) {
+      result.push(...findAllMixers(child));
+    }
+    return result;
+  }
+
+  function buildClips(
+    asset: ReturnType<typeof parseGltfModel>,
+    mixer: AnimationMixer | null,
+  ): AnimationClip[] {
+    if (!mixer || asset.animations.length === 0) return [];
+    // The first clip was already created by instantiateModel.
+    // We need to recreate all clips so the dropdown can switch between them.
+    const skin = asset.skins[0];
+    if (!skin) return [];
+
+    const nodeToJoint = new Map<number, number>();
+    for (let ji = 0; ji < skin.jointNodeIndices.length; ji++) {
+      nodeToJoint.set(skin.jointNodeIndices[ji]!, ji);
+    }
+
+    const clips: AnimationClip[] = [];
+    for (const anim of asset.animations) {
+      const tracks: KeyframeTrack[] = [];
+      for (const track of anim.tracks) {
+        const jointIndex = nodeToJoint.get(track.targetNode);
+        if (jointIndex === undefined) continue;
+        tracks.push({
+          jointIndex,
+          channel: track.path as AnimationChannel,
+          interpolation: track.interpolation,
+          times: track.times,
+          values: track.values,
+        });
+      }
+      if (tracks.length > 0) {
+        clips.push(createAnimationClip(anim.name, tracks));
+      }
+    }
+    return clips;
+  }
+
+  function populateAnimSelect(clips: AnimationClip[]) {
+    animSelect.innerHTML = "";
+    if (clips.length === 0) {
+      animSelect.style.display = "none";
+      return;
+    }
+    for (const clip of clips) {
+      const opt = document.createElement("option");
+      opt.textContent = clip.name;
+      animSelect.appendChild(opt);
+    }
+    animSelect.style.display = "";
+  }
+
   // Load button
-  document.getElementById('load-btn')!.addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.glb';
+  document.getElementById("load-btn")!.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".glb";
     input.onchange = async () => {
       const file = input.files?.[0];
       if (!file) return;
@@ -130,11 +240,13 @@ async function main() {
 
   // Try auto-loading model.glb from models/ folder
   try {
-    const res = await fetch('/models/model.glb');
+    const res = await fetch("/models/model.glb");
     if (res.ok) {
-      await loadGlb(await res.arrayBuffer(), 'model.glb');
+      await loadGlb(await res.arrayBuffer(), "model.glb");
     }
-  } catch { /* no auto-load model */ }
+  } catch {
+    /* no auto-load model */
+  }
 }
 
 main().catch(console.error);

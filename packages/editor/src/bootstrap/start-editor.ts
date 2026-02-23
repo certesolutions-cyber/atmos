@@ -7,6 +7,7 @@ import {
   createDirectionalLight,
   RenderSystem,
   MeshRenderer,
+  SkinnedMeshRenderer,
   Camera,
   DirectionalLight,
   PointLight,
@@ -14,11 +15,12 @@ import {
   registerRendererBuiltins,
   resizeGPU,
   createMesh,
+  SKINNED_VERTEX_STRIDE_FLOATS,
 } from '@atmos/renderer';
 import type { ModelAsset } from '@atmos/assets';
 import { Vec3 } from '@atmos/math';
 import { parseGltfModel, instantiateModel } from '@atmos/assets';
-import { registerAnimationBuiltins } from '@atmos/animation';
+import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@atmos/animation';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -99,26 +101,52 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   // Model mesh cache for deserialize (model:path.glb:index)
   const modelCache = new Map<string, ModelAsset>();
 
-  const loadModelMesh = async (source: string): Promise<{ mesh: import('@atmos/renderer').Mesh } | null> => {
+  const loadModelAsset = async (filePath: string): Promise<ModelAsset | null> => {
+    let asset = modelCache.get(filePath);
+    if (!asset) {
+      const res = await fetch('/' + filePath);
+      if (!res.ok) return null;
+      asset = parseGltfModel(await res.arrayBuffer());
+      modelCache.set(filePath, asset);
+    }
+    return asset;
+  };
+
+  const parseModelSource = (source: string): { path: string; index: number } | null => {
     const rest = source.slice(6); // strip "model:"
     const lastColon = rest.lastIndexOf(':');
     if (lastColon < 0) return null;
-    const path = rest.slice(0, lastColon);
-    const index = parseInt(rest.slice(lastColon + 1), 10);
+    return { path: rest.slice(0, lastColon), index: parseInt(rest.slice(lastColon + 1), 10) };
+  };
 
-    let asset = modelCache.get(path);
-    if (!asset) {
-      const res = await fetch('/' + path);
-      if (!res.ok) return null;
-      asset = parseGltfModel(await res.arrayBuffer());
-      modelCache.set(path, asset);
-    }
-
-    const meshData = asset.meshes[index];
+  const loadModelMesh = async (source: string): Promise<{
+    mesh: import('@atmos/renderer').Mesh; skinned: boolean; skinIndex?: number;
+  } | null> => {
+    const parsed = parseModelSource(source);
+    if (!parsed) return null;
+    const asset = await loadModelAsset(parsed.path);
+    if (!asset) return null;
+    const meshData = asset.meshes[parsed.index];
     if (!meshData) return null;
-    const mesh = createMesh(gpu.device, meshData.geometry.vertices, meshData.geometry.indices, 8);
+    const stride = meshData.skinned ? SKINNED_VERTEX_STRIDE_FLOATS : 8;
+    const mesh = createMesh(gpu.device, meshData.geometry.vertices, meshData.geometry.indices, stride);
     mesh.bounds = meshData.geometry.bounds;
-    return { mesh };
+    return { mesh, skinned: meshData.skinned, skinIndex: meshData.skinIndex };
+  };
+
+  const loadModelData = async (source: string): Promise<{
+    mesh: import('@atmos/renderer').Mesh; asset: ModelAsset; meshIndex: number;
+  } | null> => {
+    const parsed = parseModelSource(source);
+    if (!parsed) return null;
+    const asset = await loadModelAsset(parsed.path);
+    if (!asset) return null;
+    const meshData = asset.meshes[parsed.index];
+    if (!meshData) return null;
+    const stride = meshData.skinned ? SKINNED_VERTEX_STRIDE_FLOATS : 8;
+    const mesh = createMesh(gpu.device, meshData.geometry.vertices, meshData.geometry.indices, stride);
+    mesh.bounds = meshData.geometry.bounds;
+    return { mesh, asset, meshIndex: parsed.index };
   };
 
   const factoryDeps: FactoryDeps = {
@@ -127,6 +155,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     editorState: lazyState,
     materialManager: lazyMM,
     loadModelMesh,
+    loadModelData,
   };
 
   const primitiveFactory = config.primitiveFactory ?? createDefaultPrimitiveFactory(factoryDeps);
@@ -157,24 +186,25 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
       const root = await instantiateModel(asset, { renderSystem });
 
-      // Tag MeshRenderers with meshSource + assign material assets
+      // Tag MeshRenderers/SkinnedMeshRenderers with meshSource + assign material assets
       const tagMeshRenderers = async (
         go: import('@atmos/core').GameObject,
         modelPath: string,
         idx: { n: number },
       ) => {
         const mr = go.getComponent(MeshRenderer);
-        if (mr) {
-          mr.meshSource = `model:${modelPath}:${idx.n}`;
-          // Assign material asset if we have a mapping
+        const smr = go.getComponent(SkinnedMeshRenderer);
+        const renderer = mr ?? smr;
+        if (renderer) {
+          renderer.meshSource = `model:${modelPath}:${idx.n}`;
           if (materialMap && mm) {
             const matIdx = asset.meshes[idx.n]?.materialIndex ?? 0;
             const matPath = materialMap.get(matIdx);
             if (matPath) {
-              mr.materialSource = matPath;
+              renderer.materialSource = matPath;
               const mat = await mm.getMaterial(matPath);
-              mr.material = mat;
-              mr.materialBindGroup = null;
+              renderer.material = mat;
+              renderer.materialBindGroup = null;
             }
           }
           idx.n++;
@@ -272,6 +302,22 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       showAssetBrowser: config.showAssetBrowser ?? true,
       onAttachScript,
       onLoadModel,
+      onLoadScene: async (entry: { path: string; name: string }) => {
+        const edState = lazyState.current;
+        if (!edState || !projectFs.isOpen) return;
+        try {
+          const json = await projectFs.readTextFile(entry.path);
+          const data = JSON.parse(json);
+          const scene = deserializeScene(data, deserializeCtx);
+          if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+          const name = entry.name.replace(/\.scene\.json$/, '');
+          edState.sceneName = name;
+          edState.setScene(scene);
+          if (data.postProcess && renderSystem) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
+        } catch (err) {
+          console.error('[Editor] Failed to load scene:', err);
+        }
+      },
       onDropModel,
       primitiveFactory,
       componentFactory,
@@ -313,6 +359,10 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   await loadProjectTree();
   assetClient.onChange(() => loadProjectTree());
   cleanups.push(() => assetClient.dispose());
+
+  // Poll for external file changes every 2s
+  const pollInterval = setInterval(() => loadProjectTree(), 2000);
+  cleanups.push(() => clearInterval(pollInterval));
 
   // Refresh asset browser when project files change (write/delete via ProjectFileSystem)
   projectFs.onFileChanged = () => loadProjectTree();
@@ -360,9 +410,11 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
   // Skip GPU-owning components when cycling play/pause lifecycle
   const isEngineComponent = (c: import('@atmos/core').Component) =>
-    c instanceof MeshRenderer || c instanceof Camera
-    || c instanceof DirectionalLight || c instanceof PointLight
-    || c instanceof SpotLight;
+    c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
+    || c instanceof Camera || c instanceof DirectionalLight
+    || c instanceof PointLight || c instanceof SpotLight
+    || c instanceof AnimationMixer
+    || c instanceof AnimationHandler;
 
   cleanups.push(editorState.on('pauseChanged', () => {
     engine.paused = editorState.paused;
@@ -376,6 +428,11 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   cleanups.push(editorState.on('sceneRestored', () => {
     // Destroy user script components (not GPU-owning ones) so they reset state
     editorState.scene.destroyAllComponents((c) => !isEngineComponent(c));
+    // Reset all skinned meshes to rest pose
+    for (const obj of editorState.scene.getAllObjects()) {
+      const mixer = obj.getComponent(AnimationMixer);
+      if (mixer) mixer.resetToRestPose();
+    }
     config.physics?.onSceneRestored(editorState.scene);
   }));
 
@@ -404,6 +461,25 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       }
     }
   }
+
+  // 17. Scene loader — allows scripts to call Scene.loadScene('name')
+  Scene.setSceneLoader(async (name: string) => {
+    const edState = lazyState.current;
+    if (!edState || !projectFs.isOpen) return;
+    const scenePath = `scenes/${name}.scene.json`;
+    try {
+      const json = await projectFs.readTextFile(scenePath);
+      const data = JSON.parse(json);
+      const loaded = deserializeScene(data, deserializeCtx);
+      if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+      edState.sceneName = name;
+      edState.setScene(loaded);
+      if (data.postProcess) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
+    } catch (err) {
+      console.error(`[Scene] Failed to load scene "${name}":`, err);
+    }
+  });
+  cleanups.push(() => Scene.setSceneLoader(null));
 
   return {
     editorState,

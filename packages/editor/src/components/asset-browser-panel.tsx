@@ -7,13 +7,13 @@ interface AssetBrowserPanelProps {
   editorState: EditorState;
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
   onLoadModel?: (entry: AssetEntry) => void;
+  onLoadScene?: (entry: AssetEntry) => void;
+  style?: React.CSSProperties;
 }
 
 /* ── Styles ─────────────────────────────────────────── */
 
 const panelStyle: React.CSSProperties = {
-  height: '180px',
-  minHeight: '100px',
   background: '#1c1c1c',
   borderTop: '1px solid #2a2a2a',
   display: 'flex',
@@ -111,6 +111,7 @@ const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
 
 const MODEL_EXTENSIONS = new Set(['glb', 'gltf']);
 const MATERIAL_EXTENSION = '.mat.json';
+const SCENE_EXTENSION = '.scene.json';
 const TEXTURE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp']);
 
 const contextMenuStyle: React.CSSProperties = {
@@ -155,7 +156,7 @@ function badgeFor(entry: AssetEntry): { label: string; bg: string; color: string
 
 /* ── Component ──────────────────────────────────────── */
 
-export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel }: AssetBrowserPanelProps) {
+export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, onLoadScene, style }: AssetBrowserPanelProps) {
   const [, setTick] = useState(0);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [search, setSearch] = useState('');
@@ -228,7 +229,7 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel }: 
   const breadcrumbs = ['Project', ...currentPath];
 
   return (
-    <div style={panelStyle}>
+    <div style={{ ...panelStyle, ...style }}>
       {/* Header */}
       <div style={headerStyle}>
         <span style={{ textTransform: 'uppercase' }}>Project</span>
@@ -266,6 +267,7 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel }: 
           const isScript = scriptSet.has(entry.path);
           const isModel = MODEL_EXTENSIONS.has(entry.extension.toLowerCase());
           const isMaterial = entry.name.endsWith(MATERIAL_EXTENSION);
+          const isScene = entry.name.endsWith(SCENE_EXTENSION);
           const isTexture = TEXTURE_EXTENSIONS.has(entry.extension.toLowerCase());
           const isSelected = selectedPath === entry.path;
 
@@ -288,6 +290,10 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel }: 
               }}
               onDoubleClick={() => {
                 if (entry.kind === 'directory') navigateInto(entry);
+                else if (isScene && onLoadScene) {
+                  const name = entry.name.replace(/\.scene\.json$/, '');
+                  if (confirm(`Load scene "${name}"?`)) onLoadScene(entry);
+                }
                 else if (isScript) handleAttach(entry);
                 else if (isModel && onLoadModel) onLoadModel(entry);
               }}
@@ -335,6 +341,11 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel }: 
               {isMaterial && (
                 <span style={{ fontSize: '9px', color: '#6a4a8a', marginLeft: '4px' }}>
                   Material
+                </span>
+              )}
+              {isScene && (
+                <span style={{ fontSize: '9px', color: '#5a8a8a', marginLeft: '4px' }}>
+                  Scene
                 </span>
               )}
             </div>

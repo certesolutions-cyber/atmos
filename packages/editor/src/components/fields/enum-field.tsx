@@ -6,6 +6,8 @@ interface EnumFieldProps {
   value: string;
   onChange: (value: string) => void;
   def: EnumPropertyDef;
+  /** Component instance, needed for `def.optionsFrom` dynamic options. */
+  target?: unknown;
 }
 
 const selectStyle: React.CSSProperties = {
@@ -24,12 +26,13 @@ const rowStyle: React.CSSProperties = {
   padding: '2px 0',
 };
 
-export function EnumField({ label, value, onChange, def }: EnumFieldProps) {
+export function EnumField({ label, value, onChange, def, target }: EnumFieldProps) {
+  const options = (def.optionsFrom && target) ? def.optionsFrom(target) : def.options;
   return (
     <div style={rowStyle}>
       <span style={{ fontSize: '12px', color: '#aaa' }}>{label}</span>
       <select style={selectStyle} value={value} onChange={(e) => onChange(e.target.value)}>
-        {def.options.map((opt) => (
+        {options.map((opt) => (
           <option key={opt} value={opt}>
             {opt}
           </option>

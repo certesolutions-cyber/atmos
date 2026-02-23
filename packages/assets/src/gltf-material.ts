@@ -32,6 +32,11 @@ export function extractMaterials(doc: GltfDocument): ModelMaterial[] {
       }
     }
 
+    // glTF alphaMode: "MASK" uses alphaCutoff (default 0.5 per spec)
+    const alphaCutoff = gltfMat.alphaMode === 'MASK'
+      ? (gltfMat.alphaCutoff ?? 0.5)
+      : 0;
+
     return {
       name: gltfMat.name ?? `material_${i}`,
       params: {
@@ -43,6 +48,7 @@ export function extractMaterials(doc: GltfDocument): ModelMaterial[] {
         ] as [number, number, number, number],
         metallic: pbr?.metallicFactor ?? 0,
         roughness: pbr?.roughnessFactor ?? 0.5,
+        alphaCutoff,
       },
       albedoTextureIndex,
     };

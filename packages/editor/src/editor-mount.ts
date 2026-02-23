@@ -41,6 +41,7 @@ export interface MountEditorOptions {
   showAssetBrowser?: boolean;
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
   onLoadModel?: (entry: AssetEntry) => void;
+  onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
 }
 
@@ -179,6 +180,7 @@ export function mountEditor(
       showAssetBrowser: options?.showAssetBrowser ?? false,
       onAttachScript: options?.onAttachScript,
       onLoadModel: options?.onLoadModel,
+      onLoadScene: options?.onLoadScene,
       onDropModel: options?.onDropModel,
       renderSystem: options?.renderSystem,
     }),

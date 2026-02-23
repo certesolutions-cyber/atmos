@@ -212,7 +212,7 @@ export function deserializeScene(data: SceneData, context?: DeserializeContext):
     scene.add(go);
   }
 
-  context?.onComplete?.();
+  // NOTE: caller is responsible for awaiting context.onComplete() after this returns.
   return scene;
 }
 

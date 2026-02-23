@@ -74,7 +74,7 @@ function Row({ label, value, min, max, step, onChange }: {
 }
 
 export function PostProcessPanel({ renderSystem, editorState }: PostProcessPanelProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [, setTick] = useState(0);
   const refresh = useCallback(() => setTick(t => t + 1), []);
 

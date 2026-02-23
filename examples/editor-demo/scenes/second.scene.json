@@ -1,0 +1,77 @@
+{
+  "gameObjects": [
+    {
+      "name": "Suzanne",
+      "id": 340,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/monkey.glb:0",
+            "materialSource": "materials/monkey_material_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": false,
+    "fogMode": "linear",
+    "fogDensity": 0.02,
+    "fogStart": 10,
+    "fogEnd": 100,
+    "fogColor": [
+      0.699999988079071,
+      0.75,
+      0.800000011920929
+    ]
+  }
+}

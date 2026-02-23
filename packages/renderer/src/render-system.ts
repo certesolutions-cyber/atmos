@@ -29,6 +29,7 @@ import { BloomPass } from './bloom-pass.js';
 import { TonemapPass } from './tonemap-pass.js';
 import { DepthPrepass } from './depth-prepass.js';
 import { SSAOPass } from './ssao-pass.js';
+import { SceneDepthPass } from './scene-depth.js';
 
 export interface CameraSettings {
   eye: Float32Array;
@@ -105,6 +106,10 @@ export class RenderSystem implements Renderer {
   private _depthPrepass: DepthPrepass | null = null;
   private _ssaoPass: SSAOPass | null = null;
   private readonly _invProjMatrix: Mat4Type = Mat4.create();
+  private readonly _invVPMatrix: Mat4Type = Mat4.create();
+  private _sceneDepthPass: SceneDepthPass | null = null;
+  private _pendingReadbacks: PendingReadback[] = [];
+  private _activeReadbacks: ActiveReadback[] = [];
   private _meshRenderers: MeshRenderer[] = [];
   private _skinnedMeshRenderers: SkinnedMeshRenderer[] = [];
   private _skinnedPipelineResources: SkinnedPipelineResources | null = null;
@@ -330,6 +335,42 @@ export class RenderSystem implements Renderer {
       const depthExtraDraw = this._makeDepthPrepassExtraDraw();
       this._depthPrepass.execute(this._encoder, this._scene, vpMatrix, depthExtraDraw);
     }
+
+    // --- On-demand scene depth pass for screenToWorldPoint readback ---
+    if (this._pendingReadbacks.length > 0) {
+      if (!this._sceneDepthPass) {
+        this._sceneDepthPass = new SceneDepthPass(device, this._pipelineResources.objectBindGroupLayout, canvasW, canvasH);
+      }
+      this._sceneDepthPass.resize(canvasW, canvasH);
+      this._sceneDepthPass.execute(this._encoder, vpMatrix, meshRenderers, skinnedRenderers, terrainRenderers);
+      Mat4.invert(this._invVPMatrix, vpMatrix);
+
+      // Encode pixel copies for all pending readbacks
+      for (const req of this._pendingReadbacks) {
+        const px = Math.round(req.x);
+        const py = Math.round(req.y);
+        if (px < 0 || px >= canvasW || py < 0 || py >= canvasH) {
+          req.resolve(null);
+          continue;
+        }
+        const staging = device.createBuffer({ size: 4, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+        this._encoder.copyTextureToBuffer(
+          { texture: this._sceneDepthPass.depthTexture, origin: { x: px, y: py } },
+          { buffer: staging, bytesPerRow: 256 },
+          { width: 1, height: 1 },
+        );
+        this._activeReadbacks.push({
+          staging, px, py, nearClip: req.nearClip, resolve: req.resolve,
+          invVP: new Float32Array(this._invVPMatrix as Float32Array),
+          eyeX: cameraEye[0]!, eyeY: cameraEye[1]!, eyeZ: cameraEye[2]!,
+          canvasW, canvasH,
+        });
+      }
+      this._pendingReadbacks.length = 0;
+    }
+
+    // Wire up Camera static so scripts can call Camera.main.screenToWorldPoint()
+    Camera._renderSystem = this;
 
     // Begin main render pass: MSAA → resolve to HDR texture
     const cc = (this._activeCamera ?? Camera.getMain(this._scene))?.clearColor;
@@ -559,6 +600,17 @@ export class RenderSystem implements Renderer {
     return this._shadowBindGroup;
   }
 
+  /**
+   * Queue a depth readback for the next frame. The returned promise resolves
+   * after endFrame() submits the GPU commands and the staging buffer is mapped.
+   * Returns null if the pixel is sky (depth >= 1.0) or closer than nearClip world units.
+   */
+  screenToWorldPoint(x: number, y: number, nearClip?: number): Promise<Float32Array | null> {
+    return new Promise(resolve => {
+      this._pendingReadbacks.push({ x, y, nearClip, resolve });
+    });
+  }
+
   endFrame(): void {
     if (!this._pass || !this._encoder) return;
     this._pass.end();
@@ -593,6 +645,68 @@ export class RenderSystem implements Renderer {
     device.queue.submit([this._encoder.finish()]);
     this._encoder = null;
     this._pass = null;
+
+    // Resolve pending depth readbacks (fire-and-forget async)
+    if (this._activeReadbacks.length > 0) {
+      const readbacks = this._activeReadbacks.slice();
+      this._activeReadbacks.length = 0;
+      for (const rb of readbacks) {
+        resolveReadback(rb);
+      }
+    }
+  }
+}
+
+interface PendingReadback {
+  x: number;
+  y: number;
+  nearClip?: number;
+  resolve: (v: Float32Array | null) => void;
+}
+
+interface ActiveReadback {
+  staging: GPUBuffer;
+  px: number;
+  py: number;
+  nearClip?: number;
+  invVP: Float32Array;
+  eyeX: number;
+  eyeY: number;
+  eyeZ: number;
+  canvasW: number;
+  canvasH: number;
+  resolve: (v: Float32Array | null) => void;
+}
+
+async function resolveReadback(rb: ActiveReadback): Promise<void> {
+  try {
+    await rb.staging.mapAsync(GPUMapMode.READ);
+    const depthValue = new Float32Array(rb.staging.getMappedRange())[0]!;
+    rb.staging.unmap();
+    rb.staging.destroy();
+
+    if (depthValue >= 1.0) { rb.resolve(null); return; }
+
+    const ndcX = (rb.px / rb.canvasW) * 2 - 1;
+    const ndcY = 1 - (rb.py / rb.canvasH) * 2;
+    const ndcZ = depthValue;
+    const inv = rb.invVP;
+    const rx = inv[0]! * ndcX + inv[4]! * ndcY + inv[8]! * ndcZ + inv[12]!;
+    const ry = inv[1]! * ndcX + inv[5]! * ndcY + inv[9]! * ndcZ + inv[13]!;
+    const rz = inv[2]! * ndcX + inv[6]! * ndcY + inv[10]! * ndcZ + inv[14]!;
+    const rw = inv[3]! * ndcX + inv[7]! * ndcY + inv[11]! * ndcZ + inv[15]!;
+    const worldX = rx / rw;
+    const worldY = ry / rw;
+    const worldZ = rz / rw;
+
+    if (rb.nearClip !== undefined) {
+      const dx = worldX - rb.eyeX, dy = worldY - rb.eyeY, dz = worldZ - rb.eyeZ;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) < rb.nearClip) { rb.resolve(null); return; }
+    }
+
+    rb.resolve(Vec3.fromValues(worldX, worldY, worldZ));
+  } catch {
+    rb.resolve(null);
   }
 }
 

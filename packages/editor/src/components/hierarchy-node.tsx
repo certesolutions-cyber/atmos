@@ -28,7 +28,7 @@ export function HierarchyNode({
   gameObject, selectedId, depth, onSelect, onDoubleClick,
   onReparent, onContextMenu, onDropModel, filterMatch, renameId, onRenameComplete,
 }: HierarchyNodeProps) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const isSelected = gameObject.id === selectedId;
   const hasChildren = gameObject.children.length > 0;

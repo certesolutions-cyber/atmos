@@ -1,5 +1,6 @@
 import { registerComponent } from '@atmos/core';
 import { MeshRenderer } from './mesh-renderer.js';
+import { SkinnedMeshRenderer } from './skinned-mesh-renderer.js';
 import { TerrainMeshRenderer } from './terrain-mesh-renderer.js';
 import { Camera } from './camera.js';
 import { DirectionalLight } from './directional-light.js';
@@ -19,6 +20,20 @@ export function registerRendererBuiltins(): void {
       { key: 'material.emissiveIntensity', type: 'number', min: 0, max: 20, step: 0.1 },
       { key: 'castShadow', type: 'boolean' },
       { key: 'receiveSSAO', type: 'boolean' },
+    ],
+  });
+
+  registerComponent(SkinnedMeshRenderer, {
+    name: 'SkinnedMeshRenderer',
+    properties: [
+      { key: 'meshSource', type: 'string' },
+      { key: 'materialSource', type: 'materialAsset' },
+      { key: 'material.albedo', type: 'color' },
+      { key: 'material.metallic', type: 'number', min: 0, max: 1, step: 0.01 },
+      { key: 'material.roughness', type: 'number', min: 0, max: 1, step: 0.01 },
+      { key: 'material.emissive', type: 'color' },
+      { key: 'material.emissiveIntensity', type: 'number', min: 0, max: 20, step: 0.1 },
+      { key: 'castShadow', type: 'boolean' },
     ],
   });
 

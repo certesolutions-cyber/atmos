@@ -1,0 +1,13 @@
+{
+  "name": "MI_Chum_Eyes",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0,
+  "albedoTexture": "textures/model_texture_3.png"
+}

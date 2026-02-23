@@ -1,6 +1,6 @@
 # 🌌 Atmos Engine
 
-Atmos is an open-source, web-native game engine built on top of **WebGPU**, **TypeScript**, and **Vite**.  
+Atmos is an open-source, web-native game engine built on top of **WebGPU**, **TypeScript**, and **Vite**.
 It brings a Unity-style component workflow directly into the browser, powered by the npm ecosystem.
 
 The project is designed for:
@@ -29,12 +29,22 @@ Atmos is structured as a **monorepo with npm workspaces**.
 
 ```
 /packages
-  /core
-  /renderer
-  /math
-  /physics
-  /editor
+  /math          # Vec3, Mat4, Quat, Ray, noise
+  /core          # Component model, Scene, Engine, Input
+  /renderer      # WebGPU, PBR, lights, shadows, post-fx
+  /physics       # Rapier wrapper, rigid bodies, joints
+  /animation     # Skeletal animation, clips, blending
+  /assets        # glTF/GLB parser + instantiation
+  /editor        # React-based Unity-style editor
+  /terrain       # Voxel terrain, marching cubes, LOD
 /examples
+  /rotating-cube     # Minimal setup
+  /pbr-scene         # 100 objects, PBR materials
+  /falling-cubes     # Physics with Rapier
+  /model-viewer      # glTF drag-and-drop
+  /animated-model    # Skeletal animation
+  /editor-demo       # Full editor
+  /terrain-editor    # Voxel terrain + editor
 ```
 
 Each package:
@@ -48,84 +58,30 @@ Each package:
 
 # 📦 Packages
 
-## 1️⃣ @atmos/core
-
-Responsible for:
-
-- Game loop
-- Scene graph
-- Component model
-- Lifecycle management
-- Input system
-- Time management
-
-### Responsibilities
-
-- Deterministic update cycle
-- Component registration system
-- Object hierarchy management
-- Lifecycle state tracking
-
-### Non-responsibilities
-
-- Rendering implementation
-- Physics engine internals
-- Editor UI
+| Package | Description | README |
+|---|---|---|
+| [@atmos/math](packages/math/) | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc | [README](packages/math/README.md) |
+| [@atmos/core](packages/core/) | Component lifecycle, GameObject, Scene, Engine, Input, Time | [README](packages/core/README.md) |
+| [@atmos/renderer](packages/renderer/) | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning | [README](packages/renderer/README.md) |
+| [@atmos/physics](packages/physics/) | Rapier WASM wrapper, RigidBody, Collider, joints, queries | [README](packages/physics/README.md) |
+| [@atmos/animation](packages/animation/) | Skeleton, AnimationClip, AnimationMixer, keyframe blending | [README](packages/animation/README.md) |
+| [@atmos/assets](packages/assets/) | glTF 2.0 / GLB parser, mesh/material/skin/animation extraction | [README](packages/assets/README.md) |
+| [@atmos/editor](packages/editor/) | React editor: hierarchy, inspector, gizmos, picking, project I/O | [README](packages/editor/README.md) |
+| [@atmos/terrain](packages/terrain/) | Voxel density fields, marching cubes, LOD streaming, splat textures | [README](packages/terrain/README.md) |
 
 ---
 
-## 2️⃣ @atmos/renderer
+# 🎮 Examples
 
-Responsible for:
-
-- WebGPU device initialization
-- Render pipeline management
-- Materials
-- Mesh rendering
-- Bind group optimization
-- Frame graph (future)
-
----
-
-## 3️⃣ @atmos/math
-
-Responsible for:
-
-- Vector & matrix math
-- Transform calculations
-- GPU-compatible memory layouts
-
-Must:
-
-- Use `Float32Array`
-- Avoid heap allocations in hot paths
-- Be tree-shakable
-
----
-
-## 4️⃣ @atmos/physics
-
-Wrapper around Rapier (WASM).
-
-Responsible for:
-
-- Physics world lifecycle
-- Syncing physics transforms to GameObjects
-- Collision event system
-
----
-
-## 5️⃣ @atmos/editor (Client)
-
-React-based editor running on Vite dev server.
-
-Responsible for:
-
-- Scene hierarchy view
-- Inspector
-- Asset browser
-- Project file management
-- Hot reload bridge
+| Example | Description | README |
+|---|---|---|
+| [rotating-cube](examples/rotating-cube/) | Minimal engine setup with a spinning cube | [README](examples/rotating-cube/README.md) |
+| [pbr-scene](examples/pbr-scene/) | 100 objects with PBR materials at 60fps | [README](examples/pbr-scene/README.md) |
+| [falling-cubes](examples/falling-cubes/) | Physics simulation with Rapier | [README](examples/falling-cubes/README.md) |
+| [model-viewer](examples/model-viewer/) | Drag-and-drop glTF/GLB viewer | [README](examples/model-viewer/README.md) |
+| [animated-model](examples/animated-model/) | Skeletal animation with clip cross-fade | [README](examples/animated-model/README.md) |
+| [editor-demo](examples/editor-demo/) | Full editor with all packages integrated | [README](examples/editor-demo/README.md) |
+| [terrain-editor](examples/terrain-editor/) | Voxel terrain with splat textures + editor | [README](examples/terrain-editor/README.md) |
 
 ---
 
@@ -251,26 +207,30 @@ Must:
 
 # 🎨 Renderer Architecture
 
-## Initialization
-
-1. Request adapter
-2. Request device
-3. Configure canvas context
-4. Setup depth buffer
-5. Create default pipeline
-
-## Rendering Flow
-
-Per frame:
+## Rendering Pipeline
 
 ```
-Begin Command Encoder
-  Begin Render Pass
-    Draw opaque objects
-    Draw transparent objects
-  End Pass
-Submit queue
+Depth Pre-pass
+Shadow Passes (2× CSM + Point Cube + Spot)
+Main Pass (MSAA 4× → HDR resolve)
+SSAO (half-res, 16 samples)
+Bloom (5-level downsample/upsample)
+Tonemap (ACES + gamma 2.2 + vignette) → Swapchain
 ```
+
+## Lights
+
+- **DirectionalLight** — cascaded shadow maps (2 cascades)
+- **PointLight** — omnidirectional cube shadow maps
+- **SpotLight** — perspective shadow maps
+
+## Materials
+
+PBR Cook-Torrance with:
+- Albedo (color + texture)
+- Metallic / Roughness (uniform + map)
+- Normal maps (TBN from derivatives)
+- Emissive (color + intensity)
 
 ---
 
@@ -337,68 +297,6 @@ Each package must include:
 - Unit tests (Vitest)
 - No DOM dependency in core
 - Deterministic simulation tests
-
----
-
-# 📋 Development Phases
-
-## Phase 1 – Core Minimal Engine
-
-Deliver:
-
-- Game loop
-- Transform hierarchy
-- Component system
-- Basic WebGPU clear screen
-
-Exit Criteria:
-
-- Rotating cube example runs
-
----
-
-## Phase 2 – Rendering Expansion
-
-Deliver:
-
-- Mesh support
-- PBR material
-- Depth testing
-- Multiple objects
-
-Exit Criteria:
-
-- Scene with 100 objects renders at 60fps
-
----
-
-## Phase 3 – Physics Integration
-
-Deliver:
-
-- Rapier wrapper
-- RigidBody component
-- Collider component
-- Sync transforms
-
-Exit Criteria:
-
-- Falling cube with collision
-
----
-
-## Phase 4 – Editor MVP
-
-Deliver:
-
-- Scene hierarchy panel
-- Inspector
-- Editable decorator support
-- Save/load scenes
-
-Exit Criteria:
-
-- Modify property in editor updates scene live
 
 ---
 
@@ -472,5 +370,5 @@ MIT
 
 ---
 
-Atmos is not just a web engine.  
+Atmos is not just a web engine.
 It is an experiment in how far the **open web + WebGPU + AI agents** can go.

@@ -24,6 +24,8 @@ export { SpotLight } from './spot-light.js';
 export { MeshRenderer } from './mesh-renderer.js';
 export type { MeshRendererContext } from './mesh-renderer.js';
 export { Camera } from './camera.js';
+export type { ScreenToWorldProvider } from './camera.js';
+export { SceneDepthPass } from './scene-depth.js';
 export { RenderSystem, createDefaultCamera } from './render-system.js';
 export type { CameraSettings, OverlayCallback } from './render-system.js';
 export { registerRendererBuiltins } from './register-builtins.js';

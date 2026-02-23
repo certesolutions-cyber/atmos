@@ -26,7 +26,7 @@ export function createGeometryCache(device: GPUDevice): MeshRecord {
   const sphereMesh = createMesh(device, sphereGeo.vertices, sphereGeo.indices, S);
   sphereMesh.bounds = sphereGeo.bounds;
 
-  const cylinderGeo = createCylinderGeometry(0.4, 1.0, 16);
+  const cylinderGeo = createCylinderGeometry(0.5, 0.5, 1, 16);
   const cylinderMesh = createMesh(device, cylinderGeo.vertices, cylinderGeo.indices, S);
   cylinderMesh.bounds = cylinderGeo.bounds;
 

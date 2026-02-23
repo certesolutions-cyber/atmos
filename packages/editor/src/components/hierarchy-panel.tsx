@@ -18,11 +18,10 @@ interface HierarchyPanelProps {
   primitiveFactory?: (type: PrimitiveType, name: string) => GameObject;
   onFocusObject?: (obj: import('@atmos/core').GameObject) => void;
   onDropModel?: (path: string, parent: import('@atmos/core').GameObject | null) => void;
+  style?: React.CSSProperties;
 }
 
 const panelStyle: React.CSSProperties = {
-  width: '200px',
-  minWidth: '200px',
   background: '#1c1c1c',
   borderRight: '1px solid #2a2a2a',
   overflow: 'hidden',
@@ -75,7 +74,7 @@ function collectMatchingIds(
   return false;
 }
 
-export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel }: HierarchyPanelProps) {
+export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel, style }: HierarchyPanelProps) {
   const [, setTick] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; obj: import('@atmos/core').GameObject | null } | null>(null);
@@ -216,7 +215,7 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
   };
 
   return (
-    <div style={panelStyle}>
+    <div style={{ ...panelStyle, ...style }}>
       <div style={headerStyle}>Hierarchy</div>
       <input
         style={searchStyle}

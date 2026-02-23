@@ -112,8 +112,8 @@ export function createSkinnedPBRPipeline(
         arrayStride: SKINNED_VERTEX_STRIDE_BYTES,
         attributes: [
           { shaderLocation: 0, offset: 0, format: 'float32x3' },    // position
-          { shaderLocation: 3, offset: 32, format: 'uint8x4' },     // joints
-          { shaderLocation: 4, offset: 36, format: 'float32x4' },   // weights
+          { shaderLocation: 3, offset: 32, format: 'uint16x4' },    // joints
+          { shaderLocation: 4, offset: 40, format: 'float32x4' },   // weights
         ],
       }],
     },
