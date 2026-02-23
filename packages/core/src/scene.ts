@@ -15,10 +15,18 @@ export class Scene {
     if (!gameObject.parent) {
       this._roots.push(gameObject);
     }
+    // Recursively add all children
+    for (const child of gameObject.children) {
+      this.add(child);
+    }
   }
 
   remove(gameObject: GameObject): void {
     if (!this._allObjects.has(gameObject)) return;
+    // Recursively remove all children first
+    for (const child of gameObject.children) {
+      this.remove(child);
+    }
     this._allObjects.delete(gameObject);
     const idx = this._roots.indexOf(gameObject);
     if (idx !== -1) this._roots.splice(idx, 1);
@@ -27,6 +35,19 @@ export class Scene {
     for (const comp of gameObject.getComponents()) {
       if (comp.onDestroy) comp.onDestroy();
     }
+  }
+
+  /**
+   * Call onDestroy on components, then reset started flag so awakeAll/startAll fire again.
+   * Optional filter: only destroy components where filter returns true.
+   */
+  destroyAllComponents(filter?: (comp: import('./component.js').Component) => boolean): void {
+    for (const obj of this._allObjects) {
+      for (const comp of obj.getComponents()) {
+        if (comp.onDestroy && (!filter || filter(comp))) comp.onDestroy();
+      }
+    }
+    this._started = false;
   }
 
   awakeAll(): void {

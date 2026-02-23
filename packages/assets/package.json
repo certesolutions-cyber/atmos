@@ -8,7 +8,8 @@
   "dependencies": {
     "@atmos/core": "*",
     "@atmos/math": "*",
-    "@atmos/renderer": "*"
+    "@atmos/renderer": "*",
+    "@atmos/animation": "*"
   },
   "scripts": {
     "test": "vitest run"

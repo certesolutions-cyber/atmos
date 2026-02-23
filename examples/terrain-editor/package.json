@@ -1,0 +1,21 @@
+{
+  "name": "@atmos/example-terrain-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@atmos/core": "*",
+    "@atmos/math": "*",
+    "@atmos/renderer": "*",
+    "@atmos/editor": "*",
+    "@atmos/terrain": "*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  }
+}

@@ -6,3 +6,4 @@ export type { Vec3 as Vec3Type } from './vec3.js';
 export type { Mat4 as Mat4Type } from './mat4.js';
 export type { Quat as QuatType } from './quat.js';
 export type { Ray as RayType } from './ray.js';
+export { valueNoise2D, fbm, perlinNoise3D, fbm3D } from './noise.js';

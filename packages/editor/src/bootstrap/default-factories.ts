@@ -1,24 +1,25 @@
 import { GameObject, getAllRegisteredComponents, applyComponentData } from '@atmos/core';
 import type { Component, DeserializeContext } from '@atmos/core';
-import type { PipelineResources, GPUContext } from '@atmos/renderer';
-import { MeshRenderer, Camera, createMaterial } from '@atmos/renderer';
+import type { MeshRendererContext } from '@atmos/renderer';
+import { MeshRenderer, Camera, DirectionalLight, PointLight, SpotLight, createMaterial } from '@atmos/renderer';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorPhysicsPlugin } from './types.js';
+import type { Mesh } from '@atmos/renderer';
 import type { MeshRecord } from './geometry-cache.js';
 
 const DEFAULT_MAT = { albedo: [0.7, 0.7, 0.7, 1] as const, metallic: 0.0, roughness: 0.5 };
 const DEFAULT_MAT_PATH = 'materials/default.mat.json';
 
 export interface FactoryDeps {
-  gpu: GPUContext;
-  pipeline: PipelineResources;
+  rendererCtx: MeshRendererContext;
   meshes: MeshRecord;
   physics: EditorPhysicsPlugin | undefined;
   /** Lazy ref — set after mountEditor returns, before any callback fires. */
   editorState: { current: EditorState | null };
   materialManager: { current: MaterialManager | null };
+  loadModelMesh?: (source: string) => Promise<{ mesh: Mesh } | null>;
 }
 
 // ---- Primitive factory ---- //
@@ -30,10 +31,16 @@ export function createDefaultPrimitiveFactory(deps: FactoryDeps) {
       const cam = go.addComponent(Camera);
       const scene = deps.editorState.current?.scene;
       if (scene && !Camera.getMain(scene)) cam.isMainCamera = true;
+    } else if (type === 'directionalLight') {
+      go.addComponent(DirectionalLight);
+    } else if (type === 'pointLight') {
+      go.addComponent(PointLight);
+    } else if (type === 'spotLight') {
+      go.addComponent(SpotLight);
     } else {
       const mr = go.addComponent(MeshRenderer);
       const mat = createMaterial(DEFAULT_MAT);
-      mr.init(deps.gpu.device, deps.pipeline, deps.meshes[type], mat);
+      mr.init(deps.rendererCtx, deps.meshes[type], mat);
       mr.meshSource = `primitive:${type}`;
       mr.materialSource = DEFAULT_MAT_PATH;
       // Async: load shared material from manager
@@ -59,7 +66,7 @@ export function createDefaultComponentFactory(deps: FactoryDeps) {
     if (ctor === MeshRenderer) {
       const mr = go.addComponent(MeshRenderer);
       const mat = createMaterial(DEFAULT_MAT);
-      mr.init(deps.gpu.device, deps.pipeline, deps.meshes.cube, mat);
+      mr.init(deps.rendererCtx, deps.meshes.cube, mat);
       mr.meshSource = 'primitive:cube';
       mr.materialSource = DEFAULT_MAT_PATH;
       const mm = deps.materialManager.current;
@@ -99,13 +106,19 @@ export function createDefaultComponentRemover(deps: FactoryDeps) {
 // ---- Deserialize context ---- //
 
 export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeContext {
-  const nameToCtors = new Map<string, new () => Component>();
-  for (const [ctor, def] of getAllRegisteredComponents()) {
-    nameToCtors.set(def.name, ctor as new () => Component);
-  }
+  let nameToCtors: Map<string, new () => Component> | null = null;
+  const getCtorMap = () => {
+    if (!nameToCtors) {
+      nameToCtors = new Map();
+      for (const [ctor, def] of getAllRegisteredComponents()) {
+        nameToCtors.set(def.name, ctor as new () => Component);
+      }
+    }
+    return nameToCtors;
+  };
 
   const deferredOps: Array<() => void> = [];
-  const materialLoads: Array<Promise<void>> = [];
+  const asyncLoads: Array<Promise<void>> = [];
 
   return {
     onComponent(go: GameObject, type: string, data: Record<string, unknown>) {
@@ -117,17 +130,27 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
           const mr = go.addComponent(MeshRenderer);
           const mat = createMaterial(DEFAULT_MAT);
           const source = (data['meshSource'] as string) ?? 'primitive:cube';
+          // Resolve mesh: primitive or placeholder for model
           const primName = source.startsWith('primitive:') ? source.slice(10) : 'cube';
           const mesh = deps.meshes[primName as keyof MeshRecord] ?? deps.meshes.cube;
-          mr.init(deps.gpu.device, deps.pipeline, mesh, mat);
+          mr.init(deps.rendererCtx, mesh, mat);
           mr.meshSource = source;
-          const matPath = (data['materialSource'] as string) ?? DEFAULT_MAT_PATH;
+          const rawMat = data['materialSource'] as string | undefined;
+          const matPath = rawMat?.endsWith('.mat.json') ? rawMat : DEFAULT_MAT_PATH;
           mr.materialSource = matPath;
           applyComponentData(mr, data);
+          // Queue async model mesh load if source is model:*
+          if (source.startsWith('model:') && deps.loadModelMesh) {
+            asyncLoads.push(
+              deps.loadModelMesh(source).then((result) => {
+                if (result) mr.mesh = result.mesh;
+              }).catch(() => {}),
+            );
+          }
           // Queue async material load
           const mm = deps.materialManager.current;
           if (mm && matPath) {
-            materialLoads.push(
+            asyncLoads.push(
               mm.getMaterial(matPath).then((m) => {
                 mr.material = m;
                 mr.materialBindGroup = null;
@@ -141,9 +164,27 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
           applyComponentData(cam, data);
           break;
         }
+        case 'DirectionalLight': {
+          const dl = go.addComponent(DirectionalLight);
+          applyComponentData(dl, data);
+          break;
+        }
+        case 'PointLight': {
+          const pl = go.addComponent(PointLight);
+          applyComponentData(pl, data);
+          break;
+        }
+        case 'SpotLight': {
+          const sl = go.addComponent(SpotLight);
+          applyComponentData(sl, data);
+          break;
+        }
         default: {
-          const ctor = nameToCtors.get(type);
-          if (ctor) go.addComponent(ctor);
+          const ctor = getCtorMap().get(type);
+          if (ctor) {
+            const comp = go.addComponent(ctor);
+            applyComponentData(comp, data);
+          }
           break;
         }
       }
@@ -151,8 +192,9 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
     async onComplete() {
       if (deps.physics) deps.physics.flushDeferred(deferredOps);
       deferredOps.length = 0;
-      await Promise.all(materialLoads);
-      materialLoads.length = 0;
+      await Promise.all(asyncLoads);
+      asyncLoads.length = 0;
+      nameToCtors = null; // invalidate so next deserialize picks up newly registered scripts
     },
   };
 }

@@ -96,6 +96,13 @@ export function transformQuat(out: Vec3, a: Vec3, q: Float32Array): Vec3 {
   return out;
 }
 
+export function lerp(out: Vec3, a: Vec3, b: Vec3, t: number): Vec3 {
+  out[0] = a[0]! + t * (b[0]! - a[0]!);
+  out[1] = a[1]! + t * (b[1]! - a[1]!);
+  out[2] = a[2]! + t * (b[2]! - a[2]!);
+  return out;
+}
+
 export function normalize(out: Vec3, a: Vec3): Vec3 {
   const len = length(a);
   if (len > 0) {

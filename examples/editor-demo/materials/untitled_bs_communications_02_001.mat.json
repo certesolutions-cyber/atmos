@@ -1,0 +1,13 @@
+{
+  "name": "bs_communications_02.001",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5,
+  "albedoTexture": "textures/untitled_texture_6.jpg"
+}

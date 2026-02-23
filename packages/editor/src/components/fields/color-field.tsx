@@ -42,7 +42,8 @@ function fromHex(hex: string, alpha: number): number[] {
 }
 
 export function ColorField({ label, value, onChange }: ColorFieldProps) {
-  const v = value.length >= 4 ? value : [1, 1, 1, 1];
+  const v = value.length >= 4 ? value
+    : [value[0] ?? 1, value[1] ?? 1, value[2] ?? 1, value[3] ?? 1];
 
   const handleChannel = (index: number, num: number) => {
     const next = [...v];

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Scene, serializeScene, deserializeScene } from '@atmos/core';
+import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess } from '@atmos/core';
 import type { DeserializeContext, Component, GameObject } from '@atmos/core';
 import type { EditorState } from '../editor-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
@@ -9,6 +9,7 @@ import { HierarchyPanel } from './hierarchy-panel.js';
 import { InspectorPanel } from './inspector-panel.js';
 import { AssetBrowserPanel } from './asset-browser-panel.js';
 import { ProjectGate } from './project-gate.js';
+import { PostProcessPanel } from './post-process-panel.js';
 import type { GizmoMode } from '../gizmo-state.js';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { ScriptAsset, AssetEntry } from '../asset-types.js';
@@ -28,6 +29,7 @@ interface EditorShellProps {
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
   onLoadModel?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
+  renderSystem?: import('@atmos/renderer').RenderSystem;
 }
 
 /* ── Layout ─────────────────────────────────────────── */
@@ -132,6 +134,14 @@ const HIDE_SPINNERS_CSS = `
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
+  [data-atmos-toolbar] button:active {
+    filter: brightness(1.4);
+    transform: scale(0.96);
+  }
+  [data-atmos-toolbar] button:hover,
+  [data-atmos-toolbar] select:hover {
+    filter: brightness(1.15);
+  }
 `;
 
 /* ── Component ──────────────────────────────────────── */
@@ -139,10 +149,18 @@ const HIDE_SPINNERS_CSS = `
 export function EditorShell({
   editorState, projectFs, onOpenProject, deserializeContext, componentFactory, componentFilter, componentRemover,
   primitiveFactory, orbitCamera, canvas,
-  showAssetBrowser, onAttachScript, onLoadModel, onDropModel,
+  showAssetBrowser, onAttachScript, onLoadModel, onDropModel, renderSystem,
 }: EditorShellProps) {
   const [, setTick] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const viewportRef = useRef<HTMLDivElement>(null);
+
+  const showToast = useCallback((msg: string) => {
+    clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }, []);
 
   // Inject global style to hide number-input spinners (once)
   useEffect(() => {
@@ -175,9 +193,19 @@ export function EditorShell({
   const handleSave = useCallback(async () => {
     const projectFs = editorState.projectFs;
     const data = serializeScene(editorState.scene);
+    if (renderSystem) data.postProcess = serializePostProcess(renderSystem as unknown as Record<string, unknown>);
     const json = JSON.stringify(data, null, 2);
     if (projectFs?.isOpen) {
-      await projectFs.writeFile('scenes/main.scene.json', json);
+      let name = editorState.sceneName;
+      if (!name) {
+        const input = window.prompt('Scene name:', 'main');
+        if (!input) return;
+        name = input.trim().replace(/\.scene\.json$/i, '');
+        if (!name) return;
+      }
+      editorState.sceneName = name;
+      await projectFs.writeFile(`scenes/${name}.scene.json`, json);
+      showToast(`Saved ${name}.scene.json`);
     } else {
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -189,14 +217,49 @@ export function EditorShell({
     }
   }, [editorState]);
 
+  const handleSaveAs = useCallback(async () => {
+    const projectFs = editorState.projectFs;
+    if (!projectFs?.isOpen) return;
+    const data = serializeScene(editorState.scene);
+    if (renderSystem) data.postProcess = serializePostProcess(renderSystem as unknown as Record<string, unknown>);
+    const json = JSON.stringify(data, null, 2);
+    const input = window.prompt('Scene name:', editorState.sceneName || 'main');
+    if (!input) return;
+    const name = input.trim().replace(/\.scene\.json$/i, '');
+    if (!name) return;
+    editorState.sceneName = name;
+    await projectFs.writeFile(`scenes/${name}.scene.json`, json);
+  }, [editorState]);
+
   const handleLoad = useCallback(async () => {
     const projectFs = editorState.projectFs;
     if (projectFs?.isOpen) {
       try {
-        const json = await projectFs.readTextFile('scenes/main.scene.json');
+        const files = await projectFs.listFiles('scenes');
+        const scenes = files.filter((f: string) => f.endsWith('.scene.json'));
+        if (scenes.length === 0) {
+          console.warn('[Editor] No scenes found in project');
+          return;
+        }
+        let scenePath: string;
+        if (scenes.length === 1) {
+          scenePath = scenes[0]!;
+        } else {
+          const names = scenes.map((f: string) => f.replace(/^scenes\//, '').replace(/\.scene\.json$/, ''));
+          const choice = window.prompt(`Load scene:\n${names.join(', ')}`, names[0]!);
+          if (!choice) return;
+          const trimmed = choice.trim();
+          scenePath = `scenes/${trimmed}.scene.json`;
+        }
+        const json = await projectFs.readTextFile(scenePath);
         const data = JSON.parse(json);
-        const scene = deserializeScene(data, deserializeContext);
+        const ctx = deserializeContext;
+        const scene = deserializeScene(data, ctx);
+        if (ctx?.onComplete) await ctx.onComplete();
+        const name = scenePath.replace(/^scenes\//, '').replace(/\.scene\.json$/, '');
+        editorState.sceneName = name;
         editorState.setScene(scene);
+        if (data.postProcess && renderSystem) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
       } catch (err) {
         console.warn('[Editor] Failed to load scene from project:', err);
       }
@@ -212,6 +275,7 @@ export function EditorShell({
           const data = JSON.parse(reader.result as string);
           const scene = deserializeScene(data, deserializeContext);
           editorState.setScene(scene);
+          if (data.postProcess && renderSystem) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
         };
         reader.readAsText(file);
       };
@@ -250,7 +314,7 @@ export function EditorShell({
   return (
     <div style={shellStyle}>
       {/* ── Toolbar ── */}
-      <div style={toolbarStyle}>
+      <div style={toolbarStyle} data-atmos-toolbar>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#888', marginRight: '8px', letterSpacing: '0.5px' }}>
           ATMOS
         </span>
@@ -258,7 +322,7 @@ export function EditorShell({
         {/* Scene controls */}
         <button
           style={editorState.paused ? btnAccent : btnActive}
-          onClick={() => editorState.togglePause()}
+          onMouseDown={(e) => { e.preventDefault(); editorState.togglePause(); }}
         >
           {editorState.paused ? '\u25B6 Play' : '\u23F8 Pause'}
         </button>
@@ -266,6 +330,9 @@ export function EditorShell({
         <div style={groupStyle}>
           <button style={btnBase} onClick={() => editorState.setScene(new Scene())}>New</button>
           <button style={btnBase} onClick={handleSave}>Save</button>
+          {editorState.projectFs?.isOpen && (
+            <button style={btnBase} onClick={handleSaveAs}>Save As</button>
+          )}
           <button style={btnBase} onClick={handleLoad}>Load</button>
         </div>
 
@@ -325,6 +392,9 @@ export function EditorShell({
               <option value="cylinder">Cylinder</option>
               <option value="plane">Plane</option>
               <option value="camera">Camera</option>
+              <option value="directionalLight">Directional Light</option>
+              <option value="pointLight">Point Light</option>
+              <option value="spotLight">Spot Light</option>
             </select>
           </>
         )}
@@ -344,7 +414,16 @@ export function EditorShell({
           } : undefined}
         />
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-          <div ref={viewportRef} style={viewportStyle} />
+          <div ref={viewportRef} style={viewportStyle}>
+            {toast && (
+              <div style={{
+                position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+                background: '#1a6a3a', color: '#e8e8e8', padding: '5px 14px',
+                borderRadius: '4px', fontSize: '11px', fontFamily: 'inherit',
+                zIndex: 100, pointerEvents: 'none', whiteSpace: 'nowrap',
+              }}>{toast}</div>
+            )}
+          </div>
           {showAssetBrowser && (
             <AssetBrowserPanel
               editorState={editorState}
@@ -353,14 +432,17 @@ export function EditorShell({
             />
           )}
         </div>
-        <InspectorPanel
-          editorState={editorState}
-          materialManager={materialManager}
-          componentFactory={componentFactory}
-          componentFilter={componentFilter}
-          componentRemover={componentRemover}
-          onDropModel={onDropModel ? (path, go) => onDropModel(path, go) : undefined}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', width: '260px', minWidth: '260px', borderLeft: '1px solid #2a2a2a', overflow: 'hidden' }}>
+          <InspectorPanel
+            editorState={editorState}
+            materialManager={materialManager}
+            componentFactory={componentFactory}
+            componentFilter={componentFilter}
+            componentRemover={componentRemover}
+            onDropModel={onDropModel ? (path, go) => onDropModel(path, go) : undefined}
+          />
+          {renderSystem && <PostProcessPanel renderSystem={renderSystem} editorState={editorState} />}
+        </div>
       </div>
     </div>
   );

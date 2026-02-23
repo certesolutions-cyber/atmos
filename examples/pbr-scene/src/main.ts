@@ -25,12 +25,25 @@ async function main() {
   const pipeline = createRenderPipeline(gpu.device, gpu.format);
   const scene = new Scene();
 
+  // Light, camera, render system
+  const light = createDirectionalLight([-0.5, -1.0, -0.3], [1, 1, 1], 1.0);
+  const camera = createDefaultCamera();
+  Vec3.set(camera.eye, 0, 10, 18);
+  Vec3.set(camera.target, 0, 0, 0);
+  const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
+
   // Shared meshes
+  const geo = {
+    cube: createCubeGeometry(),
+    sphere: createSphereGeometry(),
+    cylinder: createCylinderGeometry(),
+    plane: createPlaneGeometry(0.8, 0.8),
+  };
   const meshes: Mesh[] = [
-    createMesh(gpu.device, ...spread(createCubeGeometry())),
-    createMesh(gpu.device, ...spread(createSphereGeometry())),
-    createMesh(gpu.device, ...spread(createCylinderGeometry())),
-    createMesh(gpu.device, ...spread(createPlaneGeometry(0.8, 0.8))),
+    createMesh(gpu.device, geo.cube.vertices, geo.cube.indices),
+    createMesh(gpu.device, geo.sphere.vertices, geo.sphere.indices),
+    createMesh(gpu.device, geo.cylinder.vertices, geo.cylinder.indices),
+    createMesh(gpu.device, geo.plane.vertices, geo.plane.indices),
   ];
 
   // Shared materials
@@ -61,20 +74,12 @@ async function main() {
       const matIdx = idx % materials.length;
 
       const mr = obj.addComponent(MeshRenderer);
-      mr.init(gpu.device, pipeline, meshes[meshIdx]!, materials[matIdx]!);
+      mr.init(renderSystem, meshes[meshIdx]!, materials[matIdx]!);
 
       obj.addComponent(RandomRotator);
       scene.add(obj);
     }
   }
-
-  // Light & camera
-  const light = createDirectionalLight([-0.5, -1.0, -0.3], [1, 1, 1], 1.0);
-  const camera = createDefaultCamera();
-  Vec3.set(camera.eye, 0, 10, 18);
-  Vec3.set(camera.target, 0, 0, 0);
-
-  const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
 
   // FPS counter
   const fpsEl = document.getElementById('fps')!;
@@ -96,10 +101,6 @@ async function main() {
   engine.setRenderer(renderSystem);
   engine.input.attach(window);
   engine.start(scene);
-}
-
-function spread(g: { vertices: Float32Array; indices: Uint16Array }): [Float32Array, Uint16Array] {
-  return [g.vertices, g.indices];
 }
 
 main().catch(console.error);

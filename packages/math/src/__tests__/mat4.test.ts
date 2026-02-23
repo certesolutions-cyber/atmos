@@ -169,6 +169,22 @@ describe('Mat4', () => {
     expectMat4Close(m, Array.from(expected));
   });
 
+  it('ortho produces valid orthographic projection (depth 0..1)', () => {
+    const m = Mat4.create();
+    Mat4.ortho(m, -10, 10, -10, 10, 0.1, 100);
+    // x scale = 2/(right-left) = 2/20 = 0.1
+    expect(m[0]).toBeCloseTo(0.1, 5);
+    // y scale = 2/(top-bottom) = 2/20 = 0.1
+    expect(m[5]).toBeCloseTo(0.1, 5);
+    // z scale = 1/(near-far) for WebGPU 0..1 depth
+    expect(m[10]).toBeCloseTo(1 / (0.1 - 100), 5);
+    // no perspective divide
+    expect(m[11]).toBeCloseTo(0, 5);
+    expect(m[15]).toBeCloseTo(1, 5);
+    // z translation: near/(near-far)
+    expect(m[14]).toBeCloseTo(0.1 / (0.1 - 100), 5);
+  });
+
   it('fromRotationTranslationScale composes TRS', () => {
     const q = Quat.create();
     Quat.identity(q);

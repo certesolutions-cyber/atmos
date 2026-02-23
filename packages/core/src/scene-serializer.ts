@@ -18,8 +18,28 @@ export interface GameObjectData {
   components: ComponentData[];
 }
 
+export interface PostProcessData {
+  bloomIntensity?: number;
+  bloomThreshold?: number;
+  bloomRadius?: number;
+  ssaoEnabled?: boolean;
+  ssaoRadius?: number;
+  ssaoBias?: number;
+  ssaoIntensity?: number;
+  exposure?: number;
+  vignetteIntensity?: number;
+  vignetteRadius?: number;
+  fogEnabled?: boolean;
+  fogMode?: 'linear' | 'exponential';
+  fogDensity?: number;
+  fogStart?: number;
+  fogEnd?: number;
+  fogColor?: number[];
+}
+
 export interface SceneData {
   gameObjects: GameObjectData[];
+  postProcess?: PostProcessData;
 }
 
 export interface DeserializeContext {
@@ -57,6 +77,7 @@ export function serializeScene(scene: Scene): SceneData {
   const gameObjects: GameObjectData[] = [];
 
   for (const obj of scene.getAllObjects()) {
+    if (obj.transient) continue;
     const components: ComponentData[] = [];
 
     // Serialize Transform (always present)
@@ -107,6 +128,8 @@ function setPropertyPath(obj: unknown, path: string, value: unknown): void {
     for (let i = 0; i < value.length && i < existing.length; i++) {
       existing[i] = value[i] as number;
     }
+    // Re-assign to trigger setter (e.g. HingeJoint.axis recreates joint)
+    (current as Record<string, unknown>)[lastKey] = existing;
   } else {
     (current as Record<string, unknown>)[lastKey] = value;
   }
@@ -191,4 +214,37 @@ export function deserializeScene(data: SceneData, context?: DeserializeContext):
 
   context?.onComplete?.();
   return scene;
+}
+
+const POST_PROCESS_KEYS: (keyof PostProcessData)[] = [
+  'bloomIntensity', 'bloomThreshold', 'bloomRadius',
+  'ssaoEnabled', 'ssaoRadius', 'ssaoBias', 'ssaoIntensity',
+  'exposure', 'vignetteIntensity', 'vignetteRadius',
+  'fogEnabled', 'fogMode', 'fogDensity', 'fogStart', 'fogEnd', 'fogColor',
+];
+
+export function serializePostProcess(source: Record<string, unknown>): PostProcessData {
+  const result: PostProcessData = {};
+  for (const key of POST_PROCESS_KEYS) {
+    const val = source[key];
+    if (val === undefined) continue;
+    (result as Record<string, unknown>)[key] = toSerializableValue(val);
+  }
+  return result;
+}
+
+export function applyPostProcess(target: Record<string, unknown>, data: PostProcessData): void {
+  for (const key of POST_PROCESS_KEYS) {
+    const val = (data as Record<string, unknown>)[key];
+    if (val === undefined) continue;
+    const existing = target[key];
+    if (existing instanceof Float32Array && Array.isArray(val)) {
+      for (let i = 0; i < val.length && i < existing.length; i++) {
+        existing[i] = val[i] as number;
+      }
+      target[key] = existing;
+    } else {
+      target[key] = val;
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { Engine, Scene, registerCoreBuiltins } from '@atmos/core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@atmos/core';
 import type { PhysicsStepper } from '@atmos/core';
 import {
   initWebGPU,
@@ -7,11 +7,18 @@ import {
   createDirectionalLight,
   RenderSystem,
   MeshRenderer,
+  Camera,
+  DirectionalLight,
+  PointLight,
+  SpotLight,
   registerRendererBuiltins,
   resizeGPU,
+  createMesh,
 } from '@atmos/renderer';
+import type { ModelAsset } from '@atmos/assets';
 import { Vec3 } from '@atmos/math';
 import { parseGltfModel, instantiateModel } from '@atmos/assets';
+import { registerAnimationBuiltins } from '@atmos/animation';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -39,6 +46,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   // 1. Register component builtins
   registerCoreBuiltins();
   registerRendererBuiltins();
+  registerAnimationBuiltins();
 
   // 2. DOM setup + WebGPU
   injectBaseStyles();
@@ -88,11 +96,37 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   const lazyState: { current: EditorState | null } = { current: null };
   const lazyMM: { current: MaterialManager | null } = { current: null };
 
+  // Model mesh cache for deserialize (model:path.glb:index)
+  const modelCache = new Map<string, ModelAsset>();
+
+  const loadModelMesh = async (source: string): Promise<{ mesh: import('@atmos/renderer').Mesh } | null> => {
+    const rest = source.slice(6); // strip "model:"
+    const lastColon = rest.lastIndexOf(':');
+    if (lastColon < 0) return null;
+    const path = rest.slice(0, lastColon);
+    const index = parseInt(rest.slice(lastColon + 1), 10);
+
+    let asset = modelCache.get(path);
+    if (!asset) {
+      const res = await fetch('/' + path);
+      if (!res.ok) return null;
+      asset = parseGltfModel(await res.arrayBuffer());
+      modelCache.set(path, asset);
+    }
+
+    const meshData = asset.meshes[index];
+    if (!meshData) return null;
+    const mesh = createMesh(gpu.device, meshData.geometry.vertices, meshData.geometry.indices, 8);
+    mesh.bounds = meshData.geometry.bounds;
+    return { mesh };
+  };
+
   const factoryDeps: FactoryDeps = {
-    gpu, pipeline, meshes,
+    rendererCtx: renderSystem, meshes,
     physics: config.physics,
     editorState: lazyState,
     materialManager: lazyMM,
+    loadModelMesh,
   };
 
   const primitiveFactory = config.primitiveFactory ?? createDefaultPrimitiveFactory(factoryDeps);
@@ -121,7 +155,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
         materialMap = await importModelAssets(asset, name, projectFs, mm);
       }
 
-      const root = await instantiateModel(asset, { device: gpu.device, pipelineResources: pipeline });
+      const root = await instantiateModel(asset, { renderSystem });
 
       // Tag MeshRenderers with meshSource + assign material assets
       const tagMeshRenderers = async (
@@ -315,16 +349,33 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     engine.scene = s;
     if (physicsSystem) physicsSystem.scene = s;
     config.physics?.onSceneChanged(s);
+    if (!editorState.paused) {
+      s.awakeAll();
+      s.startAll();
+    }
   });
   cleanups.push(unsubScene);
 
   engine.paused = true;
 
+  // Skip GPU-owning components when cycling play/pause lifecycle
+  const isEngineComponent = (c: import('@atmos/core').Component) =>
+    c instanceof MeshRenderer || c instanceof Camera
+    || c instanceof DirectionalLight || c instanceof PointLight
+    || c instanceof SpotLight;
+
   cleanups.push(editorState.on('pauseChanged', () => {
     engine.paused = editorState.paused;
+    if (!editorState.paused) {
+      // Entering play mode — awake + start all components
+      editorState.scene.awakeAll();
+      editorState.scene.startAll();
+    }
   }));
 
   cleanups.push(editorState.on('sceneRestored', () => {
+    // Destroy user script components (not GPU-owning ones) so they reset state
+    editorState.scene.destroyAllComponents((c) => !isEngineComponent(c));
     config.physics?.onSceneRestored(editorState.scene);
   }));
 
@@ -335,6 +386,24 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
   // 15. Start engine (paused)
   engine.start(scene);
+
+  // 16. Auto-load last active scene from session (after all wiring is in place)
+  if (preInited) {
+    const savedName = editorState.sceneName;
+    const scenePath = `scenes/${savedName}.scene.json`;
+    if (await projectFs.exists(scenePath)) {
+      try {
+        const json = await projectFs.readTextFile(scenePath);
+        const data = JSON.parse(json);
+        const loadedScene = deserializeScene(data, deserializeCtx);
+        if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+        editorState.setScene(loadedScene);
+        if (data.postProcess) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
+      } catch (err) {
+        console.warn('[Editor] Failed to auto-load scene:', err);
+      }
+    }
+  }
 
   return {
     editorState,

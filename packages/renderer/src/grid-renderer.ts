@@ -1,4 +1,5 @@
 import { GRID_VERTEX_SHADER, GRID_FRAGMENT_SHADER } from './grid-shader.js';
+import { MSAA_SAMPLE_COUNT, HDR_FORMAT } from './pipeline.js';
 
 /** Uniform layout: viewProjection(64) + cameraPos(12) + pad(4) = 80 bytes */
 const UNIFORM_SIZE = 80;
@@ -9,7 +10,7 @@ export class GridRenderer {
   private readonly _bindGroup: GPUBindGroup;
   private readonly _uniformData = new Float32Array(UNIFORM_SIZE / 4);
 
-  constructor(device: GPUDevice, format: GPUTextureFormat) {
+  constructor(device: GPUDevice, _format: GPUTextureFormat) {
     const bindGroupLayout = device.createBindGroupLayout({
       entries: [
         {
@@ -38,7 +39,7 @@ export class GridRenderer {
         entryPoint: 'fs',
         targets: [
           {
-            format,
+            format: HDR_FORMAT,
             blend: {
               color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
               alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -46,6 +47,7 @@ export class GridRenderer {
           },
         ],
       },
+      multisample: { count: MSAA_SAMPLE_COUNT },
       primitive: { topology: 'triangle-list' },
       depthStencil: {
         format: 'depth24plus',

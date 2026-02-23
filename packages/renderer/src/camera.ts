@@ -8,6 +8,7 @@ export class Camera extends Component {
   near = 0.1;
   far = 100;
   isMainCamera = false;
+  clearColor = new Float32Array([0.05, 0.05, 0.1, 1.0]);
 
   private readonly _viewMatrix: Mat4Type = Mat4.create();
 

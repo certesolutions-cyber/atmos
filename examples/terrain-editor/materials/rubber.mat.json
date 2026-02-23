@@ -1,0 +1,12 @@
+{
+  "name": "Rubber",
+  "shader": "pbr",
+  "albedo": [
+    0.15,
+    0.15,
+    0.15,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.95
+}

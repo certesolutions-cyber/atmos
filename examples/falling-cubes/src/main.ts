@@ -44,6 +44,13 @@ async function main() {
   const pipeline = createRenderPipeline(gpu.device, gpu.format);
   const scene = new Scene();
 
+  // Light, camera, render system
+  const light = createDirectionalLight([-0.5, -1.0, -0.3], [1, 1, 1], 1.0);
+  const camera = createDefaultCamera();
+  Vec3.set(camera.eye, 0, 8, 16);
+  Vec3.set(camera.target, 0, 2, 0);
+  const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
+
   // Shared geometry
   const cubeGeo = createCubeGeometry();
   const cubeMesh = createMesh(gpu.device, cubeGeo.vertices, cubeGeo.indices);
@@ -59,7 +66,7 @@ async function main() {
   floor.transform.setPosition(0, 0, 0);
 
   const floorMr = floor.addComponent(MeshRenderer);
-  floorMr.init(gpu.device, pipeline, planeMesh, floorMat);
+  floorMr.init(renderSystem, planeMesh, floorMat);
 
   const floorRb = floor.addComponent(RigidBody);
   floorRb.init(physicsWorld, { type: 'fixed' });
@@ -80,7 +87,7 @@ async function main() {
     cube.transform.setPosition(x, y, z);
 
     const mr = cube.addComponent(MeshRenderer);
-    mr.init(gpu.device, pipeline, cubeMesh, mat);
+    mr.init(renderSystem, cubeMesh, mat);
 
     const rb = cube.addComponent(RigidBody);
     rb.init(physicsWorld, { type: 'dynamic' });
@@ -92,13 +99,6 @@ async function main() {
     scene.add(cube);
   }
 
-  // Light & camera
-  const light = createDirectionalLight([-0.5, -1.0, -0.3], [1, 1, 1], 1.0);
-  const camera = createDefaultCamera();
-  Vec3.set(camera.eye, 0, 8, 16);
-  Vec3.set(camera.target, 0, 2, 0);
-
-  const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
   const physicsSystem = new PhysicsSystem(physicsWorld, scene);
 
   // FPS counter

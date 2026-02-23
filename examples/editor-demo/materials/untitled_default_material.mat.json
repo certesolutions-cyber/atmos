@@ -1,0 +1,12 @@
+{
+  "name": "Default_Material",
+  "shader": "pbr",
+  "albedo": [
+    0.5,
+    0.5,
+    0.5,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5
+}

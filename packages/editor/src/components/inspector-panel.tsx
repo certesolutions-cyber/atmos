@@ -25,10 +25,8 @@ interface InspectorPanelProps {
 }
 
 const panelStyle: React.CSSProperties = {
-  width: '260px',
-  minWidth: '260px',
+  flex: 1,
   background: '#1c1c1c',
-  borderLeft: '1px solid #2a2a2a',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',

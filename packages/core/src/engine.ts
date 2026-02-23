@@ -36,8 +36,10 @@ export class Engine {
     this._running = true;
     this.time.reset();
 
-    scene.awakeAll();
-    scene.startAll();
+    if (!this._paused) {
+      scene.awakeAll();
+      scene.startAll();
+    }
 
     this._rafId = requestAnimationFrame((ts) => this._loop(ts));
   }

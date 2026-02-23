@@ -1,8 +1,9 @@
 import { GridRenderer, Camera } from '@atmos/renderer';
-import type { RenderSystem } from '@atmos/renderer';
+import type { RenderSystem, MeshRenderer } from '@atmos/renderer';
 import { Vec3 } from '@atmos/math';
 import { GizmoRenderer } from './gizmo-renderer.js';
 import { CameraFrustumRenderer } from './camera-frustum-renderer.js';
+import { WireframeRenderer } from './wireframe-renderer.js';
 import type { GizmoState } from './gizmo-state.js';
 import type { EditorState } from './editor-state.js';
 
@@ -10,10 +11,12 @@ export class OverlayRenderer {
   private readonly _gridRenderer: GridRenderer;
   private readonly _gizmoRenderer: GizmoRenderer;
   private readonly _frustumRenderer: CameraFrustumRenderer;
+  private readonly _wireframeRenderer: WireframeRenderer;
   private readonly _editorState: EditorState;
   private readonly _gizmoState: GizmoState;
   private readonly _renderSystem: RenderSystem;
   private _removeCallback: (() => void) | null = null;
+  private _removeWireframeListener: (() => void) | null = null;
 
   constructor(
     renderSystem: RenderSystem,
@@ -30,10 +33,16 @@ export class OverlayRenderer {
     this._gridRenderer = new GridRenderer(device, format);
     this._gizmoRenderer = new GizmoRenderer(device, format);
     this._frustumRenderer = new CameraFrustumRenderer(device, format);
+    this._wireframeRenderer = new WireframeRenderer(device);
 
     this._removeCallback = renderSystem.addOverlayCallback(
       (pass, vp, eye) => this._render(pass, vp, eye),
     );
+
+    this._wireframeRenderer.setEnabled(editorState.wireframeEnabled);
+    this._removeWireframeListener = editorState.on('wireframeChanged', () => {
+      this._wireframeRenderer.setEnabled(editorState.wireframeEnabled);
+    });
   }
 
   private _render(
@@ -41,6 +50,12 @@ export class OverlayRenderer {
     vp: Float32Array,
     eye: Float32Array,
   ): void {
+    // Wireframe draws in both edit and play mode (debug tool)
+    this._wireframeRenderer.render(pass, this._renderSystem.meshRenderers as MeshRenderer[]);
+
+    // Skip other overlays in play mode
+    if (!this._editorState.paused) return;
+
     // Grid first
     this._gridRenderer.render(pass, this._renderSystem.device, vp, eye);
 
@@ -69,8 +84,10 @@ export class OverlayRenderer {
 
   destroy(): void {
     this._removeCallback?.();
+    this._removeWireframeListener?.();
     this._gridRenderer.destroy();
     this._gizmoRenderer.destroy();
     this._frustumRenderer.destroy();
+    this._wireframeRenderer.destroy();
   }
 }

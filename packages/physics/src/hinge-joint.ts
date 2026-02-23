@@ -1,5 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Vec3, Mat4 } from '@atmos/math';
+import { Vec3 } from '@atmos/math';
 import type { Vec3Type } from '@atmos/math';
 import { Joint } from './joint.js';
 import type { JointOptions } from './joint.js';
@@ -40,13 +40,16 @@ function axisToFrame(ax: number, ay: number, az: number): { x: number; y: number
 }
 
 export class HingeJoint extends Joint {
-  readonly axis: Vec3Type = Vec3.fromValues(0, 1, 0);
-  readonly connectedAxis: Vec3Type = Vec3.fromValues(0, 1, 0);
-  autoConfigureConnectedAxis = true;
-  limitsEnabled = false;
-  limitMin = -Math.PI;
-  limitMax = Math.PI;
+  private readonly _axis: Vec3Type = Vec3.fromValues(0, 1, 0);
+  private readonly _connectedAxisVec: Vec3Type = Vec3.fromValues(0, 1, 0);
+  private _autoConfigureConnectedAxis = true;
 
+  // Limits — setters sync to live Rapier joint
+  private _limitsEnabled = false;
+  private _limitMin = -Math.PI;
+  private _limitMax = Math.PI;
+
+  // Motor
   private _motorEnabled = false;
   private _motorMode: 'velocity' | 'position' = 'velocity';
   private _motorTargetVelocity = 0;
@@ -54,6 +57,39 @@ export class HingeJoint extends Joint {
   private _motorTargetPosition = 0;
   private _motorStiffness = 0;
   private _motorDamping = 0;
+
+  // --- Axis accessors (require joint recreation) --- //
+
+  get axis(): Vec3Type { return this._axis; }
+  set axis(v: Vec3Type) {
+    Vec3.copy(this._axis, v);
+    if (this.joint) this._recreateJoint();
+  }
+
+  get connectedAxis(): Vec3Type { return this._connectedAxisVec; }
+  set connectedAxis(v: Vec3Type) {
+    Vec3.copy(this._connectedAxisVec, v);
+    if (this.joint) this._recreateJoint();
+  }
+
+  get autoConfigureConnectedAxis(): boolean { return this._autoConfigureConnectedAxis; }
+  set autoConfigureConnectedAxis(v: boolean) {
+    this._autoConfigureConnectedAxis = v;
+    if (v && this.joint) this._recreateJoint();
+  }
+
+  // --- Limit accessors (sync to live joint) --- //
+
+  get limitsEnabled(): boolean { return this._limitsEnabled; }
+  set limitsEnabled(v: boolean) { this._limitsEnabled = v; this._applyLimits(); }
+
+  get limitMin(): number { return this._limitMin; }
+  set limitMin(v: number) { this._limitMin = v; this._applyLimits(); }
+
+  get limitMax(): number { return this._limitMax; }
+  set limitMax(v: number) { this._limitMax = v; this._applyLimits(); }
+
+  // --- Motor accessors (sync to live joint) --- //
 
   get motorEnabled(): boolean { return this._motorEnabled; }
   set motorEnabled(v: boolean) { this._motorEnabled = v; this._applyMotor(); }
@@ -77,21 +113,19 @@ export class HingeJoint extends Joint {
   set motorDamping(v: number) { this._motorDamping = v; this._applyMotor(); }
 
   init(world: PhysicsWorld, options?: HingeJointOptions): void {
-    if (options?.axis) this._setVec3(this.axis, options.axis);
+    if (options?.axis) this._setVec3(this._axis, options.axis);
     if (options?.connectedAxis) {
-      this._setVec3(this.connectedAxis, options.connectedAxis);
-      this.autoConfigureConnectedAxis = false;
-    } else if (options?.axis && !this.autoConfigureConnectedAxis) {
-      this._setVec3(this.connectedAxis, options.axis);
+      this._setVec3(this._connectedAxisVec, options.connectedAxis);
+      this._autoConfigureConnectedAxis = false;
+    } else if (options?.axis && !this._autoConfigureConnectedAxis) {
+      this._setVec3(this._connectedAxisVec, options.axis);
     }
     if (options?.autoConfigureConnectedAxis !== undefined) {
-      this.autoConfigureConnectedAxis = options.autoConfigureConnectedAxis;
+      this._autoConfigureConnectedAxis = options.autoConfigureConnectedAxis;
     }
-    if (options?.limitsEnabled) {
-      this.limitsEnabled = true;
-      this.limitMin = options.limitMin ?? -Math.PI;
-      this.limitMax = options.limitMax ?? Math.PI;
-    }
+    if (options?.limitsEnabled !== undefined) this._limitsEnabled = options.limitsEnabled;
+    if (options?.limitMin !== undefined) this._limitMin = options.limitMin;
+    if (options?.limitMax !== undefined) this._limitMax = options.limitMax;
     if (options?.motorEnabled !== undefined) this._motorEnabled = options.motorEnabled;
     if (options?.motorMode !== undefined) this._motorMode = options.motorMode;
     if (options?.motorTargetVelocity !== undefined) this._motorTargetVelocity = options.motorTargetVelocity;
@@ -103,7 +137,7 @@ export class HingeJoint extends Joint {
   }
 
   protected _tryCreateJoint(): void {
-    if (this.autoConfigureConnectedAxis) {
+    if (this._autoConfigureConnectedAxis) {
       this._computeConnectedAxis();
     }
     super._tryCreateJoint();
@@ -119,22 +153,21 @@ export class HingeJoint extends Joint {
 
     // Transform axis direction: local A → world (rotation only, no translation)
     const m = thisTransform.worldMatrix;
-    const ax = this.axis[0]!, ay = this.axis[1]!, az = this.axis[2]!;
+    const ax = this._axis[0]!, ay = this._axis[1]!, az = this._axis[2]!;
     const wx = m[0]! * ax + m[4]! * ay + m[8]! * az;
     const wy = m[1]! * ax + m[5]! * ay + m[9]! * az;
     const wz = m[2]! * ax + m[6]! * ay + m[10]! * az;
 
-    // Transform world direction → local B (rotation only)
-    const inv = Mat4.create();
-    Mat4.invert(inv, otherTransform.worldMatrix);
-    const lx = inv[0]! * wx + inv[4]! * wy + inv[8]! * wz;
-    const ly = inv[1]! * wx + inv[5]! * wy + inv[9]! * wz;
-    const lz = inv[2]! * wx + inv[6]! * wy + inv[10]! * wz;
+    // Transform world direction → local B using rotation transpose (no translation needed)
+    const n = otherTransform.worldMatrix;
+    const lx = n[0]! * wx + n[1]! * wy + n[2]! * wz;
+    const ly = n[4]! * wx + n[5]! * wy + n[6]! * wz;
+    const lz = n[8]! * wx + n[9]! * wy + n[10]! * wz;
 
     // Normalize
     const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
     if (len > 1e-6) {
-      Vec3.set(this.connectedAxis, lx / len, ly / len, lz / len);
+      Vec3.set(this._connectedAxisVec, lx / len, ly / len, lz / len);
     }
   }
 
@@ -143,6 +176,17 @@ export class HingeJoint extends Joint {
       Vec3.copy(target, src);
     } else {
       Vec3.set(target, src.x, src.y, src.z);
+    }
+  }
+
+  private _applyLimits(): void {
+    if (!this.joint) return;
+    const revolute = this.joint as RAPIER.RevoluteImpulseJoint;
+    if (this._limitsEnabled) {
+      revolute.setLimits(this._limitMin, this._limitMax);
+    } else {
+      // Disable limits by setting full-range
+      revolute.setLimits(-Math.PI, Math.PI);
     }
   }
 
@@ -164,14 +208,14 @@ export class HingeJoint extends Joint {
     const data = RAPIER.JointData.revolute(
       this._toXYZ(this.anchor),
       this._toXYZ(this.connectedAnchor),
-      this._toXYZ(this.axis),
+      this._toXYZ(this._axis),
     );
     // Override frames so each body can have its own local axis
-    data.frame1 = axisToFrame(this.axis[0]!, this.axis[1]!, this.axis[2]!);
-    data.frame2 = axisToFrame(this.connectedAxis[0]!, this.connectedAxis[1]!, this.connectedAxis[2]!);
-    if (this.limitsEnabled) {
+    data.frame1 = axisToFrame(this._axis[0]!, this._axis[1]!, this._axis[2]!);
+    data.frame2 = axisToFrame(this._connectedAxisVec[0]!, this._connectedAxisVec[1]!, this._connectedAxisVec[2]!);
+    if (this._limitsEnabled) {
       data.limitsEnabled = true;
-      data.limits = [this.limitMin, this.limitMax];
+      data.limits = [this._limitMin, this._limitMax];
     }
     return data;
   }

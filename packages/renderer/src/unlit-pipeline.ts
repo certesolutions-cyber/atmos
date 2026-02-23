@@ -1,4 +1,5 @@
 import { UNLIT_VERTEX_SHADER, UNLIT_FRAGMENT_SHADER } from './unlit-shader.js';
+import { MSAA_SAMPLE_COUNT, HDR_FORMAT } from './pipeline.js';
 
 export interface UnlitPipelineResources {
   pipeline: GPURenderPipeline;
@@ -39,7 +40,7 @@ export function createUnlitPipeline(
   const vertexModule = device.createShaderModule({ code: UNLIT_VERTEX_SHADER });
   const fragmentModule = device.createShaderModule({ code: UNLIT_FRAGMENT_SHADER });
 
-  const colorTarget: GPUColorTargetState = { format };
+  const colorTarget: GPUColorTargetState = { format: HDR_FORMAT };
   if (blend) {
     colorTarget.blend = {
       color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
@@ -67,6 +68,7 @@ export function createUnlitPipeline(
       entryPoint: 'fs',
       targets: [colorTarget],
     },
+    multisample: { count: MSAA_SAMPLE_COUNT },
     primitive: { topology },
     depthStencil: {
       format: 'depth24plus',

@@ -1,0 +1,220 @@
+{
+  "gameObjects": [
+    {
+      "name": "Terrain",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "TerrainWorld",
+          "data": {
+            "loadRadius": 12,
+            "unloadRadius": 14,
+            "maxBuildsPerFrame": 10,
+            "buildBudgetMs": 8,
+            "config.chunkSize": 16,
+            "config.voxelSize": 0.8,
+            "config.isoLevel": 0,
+            "config.smoothNormals": true,
+            "cameraTarget": 4,
+            "lodConfig.lodDistances.0": 3,
+            "lodConfig.lodDistances.1": 6
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 3,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "FPSWalker",
+          "data": {
+            "moveSpeed": 5,
+            "lookSpeed": 0.002,
+            "gravity": 20,
+            "jumpSpeed": 8,
+            "eyeHeight": 1.7
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 4,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0.777969241142273,
+              1.3816324472427368,
+              0
+            ],
+            "rotation": [
+              -0.1626821756362915,
+              0,
+              0,
+              0.9866785407066345
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.1,
+            "far": 1000,
+            "isMainCamera": true,
+            "clearColor": [
+              0.3137255012989044,
+              0.49803921580314636,
+              0.8627451062202454,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Directional Light",
+      "id": 5,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              -0.4226182699203491,
+              0,
+              0,
+              0.9063078165054321
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 2,
+            "castShadows": true,
+            "shadowIntensity": 0.7,
+            "shadowResolution": 2048,
+            "shadowSize": 20,
+            "shadowDistance": 50,
+            "shadowFarSize": 80,
+            "shadowFarDistance": 200
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": true,
+    "fogMode": "linear",
+    "fogDensity": 0.02,
+    "fogStart": 80,
+    "fogEnd": 150,
+    "fogColor": [
+      0.3137255012989044,
+      0.47058823704719543,
+      0.8901960849761963
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 /**
  * Assemble a complete ModelAsset from a glTF document.
- * Orchestrates parser, mesh, material, and texture extraction.
+ * Orchestrates parser, mesh, material, texture, skin, and animation extraction.
  */
 
 import { parseGlb } from './gltf-parser.js';
@@ -8,6 +8,8 @@ import type { GltfDocument, GltfNode } from './gltf-parser.js';
 import { extractMeshes } from './gltf-mesh.js';
 import { extractMaterials } from './gltf-material.js';
 import { extractTextures } from './gltf-texture.js';
+import { extractSkins } from './gltf-skin.js';
+import { extractAnimations } from './gltf-animation.js';
 import type { ModelAsset, ModelNode } from './types.js';
 
 /**
@@ -23,9 +25,38 @@ function buildModelAsset(doc: GltfDocument, name: string): ModelAsset {
   const meshes = extractMeshes(doc);
   const materials = extractMaterials(doc);
   const textures = extractTextures(doc);
+  const skins = extractSkins(doc);
+  const animations = extractAnimations(doc);
   const rootNodes = buildNodeTree(doc);
 
-  return { name, meshes, materials, textures, rootNodes };
+  // Propagate skin indices from nodes to meshes
+  propagateSkinIndices(doc, meshes, rootNodes);
+
+  return { name, meshes, materials, textures, rootNodes, skins, animations };
+}
+
+/**
+ * Walk the node tree and propagate skin index from nodes to their meshes.
+ */
+function propagateSkinIndices(
+  doc: GltfDocument,
+  meshes: ReturnType<typeof extractMeshes>,
+  _rootNodes: ModelNode[],
+): void {
+  const gltfNodes = doc.json.nodes ?? [];
+  const meshIndexMap = buildMeshIndexMap(doc);
+
+  for (const node of gltfNodes) {
+    if (node.skin !== undefined && node.mesh !== undefined) {
+      const flatIndices = meshIndexMap.get(node.mesh) ?? [];
+      for (const mi of flatIndices) {
+        const mesh = meshes[mi];
+        if (mesh) {
+          mesh.skinIndex = node.skin;
+        }
+      }
+    }
+  }
 }
 
 function buildNodeTree(doc: GltfDocument): ModelNode[] {
@@ -34,8 +65,6 @@ function buildNodeTree(doc: GltfDocument): ModelNode[] {
   const scene = doc.json.scenes?.[sceneIndex];
   const rootIndices = scene?.nodes ?? [];
 
-  // Build a mapping from glTF mesh index to our flattened mesh indices
-  // (one glTF mesh can produce multiple ModelMeshes if it has multiple primitives)
   const meshIndexMap = buildMeshIndexMap(doc);
 
   return rootIndices
@@ -56,7 +85,6 @@ function buildNode(
   let scale: [number, number, number] = [1, 1, 1];
 
   if (node.matrix) {
-    // Decompose 4x4 matrix into TRS
     const m = node.matrix;
     position = [m[12] ?? 0, m[13] ?? 0, m[14] ?? 0];
     scale = decomposeScale(m);
@@ -94,7 +122,7 @@ function buildNode(
     .map(ci => buildNode(nodes, ci, meshIndexMap))
     .filter((n): n is ModelNode => n !== null);
 
-  return {
+  const result: ModelNode = {
     name: node.name ?? `node_${index}`,
     meshIndices,
     position,
@@ -102,12 +130,14 @@ function buildNode(
     scale,
     children,
   };
+
+  if (node.skin !== undefined) {
+    result.skinIndex = node.skin;
+  }
+
+  return result;
 }
 
-/**
- * Build a map: glTF mesh index → array of flattened ModelMesh indices.
- * Each glTF mesh with N primitives produces N sequential ModelMeshes.
- */
 function buildMeshIndexMap(doc: GltfDocument): Map<number, number[]> {
   const map = new Map<number, number[]>();
   const gltfMeshes = doc.json.meshes ?? [];
@@ -124,7 +154,6 @@ function buildMeshIndexMap(doc: GltfDocument): Map<number, number[]> {
   return map;
 }
 
-/** Extract scale from a 4x4 column-major matrix. */
 function decomposeScale(m: number[]): [number, number, number] {
   const sx = Math.sqrt((m[0] ?? 0) ** 2 + (m[1] ?? 0) ** 2 + (m[2] ?? 0) ** 2);
   const sy = Math.sqrt((m[4] ?? 0) ** 2 + (m[5] ?? 0) ** 2 + (m[6] ?? 0) ** 2);
@@ -132,10 +161,8 @@ function decomposeScale(m: number[]): [number, number, number] {
   return [sx, sy, sz];
 }
 
-/** Extract rotation quaternion from a 4x4 column-major matrix (after removing scale). */
 function decomposeRotation(m: number[], s: [number, number, number]): [number, number, number, number] {
   const sx = s[0] || 1, sy = s[1] || 1, sz = s[2] || 1;
-  // Rotation matrix (column-major, scale removed)
   const r00 = (m[0] ?? 0) / sx, r01 = (m[4] ?? 0) / sy, r02 = (m[8] ?? 0) / sz;
   const r10 = (m[1] ?? 0) / sx, r11 = (m[5] ?? 0) / sy, r12 = (m[9] ?? 0) / sz;
   const r20 = (m[2] ?? 0) / sx, r21 = (m[6] ?? 0) / sy, r22 = (m[10] ?? 0) / sz;

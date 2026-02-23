@@ -26,11 +26,20 @@ export function createMesh(
   });
   device.queue.writeBuffer(vertexBuffer, 0, vertices);
 
+  // writeBuffer requires byte length to be a multiple of 4.
+  // Uint16Array with odd element count (e.g. 3 indices = 6 bytes) needs padding.
+  const alignedByteSize = Math.ceil(indices.byteLength / 4) * 4;
   const indexBuffer = device.createBuffer({
-    size: indices.byteLength,
+    size: alignedByteSize,
     usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
   });
-  device.queue.writeBuffer(indexBuffer, 0, indices);
+  if (indices.byteLength === alignedByteSize) {
+    device.queue.writeBuffer(indexBuffer, 0, indices);
+  } else {
+    const padded = new Uint8Array(alignedByteSize);
+    padded.set(new Uint8Array(indices.buffer, indices.byteOffset, indices.byteLength));
+    device.queue.writeBuffer(indexBuffer, 0, padded);
+  }
 
   const indexFormat: GPUIndexFormat = indices instanceof Uint32Array ? 'uint32' : 'uint16';
 

@@ -1,14 +1,18 @@
 import type { Component, GameObject, Scene, PhysicsStepper } from '@atmos/core';
 import { applyComponentData, getAllRegisteredComponents } from '@atmos/core';
-import { initRapier } from './init.js';
-import { PhysicsWorld } from './physics-world.js';
-import { PhysicsSystem } from './physics-system.js';
-import { RigidBody } from './rigid-body.js';
-import { Collider } from './collider.js';
-import type { ColliderShape } from './collider.js';
-import { Joint } from './joint.js';
-import { registerPhysicsBuiltins } from './register-builtins.js';
-import { findAncestorComponent, hasAncestorComponent, hasDescendantComponent } from './physics-hierarchy.js';
+import {
+  initRapier,
+  PhysicsWorld,
+  PhysicsSystem,
+  RigidBody,
+  Collider,
+  Joint,
+  registerPhysicsBuiltins,
+  findAncestorComponent,
+  hasAncestorComponent,
+  hasDescendantComponent,
+} from '@atmos/physics';
+import type { ColliderShape } from '@atmos/physics';
 
 /** Minimal mesh interface for collider auto-sizing (structurally matches @atmos/editor MeshLike) */
 interface MeshLike {

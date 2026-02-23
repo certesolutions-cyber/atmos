@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atmos – Animated Model</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #111; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+    canvas { width: 800px; height: 600px; }
+    #ui {
+      position: fixed; top: 12px; left: 12px; color: #fff;
+      font: 14px sans-serif; z-index: 1;
+      display: flex; gap: 8px; align-items: center;
+    }
+    #status { opacity: 0.7; }
+    button { padding: 6px 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <button id="load-btn">Load .glb</button>
+    <span id="status">Place a .glb in models/ or click Load</span>
+  </div>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

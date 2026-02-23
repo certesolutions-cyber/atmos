@@ -18,33 +18,29 @@ async function main() {
 
   // Init WebGPU
   const gpu = await initWebGPU(canvas);
-  const pipelineResources = createRenderPipeline(gpu.device, gpu.format);
-
-  // Create scene
+  const pipeline = createRenderPipeline(gpu.device, gpu.format);
   const scene = new Scene();
 
-  // Create material & light
-  const material = createMaterial({
-    albedo: [1, 0.2, 0.2, 1],
-    metallic: 0.3,
-    roughness: 0.5,
-  });
+  // Light, camera, render system
   const light = createDirectionalLight();
+  const camera = createDefaultCamera();
+  const renderSystem = new RenderSystem(gpu, pipeline, scene, camera, light);
 
   // Create cube
   const cube = new GameObject('Cube');
   const geometry = createCubeGeometry();
   const mesh = createMesh(gpu.device, geometry.vertices, geometry.indices);
+  const material = createMaterial({
+    albedo: [1, 0.2, 0.2, 1],
+    metallic: 0.3,
+    roughness: 0.5,
+  });
 
   const meshRenderer = cube.addComponent(MeshRenderer);
-  meshRenderer.init(gpu.device, pipelineResources, mesh, material);
+  meshRenderer.init(renderSystem, mesh, material);
 
   cube.addComponent(Rotator);
   scene.add(cube);
-
-  // Create render system
-  const camera = createDefaultCamera();
-  const renderSystem = new RenderSystem(gpu, pipelineResources, scene, camera, light);
 
   // Create and start engine
   const engine = new Engine();

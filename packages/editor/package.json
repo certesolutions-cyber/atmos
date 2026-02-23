@@ -19,6 +19,7 @@
     "vite": { "optional": true }
   },
   "dependencies": {
+    "@atmos/animation": "*",
     "@atmos/assets": "*",
     "@atmos/core": "*",
     "@atmos/math": "*",

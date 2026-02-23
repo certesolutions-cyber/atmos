@@ -1,10 +1,11 @@
 /**
  * Extract meshes from a glTF document.
- * Interleaves vertex data into the engine's 32-byte format:
- *   position(3) + normal(3) + uv(2) = 8 floats per vertex.
+ * Interleaves vertex data into the engine's format:
+ *   Static:  position(3) + normal(3) + uv(2) = 8 floats = 32 bytes
+ *   Skinned: position(3) + normal(3) + uv(2) + joints_u8x4(1) + weights(4) = 13 floats = 52 bytes
  */
 
-import { VERTEX_STRIDE_FLOATS } from '@atmos/renderer';
+import { VERTEX_STRIDE_FLOATS, SKINNED_VERTEX_STRIDE_FLOATS } from '@atmos/renderer';
 import { computeBoundingSphere } from '@atmos/renderer';
 import type { GltfDocument, GltfPrimitive } from './gltf-parser.js';
 import { readAccessor } from './gltf-parser.js';
@@ -60,20 +61,36 @@ function extractPrimitive(
     uvs = new Float32Array(vertexCount * 2);
   }
 
-  // Interleave into engine format
-  const vertices = new Float32Array(vertexCount * VERTEX_STRIDE_FLOATS);
-  for (let i = 0; i < vertexCount; i++) {
-    const vo = i * VERTEX_STRIDE_FLOATS;
-    const p = i * 3;
-    const u = i * 2;
-    vertices[vo] = positions[p]!;
-    vertices[vo + 1] = positions[p + 1]!;
-    vertices[vo + 2] = positions[p + 2]!;
-    vertices[vo + 3] = normals[p]!;
-    vertices[vo + 4] = normals[p + 1]!;
-    vertices[vo + 5] = normals[p + 2]!;
-    vertices[vo + 6] = uvs[u]!;
-    vertices[vo + 7] = uvs[u + 1]!;
+  // Detect skinning attributes
+  const jointsAccessor = prim.attributes['JOINTS_0'];
+  const weightsAccessor = prim.attributes['WEIGHTS_0'];
+  const skinned = jointsAccessor !== undefined && weightsAccessor !== undefined;
+
+  let vertices: Float32Array;
+  let stride: number;
+
+  if (skinned) {
+    stride = SKINNED_VERTEX_STRIDE_FLOATS; // 13
+    vertices = interleaveSkinnedVertices(
+      doc, positions, normals, uvs, vertexCount,
+      jointsAccessor!, weightsAccessor!,
+    );
+  } else {
+    stride = VERTEX_STRIDE_FLOATS; // 8
+    vertices = new Float32Array(vertexCount * stride);
+    for (let i = 0; i < vertexCount; i++) {
+      const vo = i * stride;
+      const p = i * 3;
+      const u = i * 2;
+      vertices[vo] = positions[p]!;
+      vertices[vo + 1] = positions[p + 1]!;
+      vertices[vo + 2] = positions[p + 2]!;
+      vertices[vo + 3] = normals[p]!;
+      vertices[vo + 4] = normals[p + 1]!;
+      vertices[vo + 5] = normals[p + 2]!;
+      vertices[vo + 6] = uvs[u]!;
+      vertices[vo + 7] = uvs[u + 1]!;
+    }
   }
 
   // Read indices
@@ -85,31 +102,85 @@ function extractPrimitive(
     } else if (raw instanceof Uint16Array) {
       indices = raw;
     } else {
-      // Convert other types (e.g. Uint8Array) to Uint16Array
       indices = new Uint16Array(raw.length);
       for (let i = 0; i < raw.length; i++) indices[i] = raw[i]!;
     }
-    // Upgrade to Uint32 if any index exceeds 65535
     if (indices instanceof Uint16Array && vertexCount > 65535) {
       const u32 = new Uint32Array(indices.length);
       for (let i = 0; i < indices.length; i++) u32[i] = indices[i]!;
       indices = u32;
     }
   } else {
-    // Non-indexed: generate sequential indices
     indices = vertexCount > 65535
       ? new Uint32Array(vertexCount)
       : new Uint16Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) indices[i] = i;
   }
 
-  const bounds = computeBoundingSphere(vertices, VERTEX_STRIDE_FLOATS);
+  const bounds = computeBoundingSphere(vertices, stride);
 
   return {
     name,
     geometry: { vertices, indices, bounds },
     materialIndex: prim.material ?? 0,
+    skinned,
   };
+}
+
+/**
+ * Interleave skinned vertex data into 52-byte format.
+ * Layout: pos(3f) + normal(3f) + uv(2f) + joints_u8x4(packed as 1 u32/float) + weights(4f)
+ */
+function interleaveSkinnedVertices(
+  doc: GltfDocument,
+  positions: Float32Array,
+  normals: Float32Array,
+  uvs: Float32Array,
+  vertexCount: number,
+  jointsAccessorIdx: number,
+  weightsAccessorIdx: number,
+): Float32Array {
+  const stride = SKINNED_VERTEX_STRIDE_FLOATS; // 13
+  const jointsRaw = readAccessor(doc, jointsAccessorIdx);
+  const weightsRaw = readAccessor(doc, weightsAccessorIdx) as Float32Array;
+
+  const vertices = new Float32Array(vertexCount * stride);
+  // Create a Uint8Array view overlaid on the same buffer for packing joint indices
+  const verticesU8 = new Uint8Array(vertices.buffer);
+
+  for (let i = 0; i < vertexCount; i++) {
+    const vo = i * stride;
+    const p = i * 3;
+    const u = i * 2;
+    const j = i * 4;
+
+    // Position
+    vertices[vo] = positions[p]!;
+    vertices[vo + 1] = positions[p + 1]!;
+    vertices[vo + 2] = positions[p + 2]!;
+    // Normal
+    vertices[vo + 3] = normals[p]!;
+    vertices[vo + 4] = normals[p + 1]!;
+    vertices[vo + 5] = normals[p + 2]!;
+    // UV
+    vertices[vo + 6] = uvs[u]!;
+    vertices[vo + 7] = uvs[u + 1]!;
+
+    // Joint indices: pack 4 × u8 at byte offset 32 from vertex start
+    const byteOffset = vo * 4 + 32; // 8 floats * 4 bytes = 32 bytes
+    verticesU8[byteOffset] = jointsRaw[j]! & 0xFF;
+    verticesU8[byteOffset + 1] = jointsRaw[j + 1]! & 0xFF;
+    verticesU8[byteOffset + 2] = jointsRaw[j + 2]! & 0xFF;
+    verticesU8[byteOffset + 3] = jointsRaw[j + 3]! & 0xFF;
+
+    // Weights: 4 × f32 at float offset 9 (byte offset 36)
+    vertices[vo + 9] = weightsRaw[j]!;
+    vertices[vo + 10] = weightsRaw[j + 1]!;
+    vertices[vo + 11] = weightsRaw[j + 2]!;
+    vertices[vo + 12] = weightsRaw[j + 3]!;
+  }
+
+  return vertices;
 }
 
 /** Generate flat normals from triangle positions. */

@@ -7,6 +7,10 @@ export interface MaterialAssetData {
   metallic: number;
   roughness: number;
   albedoTexture?: string; // relative path e.g. "textures/wood.png"
+  emissive?: [number, number, number];
+  emissiveIntensity?: number;
+  normalTexture?: string;
+  metallicRoughnessTexture?: string;
 }
 
 export function createDefaultMaterialAsset(name: string): MaterialAssetData {
@@ -32,5 +36,9 @@ export function deserializeMaterialAsset(json: string): MaterialAssetData {
     metallic: (raw['metallic'] as number) ?? 0,
     roughness: (raw['roughness'] as number) ?? 0.5,
     albedoTexture: (raw['albedoTexture'] as string) ?? undefined,
+    emissive: (raw['emissive'] as [number, number, number]) ?? undefined,
+    emissiveIntensity: (raw['emissiveIntensity'] as number) ?? undefined,
+    normalTexture: (raw['normalTexture'] as string) ?? undefined,
+    metallicRoughnessTexture: (raw['metallicRoughnessTexture'] as string) ?? undefined,
   };
 }

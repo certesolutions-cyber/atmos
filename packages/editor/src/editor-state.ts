@@ -17,7 +17,8 @@ export type EditorEvent =
   | 'assetsChanged'
   | 'scriptsChanged'
   | 'projectChanged'
-  | 'materialSelected';
+  | 'materialSelected'
+  | 'wireframeChanged';
 
 type Listener = () => void;
 
@@ -33,6 +34,14 @@ export class EditorState {
   projectFs: ProjectFileSystem | null = null;
   materialManager: MaterialManager | null = null;
   selectedMaterialPath: string | null = null;
+  wireframeEnabled = false;
+  private _sceneName = _getSessionItem('atmos:sceneName') ?? 'main';
+
+  get sceneName(): string { return this._sceneName; }
+  set sceneName(v: string) {
+    this._sceneName = v;
+    _setSessionItem('atmos:sceneName', v);
+  }
 
   private _playSnapshot: SceneSnapshot | null = null;
   private readonly _listeners = new Map<EditorEvent, Set<Listener>>();
@@ -94,6 +103,12 @@ export class EditorState {
     this._emit('snapChanged');
   }
 
+  setWireframe(on: boolean): void {
+    if (this.wireframeEnabled === on) return;
+    this.wireframeEnabled = on;
+    this._emit('wireframeChanged');
+  }
+
   /** Notify inspector that property values may have changed (e.g., gizmo drag, physics sync) */
   notifyInspectorChanged(): void {
     this._emit('inspectorChanged');
@@ -134,4 +149,12 @@ export class EditorState {
       fn();
     }
   }
+}
+
+function _getSessionItem(key: string): string | null {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+
+function _setSessionItem(key: string, value: string): void {
+  try { sessionStorage.setItem(key, value); } catch { /* noop */ }
 }

@@ -1,1 +1,1539 @@
-{}
+{
+  "gameObjects": [
+    {
+      "name": "87dd4610235448bd9d676d99586cc4ca.fbx",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.009999990463256836,
+              0.009999990463256836,
+              0.009999990463256836
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "RootNode",
+      "id": 2,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15403",
+      "id": 3,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_0",
+      "id": 4,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:0",
+            "materialSource": "materials/untitled_bs_communications_02_002.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_1",
+      "id": 5,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:1",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_2",
+      "id": 6,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:2",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_3",
+      "id": 7,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:3",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_4",
+      "id": 8,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:4",
+            "materialSource": "materials/untitled_bs_communications_02_003.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_5",
+      "id": 9,
+      "parentId": 3,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:5",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15404",
+      "id": 10,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_7",
+      "id": 11,
+      "parentId": 10,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:6",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15405",
+      "id": 12,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_9",
+      "id": 13,
+      "parentId": 12,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:7",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15406",
+      "id": 14,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_11",
+      "id": 15,
+      "parentId": 14,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:8",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15407",
+      "id": 16,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_13",
+      "id": 17,
+      "parentId": 16,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:9",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_14",
+      "id": 18,
+      "parentId": 16,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:10",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15408",
+      "id": 19,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_16",
+      "id": 20,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:11",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_17",
+      "id": 21,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:12",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_18",
+      "id": 22,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:13",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15409",
+      "id": 23,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_20",
+      "id": 24,
+      "parentId": 23,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:14",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15410",
+      "id": 25,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_22",
+      "id": 26,
+      "parentId": 25,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:15",
+            "materialSource": "materials/untitled_bs_communications_02.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15411",
+      "id": 27,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_24",
+      "id": 28,
+      "parentId": 27,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:16",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15412",
+      "id": 29,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_26",
+      "id": 30,
+      "parentId": 29,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:17",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15413",
+      "id": 31,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_28",
+      "id": 32,
+      "parentId": 31,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:18",
+            "materialSource": "materials/untitled_bs_communications_02_001.mat.json",
+            "material.albedo": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "polySurface15414",
+      "id": 33,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "_gltfNode_30",
+      "id": 34,
+      "parentId": 33,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "model:models/sci-fi-alien-city/source/Untitled.glb:19",
+            "materialSource": "materials/untitled_default_material.mat.json",
+            "material.albedo": [
+              0.5,
+              0.5,
+              0.5,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Directional Light",
+      "id": 35,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              -0.5,
+              0,
+              0,
+              0.8660253882408142
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 5,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 2048,
+            "shadowSize": 5,
+            "shadowDistance": 15,
+            "shadowFarSize": 20,
+            "shadowFarDistance": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 36,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              7.737476825714111
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.10000000149011612,
+              0.10000000149011612,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "castShadow": true
+          }
+        },
+        {
+          "type": "FlyingDrone",
+          "data": {
+            "moveSpeed": 1,
+            "turnSpeed": 0.004,
+            "bobAmplitude": 0.05,
+            "bobFrequency": 2,
+            "hoverHeight": 0.1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 37,
+      "parentId": 36,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.1,
+            "far": 100,
+            "isMainCamera": true
+          }
+        }
+      ]
+    }
+  ]
+}

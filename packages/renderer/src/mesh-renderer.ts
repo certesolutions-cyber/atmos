@@ -6,7 +6,13 @@ import type { PipelineResources } from './pipeline.js';
 import type { Material } from './material.js';
 import { writeMaterialUniforms, MATERIAL_UNIFORM_SIZE } from './material.js';
 import type { BoundingSphere } from './bounds.js';
-import { getWhiteFallbackTexture } from './texture.js';
+import { getWhiteFallbackTexture, getFlatNormalFallback, getDefaultMetallicRoughnessFallback } from './texture.js';
+
+/** Minimal context for MeshRenderer — satisfied by RenderSystem via duck typing. */
+export interface MeshRendererContext {
+  readonly device: GPUDevice;
+  readonly pipelineResources: PipelineResources;
+}
 
 /** Per-object uniform buffer: MVP(64) + model(64) + normalMatrix(64) = 192 bytes */
 const OBJECT_UNIFORM_SIZE = 192;
@@ -16,6 +22,8 @@ export class MeshRenderer extends Component {
   material: Material | null = null;
   meshSource = '';
   materialSource = 'Default';
+  castShadow = true;
+  receiveSSAO = true;
   uniformBuffer: GPUBuffer | null = null;
   bindGroup: GPUBindGroup | null = null;
   materialBindGroup: GPUBindGroup | null = null;
@@ -38,11 +46,11 @@ export class MeshRenderer extends Component {
   private readonly _worldBounds: BoundingSphere = { center: this._worldBoundsCenter, radius: 0 };
 
   init(
-    device: GPUDevice,
-    pipelineResources: PipelineResources,
+    ctx: MeshRendererContext,
     mesh: Mesh,
     material?: Material,
   ): void {
+    const { device, pipelineResources } = ctx;
     this._device = device;
     this._pipelineResources = pipelineResources;
     this.mesh = mesh;
@@ -76,6 +84,8 @@ export class MeshRenderer extends Component {
     }
 
     const tex = this.material.albedoTexture ?? getWhiteFallbackTexture(this._device);
+    const nrm = this.material.normalTexture ?? getFlatNormalFallback(this._device);
+    const mr = this.material.metallicRoughnessTexture ?? getDefaultMetallicRoughnessFallback(this._device);
     this.materialBindGroup = this._device.createBindGroup({
       layout: this._pipelineResources.materialBindGroupLayout,
       entries: [
@@ -83,6 +93,10 @@ export class MeshRenderer extends Component {
         { binding: 1, resource: { buffer: sceneBuffer } },
         { binding: 2, resource: tex.view },
         { binding: 3, resource: tex.sampler },
+        { binding: 4, resource: nrm.view },
+        { binding: 5, resource: nrm.sampler },
+        { binding: 6, resource: mr.view },
+        { binding: 7, resource: mr.sampler },
       ],
     });
   }
@@ -152,5 +166,17 @@ export class MeshRenderer extends Component {
 
   onDestroy(): void {
     this.uniformBuffer?.destroy();
+    this.uniformBuffer = null;
+    this.bindGroup = null;
+    this.materialBindGroup = null;
+  }
+
+  /** Destroy owned GPU mesh buffers (vertex + index). */
+  destroyMesh(): void {
+    if (this.mesh) {
+      this.mesh.vertexBuffer.destroy();
+      this.mesh.indexBuffer.destroy();
+      this.mesh = null;
+    }
   }
 }

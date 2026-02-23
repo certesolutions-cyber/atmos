@@ -15,7 +15,7 @@ import type { GameObject } from '@atmos/core';
 import type { ScriptAsset, AssetEntry } from './asset-types.js';
 import type { ProjectFileSystem } from './project-fs.js';
 
-export type PrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'camera';
+export type PrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'camera' | 'directionalLight' | 'pointLight' | 'spotLight';
 
 const GIZMO_SCREEN_SCALE = 0.15;
 
@@ -82,6 +82,8 @@ export function mountEditor(
 
     // Canvas click -> pick object
     const onMouseDown = (e: MouseEvent) => {
+      // Disable picking/gizmos in play mode
+      if (!editorState.paused) return;
       // Only LMB without modifiers (alt = orbit)
       if (e.button !== 0 || e.altKey) return;
 
@@ -107,6 +109,7 @@ export function mountEditor(
 
     // Mouse move for gizmo drag
     const onMouseMove = (e: MouseEvent) => {
+      if (!editorState.paused) return;
       if (!gizmoState?.dragging || !editorState.selected) return;
 
       const rect = canvas.getBoundingClientRect();
@@ -177,6 +180,7 @@ export function mountEditor(
       onAttachScript: options?.onAttachScript,
       onLoadModel: options?.onLoadModel,
       onDropModel: options?.onDropModel,
+      renderSystem: options?.renderSystem,
     }),
   );
 

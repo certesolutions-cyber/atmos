@@ -8,6 +8,7 @@ export function installKeyboardShortcuts(
 ): () => void {
   const handler = (e: KeyboardEvent) => {
     if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    if (!editorState.paused) return;
 
     switch (e.key.toLowerCase()) {
       case 'w':

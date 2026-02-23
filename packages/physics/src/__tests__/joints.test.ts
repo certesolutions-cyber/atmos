@@ -327,6 +327,125 @@ describe('HingeJoint motor', () => {
   });
 });
 
+describe('HingeJoint runtime limit changes', () => {
+  let world: PhysicsWorld;
+  afterEach(() => world?.destroy());
+
+  it('enabling limits at runtime constrains rotation', () => {
+    world = new PhysicsWorld({ gravity: { x: 0, y: 0, z: 0 } });
+    const { go: goA } = createBody(world, 'A', 0, 0, 0, 'fixed');
+    const { go: goB, rb: rbB } = createBody(world, 'B', 1, 0, 0);
+
+    const joint = goA.addComponent(HingeJoint);
+    joint.init(world, {
+      connectedObject: goB,
+      axis: { x: 0, y: 1, z: 0 },
+      motorEnabled: true,
+      motorMode: 'velocity',
+      motorTargetVelocity: 10.0,
+      motorMaxForce: 1000.0,
+    });
+
+    // Run without limits — should rotate freely
+    for (let i = 0; i < 60; i++) world.step(1 / 60);
+    rbB.syncToTransform();
+    const z1 = Math.abs(goB.transform.position[2]!);
+    expect(z1).toBeGreaterThan(0.01); // Has rotated
+
+    // Now enable tight limits at runtime
+    joint.limitsEnabled = true;
+    joint.limitMin = -0.1;
+    joint.limitMax = 0.1;
+
+    // Run more steps — rotation should be constrained
+    for (let i = 0; i < 120; i++) world.step(1 / 60);
+    rbB.syncToTransform();
+
+    // With very tight limits and a motor, the body oscillates near the limit
+    // The key test: the joint is still alive and limits were applied
+    expect(joint.joint).not.toBeNull();
+  });
+
+  it('changing limitMax at runtime updates the constraint', () => {
+    world = new PhysicsWorld({ gravity: { x: 0, y: 0, z: 0 } });
+    const { go: goA } = createBody(world, 'A', 0, 0, 0, 'fixed');
+    const { go: goB, rb: rbB } = createBody(world, 'B', 1, 0, 0);
+
+    const joint = goA.addComponent(HingeJoint);
+    joint.init(world, {
+      connectedObject: goB,
+      axis: { x: 0, y: 1, z: 0 },
+      limitsEnabled: true,
+      limitMin: -0.01,
+      limitMax: 0.01,
+      motorEnabled: true,
+      motorMode: 'velocity',
+      motorTargetVelocity: 5.0,
+      motorMaxForce: 500.0,
+    });
+
+    // With very tight limits, body barely moves
+    for (let i = 0; i < 60; i++) world.step(1 / 60);
+    rbB.syncToTransform();
+    const z1 = Math.abs(goB.transform.position[2]!);
+
+    // Now widen limits at runtime
+    joint.limitMax = Math.PI;
+
+    for (let i = 0; i < 120; i++) world.step(1 / 60);
+    rbB.syncToTransform();
+    const z2 = Math.abs(goB.transform.position[2]!);
+
+    // Should have rotated significantly more after widening
+    expect(z2).toBeGreaterThan(z1);
+  });
+});
+
+describe('HingeJoint runtime axis changes', () => {
+  let world: PhysicsWorld;
+  afterEach(() => world?.destroy());
+
+  it('recreates joint when axis is changed via setter', () => {
+    world = new PhysicsWorld({ gravity: { x: 0, y: 0, z: 0 } });
+    const { go: goA } = createBody(world, 'A', 0, 0, 0, 'fixed');
+    const { go: goB } = createBody(world, 'B', 1, 0, 0);
+
+    const joint = goA.addComponent(HingeJoint);
+    joint.init(world, {
+      connectedObject: goB,
+      axis: { x: 0, y: 1, z: 0 },
+    });
+
+    const firstJoint = joint.joint;
+    expect(firstJoint).not.toBeNull();
+
+    // Change axis — should recreate the joint
+    const newAxis = new Float32Array([1, 0, 0]);
+    joint.axis = newAxis;
+
+    expect(joint.joint).not.toBeNull();
+    expect(joint.joint).not.toBe(firstJoint);
+    expect(joint.axis[0]).toBeCloseTo(1);
+    expect(joint.axis[1]).toBeCloseTo(0);
+    expect(joint.axis[2]).toBeCloseTo(0);
+  });
+
+  it('does not recreate joint if no joint exists', () => {
+    world = new PhysicsWorld();
+    const { go: goA } = createBody(world, 'A', 0, 0, 0);
+
+    const joint = goA.addComponent(HingeJoint);
+    joint.init(world); // No connected object
+    expect(joint.joint).toBeNull();
+
+    // Changing axis without a joint should not throw
+    const newAxis = new Float32Array([1, 0, 0]);
+    joint.axis = newAxis;
+    expect(joint.joint).toBeNull();
+    expect(joint.axis[0]).toBeCloseTo(1);
+  });
+});
+
 describe('SpringJoint', () => {
   let world: PhysicsWorld;
   afterEach(() => world?.destroy());

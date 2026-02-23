@@ -28,5 +28,5 @@ export type {
   MaterialAssetPropertyDef,
 } from './component-registry.js';
 export { registerCoreBuiltins } from './register-builtins.js';
-export { serializeScene, deserializeScene, applyComponentData } from './scene-serializer.js';
-export type { SceneData, GameObjectData, ComponentData, DeserializeContext } from './scene-serializer.js';
+export { serializeScene, deserializeScene, applyComponentData, serializePostProcess, applyPostProcess } from './scene-serializer.js';
+export type { SceneData, GameObjectData, ComponentData, DeserializeContext, PostProcessData } from './scene-serializer.js';

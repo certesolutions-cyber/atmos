@@ -131,7 +131,13 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
     refresh();
   }, [refresh]);
 
-  const primitiveTypes: PrimitiveType[] = ['cube', 'sphere', 'cylinder', 'plane', 'camera'];
+  const primitiveTypes: PrimitiveType[] = ['cube', 'sphere', 'cylinder', 'plane', 'camera', 'directionalLight', 'pointLight', 'spotLight'];
+
+  const labelMap: Partial<Record<PrimitiveType, string>> = {
+    directionalLight: 'Directional Light',
+    pointLight: 'Point Light',
+    spotLight: 'Spot Light',
+  };
 
   const buildContextMenuItems = (): MenuItem[] => {
     if (!contextMenu) return [];
@@ -148,9 +154,9 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
         },
       },
       ...(primitiveFactory ? primitiveTypes.map((type) => ({
-        label: `Create ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+        label: `Create ${labelMap[type] ?? type.charAt(0).toUpperCase() + type.slice(1)}`,
         action: () => {
-          const name = type === 'camera' ? 'Camera' : type.charAt(0).toUpperCase() + type.slice(1);
+          const name = labelMap[type] ?? (type === 'camera' ? 'Camera' : type.charAt(0).toUpperCase() + type.slice(1));
           const go = primitiveFactory(type, name);
           if (parent) go.setParent(parent);
           editorState.scene.add(go);

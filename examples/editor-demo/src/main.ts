@@ -1,5 +1,4 @@
-import { startEditor } from "@atmos/editor";
-import { createEditorPhysics } from "@atmos/physics";
+import { startEditor, createEditorPhysics } from "@atmos/editor";
 
 await startEditor({
   physics: await createEditorPhysics(),

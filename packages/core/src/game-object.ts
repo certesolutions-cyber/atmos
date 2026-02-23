@@ -7,6 +7,8 @@ export class GameObject {
   readonly id: number;
   readonly transform = new Transform();
   name: string;
+  /** If true, this object and its children are skipped during serialization. */
+  transient = false;
 
   private readonly _components: Component[] = [];
   private _parent: GameObject | null = null;

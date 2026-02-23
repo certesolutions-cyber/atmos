@@ -45,7 +45,7 @@ describe('Transform', () => {
     expect(parent.isDirty).toBe(false);
     expect(child.isDirty).toBe(false);
 
-    parent.markDirty();
+    parent.setPosition(1, 0, 0); // any setter triggers dirty
     expect(parent.isDirty).toBe(true);
     expect(child.isDirty).toBe(true);
   });

@@ -66,11 +66,36 @@ export interface GltfMesh {
 export interface GltfNode {
   name?: string;
   mesh?: number;
+  skin?: number;
   children?: number[];
   translation?: number[];
   rotation?: number[];
   scale?: number[];
   matrix?: number[];
+}
+
+export interface GltfSkin {
+  name?: string;
+  inverseBindMatrices?: number;
+  skeleton?: number;
+  joints: number[];
+}
+
+export interface GltfAnimationSampler {
+  input: number;
+  output: number;
+  interpolation?: string;
+}
+
+export interface GltfAnimationChannel {
+  sampler: number;
+  target: { node?: number; path: string };
+}
+
+export interface GltfAnimation {
+  name?: string;
+  channels: GltfAnimationChannel[];
+  samplers: GltfAnimationSampler[];
 }
 
 export interface GltfScene {
@@ -89,6 +114,8 @@ export interface GltfJson {
   nodes?: GltfNode[];
   scenes?: GltfScene[];
   scene?: number;
+  skins?: GltfSkin[];
+  animations?: GltfAnimation[];
 }
 
 /** Parsed glTF document with resolved binary buffers. */

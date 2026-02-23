@@ -84,7 +84,7 @@ export class Transform {
     this.markDirty();
   }
 
-  markDirty(): void {
+  private markDirty(): void {
     if (this._dirty) return;
     this._dirty = true;
     for (const child of this._children) {

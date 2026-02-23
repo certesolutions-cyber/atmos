@@ -30,6 +30,7 @@ export { discoverScripts, autoDiscoverScripts } from './script-discovery.js';
 export { ProjectFileSystem } from './project-fs.js';
 export { MaterialManager } from './material-manager.js';
 export { startEditor } from './bootstrap/start-editor.js';
+export { createEditorPhysics } from './bootstrap/editor-physics.js';
 export type {
   EditorConfig,
   EditorApp,

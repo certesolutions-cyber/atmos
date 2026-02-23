@@ -1,4 +1,5 @@
 import type { PropertyDef } from '@atmos/core';
+import { Transform } from '@atmos/core';
 
 function navigatePath(obj: unknown, parts: string[]): { target: Record<string, unknown>; key: string } | null {
   let current: unknown = obj;
@@ -33,24 +34,28 @@ export function setProperty(component: unknown, def: PropertyDef, value: unknown
     for (let i = 0; i < value.length && i < existing.length; i++) {
       existing[i] = value[i] as number;
     }
+    // Re-assign to trigger setter (e.g. HingeJoint.axis recreates joint)
+    nav.target[nav.key] = existing;
   } else {
     nav.target[nav.key] = value;
   }
 
-  // Mark transform dirty so the scene re-renders immediately
-  const comp = component as Record<string, unknown>;
-  // If the target itself is a Transform (e.g. editing position/rotation/scale directly)
-  if (typeof comp['markDirty'] === 'function') {
-    (comp['markDirty'] as () => void)();
-  }
-  // If the target is a Component with gameObject.transform
-  const go = comp['gameObject'] as Record<string, unknown> | undefined;
-  if (go) {
-    const transform = go['transform'] as { markDirty?: () => void } | undefined;
-    transform?.markDirty?.();
+  // Notify transform so the scene re-renders immediately
+  const transform = component instanceof Transform
+    ? component
+    : (component as Record<string, unknown>)['gameObject']
+      ? ((component as Record<string, unknown>)['gameObject'] as Record<string, unknown>)['transform']
+      : null;
+
+  if (transform instanceof Transform) {
+    // Re-apply via setters to trigger dirty flag
+    transform.setPositionFrom(transform.position);
+    transform.setRotationFrom(transform.rotation);
+    transform.setScaleFrom(transform.scale);
   }
 
   // If we navigated through 'material', mark it dirty
+  const comp = component as Record<string, unknown>;
   if (parts[0] === 'material' && comp['material']) {
     (comp['material'] as Record<string, unknown>)['dirty'] = true;
   }

@@ -6,6 +6,10 @@ export interface ModelMesh {
   name: string;
   geometry: GeometryData;
   materialIndex: number;
+  /** True if vertex data includes joint indices + weights (52B skinned format). */
+  skinned: boolean;
+  /** Index into ModelAsset.skins (only set if skinned). */
+  skinIndex?: number;
 }
 
 /** Raw texture data extracted from a model file (CPU-side, not yet uploaded). */
@@ -32,6 +36,41 @@ export interface ModelNode {
   rotation: [number, number, number, number]; // quaternion xyzw
   scale: [number, number, number];
   children: ModelNode[];
+  /** Index into ModelAsset.skins (set when the node references a glTF skin). */
+  skinIndex?: number;
+}
+
+/** Skin data extracted from a model file (joint hierarchy + inverse bind matrices). */
+export interface ModelSkin {
+  name: string;
+  /** Indices into the node array, identifying which nodes are joints. */
+  jointNodeIndices: number[];
+  /** Flat Float32Array: jointCount * 16 floats (one mat4 per joint). */
+  inverseBindMatrices: Float32Array;
+  /** Parent joint index for each joint (-1 = root). Pre-computed from node hierarchy. */
+  jointParents: number[];
+  /** Node names for each joint, indexed same as jointNodeIndices. */
+  jointNames: string[];
+}
+
+/** A single animation track targeting one node's T/R/S channel. */
+export interface ModelAnimationTrack {
+  /** Index into the model's node array. */
+  targetNode: number;
+  /** Which channel: 'translation' | 'rotation' | 'scale' */
+  path: 'translation' | 'rotation' | 'scale';
+  /** Interpolation mode. */
+  interpolation: 'LINEAR' | 'STEP';
+  /** Keyframe timestamps (seconds). */
+  times: Float32Array;
+  /** Keyframe values (3 or 4 floats per keyframe). */
+  values: Float32Array;
+}
+
+/** A named animation extracted from a model file. */
+export interface ModelAnimation {
+  name: string;
+  tracks: ModelAnimationTrack[];
 }
 
 /**
@@ -44,4 +83,6 @@ export interface ModelAsset {
   materials: ModelMaterial[];
   textures: ModelTexture[];
   rootNodes: ModelNode[];
+  skins: ModelSkin[];
+  animations: ModelAnimation[];
 }
