@@ -1,6 +1,6 @@
-import { Component, Scene } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import { Component, Scene } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 
 /** Loose interface to avoid circular import with RenderSystem. */
 export interface ScreenToWorldProvider {

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { EnumPropertyDef } from '@atmos/core';
+import type { EnumPropertyDef } from '@certe/atmos-core';
 
 interface EnumFieldProps {
   label: string;

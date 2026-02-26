@@ -6,9 +6,9 @@ import {
   registerComponent,
   clearRegistry,
   resetGameObjectIds,
-} from '@atmos/core';
-import { Quat } from '@atmos/math';
-import type { QuatType } from '@atmos/math';
+} from '@certe/atmos-core';
+import { Quat } from '@certe/atmos-math';
+import type { QuatType } from '@certe/atmos-math';
 import { takeSnapshot, restoreSnapshot } from '../scene-snapshot.js';
 
 const _tmpQuat: QuatType = Quat.create();

@@ -1,5 +1,5 @@
-import { Component, registerComponent, getComponentDef } from '@atmos/core';
-import type { ComponentDef, PropertyDef } from '@atmos/core';
+import { Component, registerComponent, getComponentDef } from '@certe/atmos-core';
+import type { ComponentDef, PropertyDef } from '@certe/atmos-core';
 import type { ScriptAsset } from './asset-types.js';
 import type { AssetEntry } from './asset-types.js';
 

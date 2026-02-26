@@ -1,14 +1,14 @@
 {
-  "name": "@atmos/example-terrain-editor",
+  "name": "@certe/atmos-example-terrain-editor",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*",
-    "@atmos/renderer": "*",
-    "@atmos/editor": "*",
-    "@atmos/terrain": "*"
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-editor": "*",
+    "@certe/atmos-terrain": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0",

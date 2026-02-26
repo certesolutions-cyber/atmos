@@ -1,6 +1,6 @@
-import { createMesh } from '@atmos/renderer';
-import type { Mesh } from '@atmos/renderer';
-import { computeBoundingSphere, VERTEX_STRIDE_FLOATS } from '@atmos/renderer';
+import { createMesh } from '@certe/atmos-renderer';
+import type { Mesh } from '@certe/atmos-renderer';
+import { computeBoundingSphere, VERTEX_STRIDE_FLOATS } from '@certe/atmos-renderer';
 import { extractSurface, computeTriplanarUVs } from './marching-cubes.js';
 import { computeGradientNormals, computeTriangleNormals } from './terrain-normals.js';
 import type { DensityFn, TerrainConfig, MeshData } from './types.js';

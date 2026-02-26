@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/math",
+  "name": "@certe/atmos-math",
   "description": "Lightweight Float32Array math library for the Atmos Engine — Vec3, Mat4, Quat, Ray",
   "version": "0.1.0",
   "repository": {

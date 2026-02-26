@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Component, PropertyDef, EnumPropertyDef, NumberPropertyDef, Scene, GameObject } from '@atmos/core';
-import { getComponentDef, getAllRegisteredComponents, Transform } from '@atmos/core';
+import type { Component, PropertyDef, EnumPropertyDef, NumberPropertyDef, Scene, GameObject } from '@certe/atmos-core';
+import { getComponentDef, getAllRegisteredComponents, Transform } from '@certe/atmos-core';
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
 import { getProperty, setProperty } from '../property-setters.js';
@@ -18,10 +18,10 @@ import { MaterialInspector } from './material-inspector.js';
 interface InspectorPanelProps {
   editorState: EditorState;
   materialManager?: MaterialManager;
-  componentFactory?: (ctor: new () => Component, go: import('@atmos/core').GameObject) => void;
-  componentFilter?: (ctor: new () => Component, go: import('@atmos/core').GameObject) => string | null;
-  componentRemover?: (comp: Component, go: import('@atmos/core').GameObject) => void;
-  onDropModel?: (path: string, go: import('@atmos/core').GameObject) => void;
+  componentFactory?: (ctor: new () => Component, go: import('@certe/atmos-core').GameObject) => void;
+  componentFilter?: (ctor: new () => Component, go: import('@certe/atmos-core').GameObject) => string | null;
+  componentRemover?: (comp: Component, go: import('@certe/atmos-core').GameObject) => void;
+  onDropModel?: (path: string, go: import('@certe/atmos-core').GameObject) => void;
 }
 
 const panelStyle: React.CSSProperties = {

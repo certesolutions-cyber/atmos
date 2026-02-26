@@ -5,8 +5,8 @@ import {
   createCylinderGeometry,
   createMesh,
   VERTEX_STRIDE_FLOATS,
-} from '@atmos/renderer';
-import type { Mesh } from '@atmos/renderer';
+} from '@certe/atmos-renderer';
+import type { Mesh } from '@certe/atmos-renderer';
 import type { PrimitiveType } from '../editor-mount.js';
 
 export type MeshRecord = Record<Exclude<PrimitiveType, 'camera' | 'directionalLight' | 'pointLight' | 'spotLight'>, Mesh>;

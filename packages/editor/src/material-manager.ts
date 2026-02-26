@@ -1,8 +1,8 @@
-import type { Material } from '@atmos/renderer';
-import { createMaterial, decodeImageToRGBA, createTextureFromRGBA } from '@atmos/renderer';
-import type { MaterialAssetData, ShaderType } from '@atmos/renderer';
-import type { GPUTextureHandle } from '@atmos/renderer';
-import { deserializeMaterialAsset, serializeMaterialAsset, createDefaultMaterialAsset } from '@atmos/renderer';
+import type { Material } from '@certe/atmos-renderer';
+import { createMaterial, decodeImageToRGBA, createTextureFromRGBA } from '@certe/atmos-renderer';
+import type { MaterialAssetData, ShaderType } from '@certe/atmos-renderer';
+import type { GPUTextureHandle } from '@certe/atmos-renderer';
+import { deserializeMaterialAsset, serializeMaterialAsset, createDefaultMaterialAsset } from '@certe/atmos-renderer';
 import type { ProjectFileSystem } from './project-fs.js';
 
 interface CacheEntry {

@@ -1,4 +1,4 @@
-import type { GPUTextureHandle } from "@atmos/renderer";
+import type { GPUTextureHandle } from "@certe/atmos-renderer";
 
 /** Density function: positive = air, negative = solid, surface at isoLevel */
 export type DensityFn = (x: number, y: number, z: number) => number;

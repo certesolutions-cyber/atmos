@@ -3,8 +3,8 @@
  * Produces bone matrices each frame for GPU skinning.
  */
 
-import { Component } from '@atmos/core';
-import { Quat } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import { Quat } from '@certe/atmos-math';
 import type { Skeleton } from './skeleton.js';
 import type { AnimationClip } from './animation-clip.js';
 import { sampleTrack } from './keyframe-sampler.js';

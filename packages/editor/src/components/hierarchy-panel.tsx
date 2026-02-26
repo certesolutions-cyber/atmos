@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { GameObject } from '@atmos/core';
+import { GameObject } from '@certe/atmos-core';
 import type { EditorState } from '../editor-state.js';
 import { HierarchyNode } from './hierarchy-node.js';
 import { ContextMenu } from './context-menu.js';
@@ -16,8 +16,8 @@ import type { PrimitiveType } from '../editor-mount.js';
 interface HierarchyPanelProps {
   editorState: EditorState;
   primitiveFactory?: (type: PrimitiveType, name: string) => GameObject;
-  onFocusObject?: (obj: import('@atmos/core').GameObject) => void;
-  onDropModel?: (path: string, parent: import('@atmos/core').GameObject | null) => void;
+  onFocusObject?: (obj: import('@certe/atmos-core').GameObject) => void;
+  onDropModel?: (path: string, parent: import('@certe/atmos-core').GameObject | null) => void;
   style?: React.CSSProperties;
 }
 
@@ -54,7 +54,7 @@ const searchStyle: React.CSSProperties = {
 };
 
 function collectMatchingIds(
-  obj: import('@atmos/core').GameObject,
+  obj: import('@certe/atmos-core').GameObject,
   filter: string,
   result: Set<number>,
 ): boolean {
@@ -75,11 +75,11 @@ function collectMatchingIds(
 }
 
 function flattenHierarchy(
-  roots: readonly import('@atmos/core').GameObject[],
+  roots: readonly import('@certe/atmos-core').GameObject[],
   filterMatch: Set<number> | null,
-): import('@atmos/core').GameObject[] {
-  const result: import('@atmos/core').GameObject[] = [];
-  const visit = (obj: import('@atmos/core').GameObject) => {
+): import('@certe/atmos-core').GameObject[] {
+  const result: import('@certe/atmos-core').GameObject[] = [];
+  const visit = (obj: import('@certe/atmos-core').GameObject) => {
     if (filterMatch && !filterMatch.has(obj.id)) return;
     result.push(obj);
     for (const child of obj.children) visit(child);
@@ -91,7 +91,7 @@ function flattenHierarchy(
 export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel, style }: HierarchyPanelProps) {
   const [tick, setTick] = useState(0);
   const [searchText, setSearchText] = useState('');
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; obj: import('@atmos/core').GameObject | null } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; obj: import('@certe/atmos-core').GameObject | null } | null>(null);
   const [renameId, setRenameId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -141,11 +141,11 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
     refresh();
   }, [editorState, refresh]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, obj: import('@atmos/core').GameObject) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, obj: import('@certe/atmos-core').GameObject) => {
     setContextMenu({ x: e.clientX, y: e.clientY, obj });
   }, []);
 
-  const handleRenameComplete = useCallback((obj: import('@atmos/core').GameObject, newName: string) => {
+  const handleRenameComplete = useCallback((obj: import('@certe/atmos-core').GameObject, newName: string) => {
     if (newName.trim()) {
       obj.name = newName.trim();
     }
@@ -153,7 +153,7 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
     refresh();
   }, [refresh]);
 
-  const handleSelect = useCallback((obj: import('@atmos/core').GameObject, e: React.MouseEvent) => {
+  const handleSelect = useCallback((obj: import('@certe/atmos-core').GameObject, e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
       editorState.toggleSelect(obj);
       setLastClickedId(obj.id);

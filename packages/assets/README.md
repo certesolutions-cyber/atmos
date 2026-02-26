@@ -1,4 +1,4 @@
-# 📦 @atmos/assets
+# 📦 @certe/atmos-assets
 
 glTF 2.0 / GLB asset pipeline for the Atmos Engine. Parses binary glTF into a CPU-only `ModelAsset`, then instantiates it as a live `GameObject` hierarchy with GPU resources — meshes, materials, textures, skeletal skins, and animation clips.
 
@@ -19,7 +19,7 @@ ArrayBuffer  →  parseGltfModel()  →  ModelAsset (CPU-only)
 ## 🚀 Quick Start
 
 ```ts
-import { parseGltfModel, instantiateModel } from '@atmos/assets';
+import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
 
 // Load a .glb file
 const buffer = await fetch('/models/character.glb').then(r => r.arrayBuffer());
@@ -69,7 +69,7 @@ When a mesh has `JOINTS_0` and `WEIGHTS_0` attributes:
 For advanced use cases:
 
 ```ts
-import { parseGlb, readAccessor, readBufferView } from '@atmos/assets';
+import { parseGlb, readAccessor, readBufferView } from '@certe/atmos-assets';
 
 const doc = parseGlb(buffer);              // { json, buffers }
 const positions = readAccessor(doc, 0);     // Float32Array
@@ -116,7 +116,7 @@ packages/assets/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/core` — GameObject, Component, Transform
-- `@atmos/math` — Vec3, Mat4, Quat
-- `@atmos/renderer` — Mesh, Material, MeshRenderer, SkinnedMeshRenderer, textures
-- `@atmos/animation` — Skeleton, AnimationClip, AnimationMixer
+- `@certe/atmos-core` — GameObject, Component, Transform
+- `@certe/atmos-math` — Vec3, Mat4, Quat
+- `@certe/atmos-renderer` — Mesh, Material, MeshRenderer, SkinnedMeshRenderer, textures
+- `@certe/atmos-animation` — Skeleton, AnimationClip, AnimationMixer

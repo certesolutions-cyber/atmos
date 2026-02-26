@@ -1,5 +1,5 @@
-import { Vec3 } from '@atmos/math';
-import type { CameraSettings } from '@atmos/renderer';
+import { Vec3 } from '@certe/atmos-math';
+import type { CameraSettings } from '@certe/atmos-renderer';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_ELEVATION = 89 * DEG_TO_RAD;

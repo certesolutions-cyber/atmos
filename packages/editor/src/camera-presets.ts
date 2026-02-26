@@ -1,5 +1,5 @@
 import type { OrbitCamera } from './orbit-camera.js';
-import type { CameraSettings } from '@atmos/renderer';
+import type { CameraSettings } from '@certe/atmos-renderer';
 
 export interface CameraPreset {
   name: string;

@@ -1,5 +1,5 @@
-import { fbm3D } from "@atmos/math";
-import type { DensityFn } from "@atmos/terrain";
+import { fbm3D } from "@certe/atmos-math";
+import type { DensityFn } from "@certe/atmos-terrain";
 
 const NOISE_SCALE = 0.02;
 const SEA_LEVEL = 0;

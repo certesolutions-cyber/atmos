@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import type { RenderSystem } from '@atmos/renderer';
+import type { RenderSystem } from '@certe/atmos-renderer';
 import type { EditorState } from '../editor-state.js';
 import { DecimalInput } from './fields/decimal-input.js';
 import { ColorField } from './fields/color-field.js';

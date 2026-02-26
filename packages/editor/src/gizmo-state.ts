@@ -1,7 +1,7 @@
-import type { GameObject } from '@atmos/core';
-import { Mat4, Quat, Ray, Vec3 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
-import type { CameraSettings } from '@atmos/renderer';
+import type { GameObject } from '@certe/atmos-core';
+import { Mat4, Quat, Ray, Vec3 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
+import type { CameraSettings } from '@certe/atmos-renderer';
 
 export type GizmoMode = 'translate' | 'rotate' | 'scale';
 export type GizmoAxis = 'x' | 'y' | 'z' | null;

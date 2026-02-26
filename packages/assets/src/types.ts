@@ -1,5 +1,5 @@
-import type { GeometryData } from '@atmos/renderer';
-import type { MaterialParams } from '@atmos/renderer';
+import type { GeometryData } from '@certe/atmos-renderer';
+import type { MaterialParams } from '@certe/atmos-renderer';
 
 /** A single mesh extracted from a model file. */
 export interface ModelMesh {

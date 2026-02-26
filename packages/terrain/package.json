@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/terrain",
+  "name": "@certe/atmos-terrain",
   "description": "Voxel terrain with marching cubes and LOD streaming for the Atmos Engine",
   "version": "0.1.0",
   "repository": {
@@ -19,9 +19,9 @@
   },
   "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
   "dependencies": {
-    "@atmos/core": "^0.1.0",
-    "@atmos/math": "^0.1.0",
-    "@atmos/renderer": "^0.1.0"
+    "@certe/atmos-core": "^0.1.0",
+    "@certe/atmos-math": "^0.1.0",
+    "@certe/atmos-renderer": "^0.1.0"
   },
   "scripts": {
     "test": "vitest run"

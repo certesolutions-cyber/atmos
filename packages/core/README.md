@@ -1,4 +1,4 @@
-# 🧩 @atmos/core
+# 🧩 @certe/atmos-core
 
 The heart of the Atmos Engine — game loop, scene graph, component model, input, and serialization. This package has no rendering or physics code; it defines the contracts that all other packages build on.
 
@@ -16,7 +16,7 @@ onAwake()  →  onStart()  →  onUpdate(dt)  →  onRender()  →  onDestroy()
 ```
 
 ```ts
-import { Component } from '@atmos/core';
+import { Component } from '@certe/atmos-core';
 
 class Rotator extends Component {
   speed = 1;
@@ -49,7 +49,7 @@ Transform uses a **dirty flag system** — local matrix recomputes only when TRS
 ## 🚀 Quick Start
 
 ```ts
-import { Engine, Scene, GameObject, Time, Input } from '@atmos/core';
+import { Engine, Scene, GameObject, Time, Input } from '@certe/atmos-core';
 
 const scene = new Scene();
 const player = new GameObject('Player');
@@ -116,7 +116,7 @@ Time.frameCount  // integer frame counter
 Register components at startup so the editor and serializer know about them:
 
 ```ts
-import { registerComponent } from '@atmos/core';
+import { registerComponent } from '@certe/atmos-core';
 
 registerComponent(Rotator, {
   name: 'Rotator',
@@ -129,7 +129,7 @@ registerComponent(Rotator, {
 ### Scene Serialization
 
 ```ts
-import { serializeScene, deserializeScene } from '@atmos/core';
+import { serializeScene, deserializeScene } from '@certe/atmos-core';
 
 const data = serializeScene(scene);           // → JSON-safe SceneData
 const restored = deserializeScene(data, ctx); // → new Scene
@@ -168,4 +168,4 @@ packages/core/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/math` — Vec3, Mat4, Quat for Transform
+- `@certe/atmos-math` — Vec3, Mat4, Quat for Transform

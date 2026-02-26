@@ -1,4 +1,4 @@
-# 🏔️ @atmos/terrain
+# 🏔️ @certe/atmos-terrain
 
 Voxel-based terrain system for the Atmos Engine. Provides density field primitives, marching cubes surface extraction, multi-level LOD streaming, and optional splat texturing with 3-layer blending.
 
@@ -16,8 +16,8 @@ Voxel-based terrain system for the Atmos Engine. Provides density field primitiv
 ## 🚀 Quick Start
 
 ```ts
-import { TerrainWorld, noiseTerrain, registerTerrainBuiltins } from '@atmos/terrain';
-import { perlinNoise3D } from '@atmos/math';
+import { TerrainWorld, noiseTerrain, registerTerrainBuiltins } from '@certe/atmos-terrain';
+import { perlinNoise3D } from '@certe/atmos-math';
 
 registerTerrainBuiltins();
 
@@ -37,7 +37,7 @@ Build terrain shapes with CSG composition:
 
 ```ts
 import { sphereDensity, planeDensity, boxDensity,
-         unionDensity, subtractDensity, noiseTerrain } from '@atmos/terrain';
+         unionDensity, subtractDensity, noiseTerrain } from '@certe/atmos-terrain';
 
 const ground = planeDensity(0);
 const hill = sphereDensity(10, 0, 10, 8);
@@ -150,6 +150,6 @@ packages/terrain/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/core` — Component, GameObject, Scene
-- `@atmos/math` — Noise functions for terrain generation
-- `@atmos/renderer` — Mesh, Material, terrain pipeline, textures
+- `@certe/atmos-core` — Component, GameObject, Scene
+- `@certe/atmos-math` — Noise functions for terrain generation
+- `@certe/atmos-renderer` — Mesh, Material, terrain pipeline, textures

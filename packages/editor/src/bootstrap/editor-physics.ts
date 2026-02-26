@@ -1,5 +1,5 @@
-import type { Component, GameObject, Scene, PhysicsStepper } from '@atmos/core';
-import { applyComponentData, getAllRegisteredComponents } from '@atmos/core';
+import type { Component, GameObject, Scene, PhysicsStepper } from '@certe/atmos-core';
+import { applyComponentData, getAllRegisteredComponents } from '@certe/atmos-core';
 import {
   initRapier,
   PhysicsWorld,
@@ -12,16 +12,16 @@ import {
   findAncestorComponent,
   hasAncestorComponent,
   hasDescendantComponent,
-} from '@atmos/physics';
-import type { ColliderShape } from '@atmos/physics';
+} from '@certe/atmos-physics';
+import type { ColliderShape } from '@certe/atmos-physics';
 
-/** Minimal mesh interface for collider auto-sizing (structurally matches @atmos/editor MeshLike) */
+/** Minimal mesh interface for collider auto-sizing (structurally matches @certe/atmos-editor MeshLike) */
 interface MeshLike {
   vertices?: Float32Array;
   vertexStride?: number;
 }
 
-/** Matches @atmos/editor PhysicsInitContext structurally */
+/** Matches @certe/atmos-editor PhysicsInitContext structurally */
 interface InitContext {
   meshes: Record<string, unknown>;
   getMesh(go: GameObject): MeshLike | null;

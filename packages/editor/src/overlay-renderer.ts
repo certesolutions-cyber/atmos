@@ -1,6 +1,6 @@
-import { GridRenderer, Camera } from '@atmos/renderer';
-import type { RenderSystem, MeshRenderer } from '@atmos/renderer';
-import { Vec3 } from '@atmos/math';
+import { GridRenderer, Camera } from '@certe/atmos-renderer';
+import type { RenderSystem, MeshRenderer } from '@certe/atmos-renderer';
+import { Vec3 } from '@certe/atmos-math';
 import { GizmoRenderer } from './gizmo-renderer.js';
 import { CameraFrustumRenderer } from './camera-frustum-renderer.js';
 import { JointGizmoRenderer } from './joint-gizmo-renderer.js';

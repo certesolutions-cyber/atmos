@@ -1,4 +1,4 @@
-import { registerComponent } from '@atmos/core';
+import { registerComponent } from '@certe/atmos-core';
 import { AnimationHandler } from './animation-handler.js';
 
 /** Register animation components (AnimationHandler). */

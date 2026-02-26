@@ -1,5 +1,5 @@
-import { startPlayer } from '@atmos/editor';
-import { createEditorPhysics } from '@atmos/editor';
+import { startPlayer } from '@certe/atmos-editor';
+import { createEditorPhysics } from '@certe/atmos-editor';
 
 const scriptModules = import.meta.glob('./scripts/*.ts', { eager: true });
 

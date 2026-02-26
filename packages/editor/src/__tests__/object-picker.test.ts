@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ObjectPicker } from '../object-picker.js';
-import { Scene, GameObject } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Scene, GameObject } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 
 // Minimal mock for MeshRenderer since it needs GPU resources
 class MockMeshRenderer {

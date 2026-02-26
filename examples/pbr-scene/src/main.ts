@@ -1,5 +1,5 @@
-import { Engine, Scene, GameObject } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Engine, Scene, GameObject } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 import {
   initWebGPU,
   createRenderPipeline,
@@ -13,8 +13,8 @@ import {
   MeshRenderer,
   RenderSystem,
   createDefaultCamera,
-} from '@atmos/renderer';
-import type { Mesh, Material } from '@atmos/renderer';
+} from '@certe/atmos-renderer';
+import type { Mesh, Material } from '@certe/atmos-renderer';
 import { RandomRotator } from './random-rotator.js';
 
 async function main() {

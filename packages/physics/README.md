@@ -1,4 +1,4 @@
-# ⚡ @atmos/physics
+# ⚡ @certe/atmos-physics
 
 Physics integration for the Atmos Engine, wrapping [Rapier](https://rapier.rs/) (WASM). Provides rigid bodies, collider shapes, joints, and stateless physics queries — all as components that sync automatically with the engine's Transform system.
 
@@ -8,7 +8,7 @@ Physics integration for the Atmos Engine, wrapping [Rapier](https://rapier.rs/) 
 
 ```ts
 import { initRapier, PhysicsWorld, PhysicsSystem,
-         RigidBody, Collider } from '@atmos/physics';
+         RigidBody, Collider } from '@certe/atmos-physics';
 
 await initRapier();
 const world = new PhysicsWorld({ gravity: { x: 0, y: -9.81, z: 0 } });
@@ -104,7 +104,7 @@ hinge.init(world, {
 Stateless raycasting and shape-casting via the `Physics` class:
 
 ```ts
-import { Physics } from '@atmos/physics';
+import { Physics } from '@certe/atmos-physics';
 
 const hit = Physics.raycast(world, origin, direction, 100);
 if (hit) {
@@ -147,6 +147,6 @@ packages/physics/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/core` — Component, GameObject, Transform, Scene
-- `@atmos/math` — Vec3, Quat for transform sync
+- `@certe/atmos-core` — Component, GameObject, Transform, Scene
+- `@certe/atmos-math` — Vec3, Quat for transform sync
 - `@dimforge/rapier3d-compat` — WASM physics engine

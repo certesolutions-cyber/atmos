@@ -60,14 +60,14 @@ Each package:
 
 | Package                                 | Description                                                         | README                                 |
 | --------------------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
-| [@atmos/math](packages/math/)           | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc             | [README](packages/math/README.md)      |
-| [@atmos/core](packages/core/)           | Component lifecycle, GameObject, Scene, Engine, Input, Time         | [README](packages/core/README.md)      |
-| [@atmos/renderer](packages/renderer/)   | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning   | [README](packages/renderer/README.md)  |
-| [@atmos/physics](packages/physics/)     | Rapier WASM wrapper, RigidBody, Collider, joints, queries           | [README](packages/physics/README.md)   |
-| [@atmos/animation](packages/animation/) | Skeleton, AnimationClip, AnimationMixer, keyframe blending          | [README](packages/animation/README.md) |
-| [@atmos/assets](packages/assets/)       | glTF 2.0 / GLB parser, mesh/material/skin/animation extraction      | [README](packages/assets/README.md)    |
-| [@atmos/editor](packages/editor/)       | React editor: hierarchy, inspector, gizmos, picking, project I/O    | [README](packages/editor/README.md)    |
-| [@atmos/terrain](packages/terrain/)     | Voxel density fields, marching cubes, LOD streaming, splat textures | [README](packages/terrain/README.md)   |
+| [@certe/atmos-math](packages/math/)           | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc             | [README](packages/math/README.md)      |
+| [@certe/atmos-core](packages/core/)           | Component lifecycle, GameObject, Scene, Engine, Input, Time         | [README](packages/core/README.md)      |
+| [@certe/atmos-renderer](packages/renderer/)   | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning   | [README](packages/renderer/README.md)  |
+| [@certe/atmos-physics](packages/physics/)     | Rapier WASM wrapper, RigidBody, Collider, joints, queries           | [README](packages/physics/README.md)   |
+| [@certe/atmos-animation](packages/animation/) | Skeleton, AnimationClip, AnimationMixer, keyframe blending          | [README](packages/animation/README.md) |
+| [@certe/atmos-assets](packages/assets/)       | glTF 2.0 / GLB parser, mesh/material/skin/animation extraction      | [README](packages/assets/README.md)    |
+| [@certe/atmos-editor](packages/editor/)       | React editor: hierarchy, inspector, gizmos, picking, project I/O    | [README](packages/editor/README.md)    |
+| [@certe/atmos-terrain](packages/terrain/)     | Voxel density fields, marching cubes, LOD streaming, splat textures | [README](packages/terrain/README.md)   |
 
 ---
 

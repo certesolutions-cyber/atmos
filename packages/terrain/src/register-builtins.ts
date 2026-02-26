@@ -1,4 +1,4 @@
-import { registerComponent } from '@atmos/core';
+import { registerComponent } from '@certe/atmos-core';
 import { TerrainVolume } from './terrain-volume.js';
 import { TerrainWorld } from './terrain-world.js';
 

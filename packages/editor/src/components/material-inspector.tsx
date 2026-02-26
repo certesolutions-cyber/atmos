@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { ShaderType, MaterialAssetData } from '@atmos/renderer';
+import type { ShaderType, MaterialAssetData } from '@certe/atmos-renderer';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorState } from '../editor-state.js';
 import { DecimalInput } from './fields/decimal-input.js';

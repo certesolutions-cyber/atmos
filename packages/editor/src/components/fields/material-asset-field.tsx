@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { ShaderType } from '@atmos/renderer';
+import type { ShaderType } from '@certe/atmos-renderer';
 import type { MaterialManager } from '../../material-manager.js';
 
 interface MaterialAssetFieldProps {

@@ -1,4 +1,4 @@
-# 🎬 @atmos/animation
+# 🎬 @certe/atmos-animation
 
 Skeletal animation system for the Atmos Engine. Provides skeleton data structures, keyframe sampling, pose blending, and an `AnimationMixer` component for clip playback and cross-fading.
 
@@ -15,7 +15,7 @@ Skeletal animation system for the Atmos Engine. Provides skeleton data structure
 ## 🚀 Quick Start
 
 ```ts
-import { AnimationMixer, createSkeleton, createAnimationClip } from '@atmos/animation';
+import { AnimationMixer, createSkeleton, createAnimationClip } from '@certe/atmos-animation';
 
 // Typically created automatically by instantiateModel() for glTF skinned meshes
 const mixer = gameObject.addComponent(AnimationMixer);
@@ -38,7 +38,7 @@ mixer.crossFade(walkLayer, runLayer, 0.3);
 ### Skeleton
 
 ```ts
-import { createSkeleton, getInverseBindMatrix } from '@atmos/animation';
+import { createSkeleton, getInverseBindMatrix } from '@certe/atmos-animation';
 
 const skeleton = createSkeleton(
   joints,               // Array<{ name, parentIndex }>
@@ -54,7 +54,7 @@ getInverseBindMatrix(ibm, skeleton, jointIndex);
 ### AnimationClip & Tracks
 
 ```ts
-import { createAnimationClip } from '@atmos/animation';
+import { createAnimationClip } from '@certe/atmos-animation';
 
 const clip = createAnimationClip('walk', [
   {
@@ -71,7 +71,7 @@ const clip = createAnimationClip('walk', [
 ### Keyframe Sampling
 
 ```ts
-import { sampleTrack } from '@atmos/animation';
+import { sampleTrack } from '@certe/atmos-animation';
 
 const out = new Float32Array(4); // 4 for rotation, 3 for translation/scale
 sampleTrack(out, track, time);
@@ -127,5 +127,5 @@ packages/animation/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/core` — Component lifecycle
-- `@atmos/math` — Vec3, Mat4, Quat for pose computation and interpolation
+- `@certe/atmos-core` — Component lifecycle
+- `@certe/atmos-math` — Vec3, Mat4, Quat for pose computation and interpolation

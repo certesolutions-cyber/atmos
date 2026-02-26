@@ -1,12 +1,12 @@
 {
-  "name": "@atmos/example-pbr-scene",
+  "name": "@certe/atmos-example-pbr-scene",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*",
-    "@atmos/renderer": "*"
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0"

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { CAMERA_PRESETS, applyCameraPreset } from '../camera-presets.js';
 import { OrbitCamera } from '../orbit-camera.js';
-import { Vec3 } from '@atmos/math';
+import { Vec3 } from '@certe/atmos-math';
 
 function createTestCamera() {
   return {

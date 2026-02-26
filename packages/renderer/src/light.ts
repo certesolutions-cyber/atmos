@@ -1,4 +1,4 @@
-import type { Scene } from '@atmos/core';
+import type { Scene } from '@certe/atmos-core';
 import { DirectionalLight } from './directional-light.js';
 import { PointLight } from './point-light.js';
 import { SpotLight } from './spot-light.js';

@@ -1,6 +1,6 @@
-import { Component, Input } from "@atmos/core";
-import type { GameObject, PropertyDef } from "@atmos/core";
-import { HingeJoint, RigidBody } from "@atmos/physics";
+import { Component, Input } from "@certe/atmos-core";
+import type { GameObject, PropertyDef } from "@certe/atmos-core";
+import { HingeJoint, RigidBody } from "@certe/atmos-physics";
 
 /**
  * Rear-wheel-drive with open differential.

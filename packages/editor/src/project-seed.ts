@@ -1,5 +1,5 @@
-import type { MaterialAssetData } from '@atmos/renderer';
-import { serializeMaterialAsset } from '@atmos/renderer';
+import type { MaterialAssetData } from '@certe/atmos-renderer';
+import { serializeMaterialAsset } from '@certe/atmos-renderer';
 import type { ProjectFileSystem } from './project-fs.js';
 import { DEFAULT_PROJECT_SETTINGS } from './project-settings.js';
 

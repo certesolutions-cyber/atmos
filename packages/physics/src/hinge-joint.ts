@@ -1,6 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Vec3 } from '@atmos/math';
-import type { Vec3Type } from '@atmos/math';
+import { Vec3 } from '@certe/atmos-math';
+import type { Vec3Type } from '@certe/atmos-math';
 import { Joint } from './joint.js';
 import type { JointOptions } from './joint.js';
 import type { PhysicsWorld } from './physics-world.js';

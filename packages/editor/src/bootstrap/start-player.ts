@@ -1,5 +1,5 @@
-import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@atmos/core';
-import type { PhysicsStepper } from '@atmos/core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@certe/atmos-core';
+import type { PhysicsStepper } from '@certe/atmos-core';
 import {
   initWebGPU,
   createRenderPipeline,
@@ -12,11 +12,11 @@ import {
   resizeGPU,
   createMesh,
   SKINNED_VERTEX_STRIDE_FLOATS,
-} from '@atmos/renderer';
-import type { ModelAsset } from '@atmos/assets';
-import { Vec3 } from '@atmos/math';
-import { parseGltfModel } from '@atmos/assets';
-import { registerAnimationBuiltins } from '@atmos/animation';
+} from '@certe/atmos-renderer';
+import type { ModelAsset } from '@certe/atmos-assets';
+import { Vec3 } from '@certe/atmos-math';
+import { parseGltfModel } from '@certe/atmos-assets';
+import { registerAnimationBuiltins } from '@certe/atmos-animation';
 import { createGeometryCache } from './geometry-cache.js';
 import { createDefaultDeserializeContext } from './default-factories.js';
 import type { FactoryDeps } from './default-factories.js';
@@ -122,7 +122,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   };
 
   const loadModelMesh = async (source: string): Promise<{
-    mesh: import('@atmos/renderer').Mesh; skinned: boolean; skinIndex?: number;
+    mesh: import('@certe/atmos-renderer').Mesh; skinned: boolean; skinIndex?: number;
   } | null> => {
     const parsed = parseModelSource(source);
     if (!parsed) return null;
@@ -137,7 +137,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   };
 
   const loadModelData = async (source: string): Promise<{
-    mesh: import('@atmos/renderer').Mesh; asset: ModelAsset; meshIndex: number;
+    mesh: import('@certe/atmos-renderer').Mesh; asset: ModelAsset; meshIndex: number;
   } | null> => {
     const parsed = parseModelSource(source);
     if (!parsed) return null;

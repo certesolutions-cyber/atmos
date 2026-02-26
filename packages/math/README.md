@@ -1,4 +1,4 @@
-# 🧮 @atmos/math
+# 🧮 @certe/atmos-math
 
 Lightweight, zero-dependency math library for the Atmos Engine. Every type is a plain `Float32Array` — GPU-upload friendly, zero heap allocations on hot paths, and fully tree-shakeable.
 
@@ -21,7 +21,7 @@ Lightweight, zero-dependency math library for the Atmos Engine. Every type is a 
 All operations follow the same convention — the **first parameter is the output** and the function returns it for chaining:
 
 ```ts
-import { Vec3, Mat4, Quat } from '@atmos/math';
+import { Vec3, Mat4, Quat } from '@certe/atmos-math';
 
 const a = Vec3.fromValues(1, 2, 3);
 const b = Vec3.fromValues(4, 5, 6);
@@ -38,7 +38,7 @@ This avoids garbage collection pressure in per-frame code.
 ## 🚀 Quick Start
 
 ```ts
-import { Vec3, Mat4, Quat } from '@atmos/math';
+import { Vec3, Mat4, Quat } from '@certe/atmos-math';
 
 // Build a TRS matrix from quaternion rotation + position + scale
 const pos = Vec3.fromValues(0, 5, -10);

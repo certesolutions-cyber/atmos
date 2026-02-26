@@ -1,6 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Component } from '@atmos/core';
-import type { GameObject } from '@atmos/core';
+import { Component } from '@certe/atmos-core';
+import type { GameObject } from '@certe/atmos-core';
 import type { PhysicsWorld } from './physics-world.js';
 import { RigidBody } from './rigid-body.js';
 import { findAncestorComponent } from './physics-hierarchy.js';

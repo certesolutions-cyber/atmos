@@ -1,7 +1,7 @@
-import { Mat4, Vec3 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
-import { createUnlitPipeline } from '@atmos/renderer';
-import type { UnlitPipelineResources } from '@atmos/renderer';
+import { Mat4, Vec3 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
+import { createUnlitPipeline } from '@certe/atmos-renderer';
+import type { UnlitPipelineResources } from '@certe/atmos-renderer';
 import type { GizmoMode, GizmoAxis } from './gizmo-state.js';
 import {
   createTranslateGizmo,

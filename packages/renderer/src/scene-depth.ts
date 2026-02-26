@@ -5,7 +5,7 @@
  * Separate from the SSAO DepthPrepass which only covers a subset of geometry.
  */
 
-import type { Mat4Type } from '@atmos/math';
+import type { Mat4Type } from '@certe/atmos-math';
 import { SHADOW_VERTEX_SHADER } from './shadow-shader.js';
 import { SKINNED_SHADOW_VERTEX_SHADER } from './skinned-shadow-shader.js';
 import { VERTEX_STRIDE_BYTES } from './geometry.js';

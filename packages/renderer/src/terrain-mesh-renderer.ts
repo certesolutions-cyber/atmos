@@ -5,9 +5,9 @@
  * instead of the standard PBR albedo/normal/MR textures.
  */
 
-import { Component } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { Mesh } from './mesh.js';
 import type { TerrainPipelineResources } from './terrain-pipeline.js';
 import type { Material } from './material.js';

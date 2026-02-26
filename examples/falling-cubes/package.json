@@ -1,13 +1,13 @@
 {
-  "name": "@atmos/example-falling-cubes",
+  "name": "@certe/atmos-example-falling-cubes",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*",
-    "@atmos/renderer": "*",
-    "@atmos/physics": "*"
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-physics": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0"

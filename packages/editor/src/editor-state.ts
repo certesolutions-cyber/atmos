@@ -1,4 +1,4 @@
-import type { Scene, GameObject } from '@atmos/core';
+import type { Scene, GameObject } from '@certe/atmos-core';
 import type { GizmoMode } from './gizmo-state.js';
 import { takeSnapshot, restoreSnapshot } from './scene-snapshot.js';
 import type { SceneSnapshot } from './scene-snapshot.js';

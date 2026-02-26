@@ -5,8 +5,8 @@
  *   Skinned: position(3) + normal(3) + uv(2) + joints_u8x4(1) + weights(4) = 13 floats = 52 bytes
  */
 
-import { VERTEX_STRIDE_FLOATS, SKINNED_VERTEX_STRIDE_FLOATS } from '@atmos/renderer';
-import { computeBoundingSphere } from '@atmos/renderer';
+import { VERTEX_STRIDE_FLOATS, SKINNED_VERTEX_STRIDE_FLOATS } from '@certe/atmos-renderer';
+import { computeBoundingSphere } from '@certe/atmos-renderer';
 import type { GltfDocument, GltfPrimitive } from './gltf-parser.js';
 import { readAccessor } from './gltf-parser.js';
 import type { ModelMesh } from './types.js';

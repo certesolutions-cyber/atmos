@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GameObject } from '@atmos/core';
+import type { GameObject } from '@certe/atmos-core';
 
 interface HierarchyNodeProps {
   gameObject: GameObject;

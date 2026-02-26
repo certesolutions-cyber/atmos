@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Component, GameObject, resetGameObjectIds } from '@atmos/core';
-import type { PropertyDef } from '@atmos/core';
+import { Component, GameObject, resetGameObjectIds } from '@certe/atmos-core';
+import type { PropertyDef } from '@certe/atmos-core';
 import { getProperty, setProperty } from '../property-setters.js';
 
 class MockRenderer extends Component {

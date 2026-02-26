@@ -3,7 +3,7 @@
  * Provides a single control point for animation playback across all skinned meshes.
  */
 
-import { Component, GameObject } from '@atmos/core';
+import { Component, GameObject } from '@certe/atmos-core';
 import { AnimationMixer } from './animation-mixer.js';
 
 export class AnimationHandler extends Component {

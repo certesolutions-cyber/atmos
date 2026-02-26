@@ -4,7 +4,7 @@
  * Supports skeletal animation via SkinnedMeshRenderer + AnimationMixer.
  */
 
-import { GameObject } from '@atmos/core';
+import { GameObject } from '@certe/atmos-core';
 import {
   createMesh,
   createMaterial,
@@ -13,15 +13,15 @@ import {
   MeshRenderer,
   SkinnedMeshRenderer,
   SKINNED_VERTEX_STRIDE_FLOATS,
-} from '@atmos/renderer';
-import type { Mesh, Material, GPUTextureHandle, MeshRendererContext, SkinnedRendererContext } from '@atmos/renderer';
+} from '@certe/atmos-renderer';
+import type { Mesh, Material, GPUTextureHandle, MeshRendererContext, SkinnedRendererContext } from '@certe/atmos-renderer';
 import {
   AnimationMixer,
   AnimationHandler,
   createSkeleton,
   createAnimationClip,
-} from '@atmos/animation';
-import type { Joint, KeyframeTrack, AnimationChannel } from '@atmos/animation';
+} from '@certe/atmos-animation';
+import type { Joint, KeyframeTrack, AnimationChannel } from '@certe/atmos-animation';
 import type { ModelAsset, ModelNode } from './types.js';
 
 /** Minimal interface so callers can pass a RenderSystem without importing it. */

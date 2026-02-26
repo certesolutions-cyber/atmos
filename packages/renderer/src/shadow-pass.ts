@@ -1,5 +1,5 @@
-import type { Scene } from '@atmos/core';
-import type { Mat4Type } from '@atmos/math';
+import type { Scene } from '@certe/atmos-core';
+import type { Mat4Type } from '@certe/atmos-math';
 import { SHADOW_VERTEX_SHADER } from './shadow-shader.js';
 import { VERTEX_STRIDE_BYTES } from './geometry.js';
 import { MeshRenderer } from './mesh-renderer.js';

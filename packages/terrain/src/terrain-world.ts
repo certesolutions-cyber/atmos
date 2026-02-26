@@ -1,14 +1,14 @@
-import { Component, GameObject, Scene } from "@atmos/core";
+import { Component, GameObject, Scene } from "@certe/atmos-core";
 import {
   MeshRenderer,
   TerrainMeshRenderer,
   createMaterial,
-} from "@atmos/renderer";
+} from "@certe/atmos-renderer";
 import type {
   Material,
   MeshRendererContext,
-} from "@atmos/renderer";
-import type { TerrainPipelineResources } from "@atmos/renderer";
+} from "@certe/atmos-renderer";
+import type { TerrainPipelineResources } from "@certe/atmos-renderer";
 import { TerrainChunk } from "./chunk.js";
 import { buildLODMesh, buildLODSplatMesh } from "./lod-chunk.js";
 import { chunkKey, fromChunkKey, worldToChunk } from "./chunk-key.js";
@@ -81,7 +81,7 @@ export class TerrainWorld extends Component {
 
   init(
     device: GPUDevice,
-    pipelineResources: import('@atmos/renderer').PipelineResources,
+    pipelineResources: import('@certe/atmos-renderer').PipelineResources,
     scene: Scene,
     material?: Material,
   ): void {
@@ -358,7 +358,7 @@ export class TerrainWorld extends Component {
     chunk: TerrainChunk,
     lodLevel: number,
     skirtFaces: number,
-  ): import("@atmos/renderer").Mesh | null {
+  ): import("@certe/atmos-renderer").Mesh | null {
     if (!this._rendererCtx) return null;
     if (this.isSplatting) {
       return buildLODSplatMesh(
@@ -410,7 +410,7 @@ export class TerrainWorld extends Component {
     cx: number,
     cy: number,
     cz: number,
-    mesh: import("@atmos/renderer").Mesh,
+    mesh: import("@certe/atmos-renderer").Mesh,
   ): GameObject {
     const chunkWorldSize = this.config.chunkSize * this.config.voxelSize;
     const go = new GameObject(`Chunk_${cx}_${cy}_${cz}`);

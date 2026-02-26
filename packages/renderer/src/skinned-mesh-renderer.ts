@@ -3,9 +3,9 @@
  * Same pattern as MeshRenderer but adds a bone storage buffer (group 3).
  */
 
-import { Component } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { Mesh } from './mesh.js';
 import type { SkinnedPipelineResources } from './skinned-pipeline.js';
 import type { Material } from './material.js';

@@ -1,6 +1,6 @@
-import type { Scene, PhysicsStepper } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
-import type { Vec3Type } from '@atmos/math';
+import type { Scene, PhysicsStepper } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
+import type { Vec3Type } from '@certe/atmos-math';
 import type { PhysicsWorld } from './physics-world.js';
 import { RigidBody } from './rigid-body.js';
 import { Collider } from './collider.js';

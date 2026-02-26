@@ -1,20 +1,20 @@
-import { GameObject, getAllRegisteredComponents, applyComponentData } from '@atmos/core';
-import type { Component, DeserializeContext } from '@atmos/core';
-import type { MeshRendererContext, SkinnedRendererContext } from '@atmos/renderer';
+import { GameObject, getAllRegisteredComponents, applyComponentData } from '@certe/atmos-core';
+import type { Component, DeserializeContext } from '@certe/atmos-core';
+import type { MeshRendererContext, SkinnedRendererContext } from '@certe/atmos-renderer';
 import {
   MeshRenderer, SkinnedMeshRenderer, Camera,
   DirectionalLight, PointLight, SpotLight, createMaterial,
-} from '@atmos/renderer';
+} from '@certe/atmos-renderer';
 import {
   AnimationMixer, AnimationHandler, createSkeleton, createAnimationClip,
-} from '@atmos/animation';
-import type { Joint, KeyframeTrack, AnimationChannel } from '@atmos/animation';
-import type { ModelAsset } from '@atmos/assets';
+} from '@certe/atmos-animation';
+import type { Joint, KeyframeTrack, AnimationChannel } from '@certe/atmos-animation';
+import type { ModelAsset } from '@certe/atmos-assets';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorPhysicsPlugin } from './types.js';
-import type { Mesh } from '@atmos/renderer';
+import type { Mesh } from '@certe/atmos-renderer';
 import type { MeshRecord } from './geometry-cache.js';
 
 const DEFAULT_MAT = { albedo: [0.7, 0.7, 0.7, 1] as [number, number, number, number], metallic: 0.0, roughness: 0.5 };
@@ -265,7 +265,7 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
 
 // ---- Skinning helpers ---- //
 
-import type { ModelSkin } from '@atmos/assets';
+import type { ModelSkin } from '@certe/atmos-assets';
 
 function findRoot(go: GameObject): GameObject {
   let current = go;

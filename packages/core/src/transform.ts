@@ -1,5 +1,5 @@
-import { Vec3, Mat4, Quat } from '@atmos/math';
-import type { Vec3Type, Mat4Type, QuatType } from '@atmos/math';
+import { Vec3, Mat4, Quat } from '@certe/atmos-math';
+import type { Vec3Type, Mat4Type, QuatType } from '@certe/atmos-math';
 
 export class Transform {
   readonly position: Vec3Type = Vec3.fromValues(0, 0, 0);

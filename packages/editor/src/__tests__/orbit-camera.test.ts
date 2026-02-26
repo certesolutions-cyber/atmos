@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Vec3 } from '@atmos/math';
-import type { CameraSettings } from '@atmos/renderer';
+import { Vec3 } from '@certe/atmos-math';
+import type { CameraSettings } from '@certe/atmos-renderer';
 import { OrbitCamera } from '../orbit-camera.js';
 
 function makeCamera(

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { extractFrustumPlanes, isSphereInFrustum } from '../frustum.js';
-import * as Mat4 from '@atmos/math/src/mat4.js';
-import * as Vec3 from '@atmos/math/src/vec3.js';
+import * as Mat4 from '@certe/atmos-math/src/mat4.js';
+import * as Vec3 from '@certe/atmos-math/src/vec3.js';
 
 function makeVP(): Float32Array {
   const view = Mat4.create();

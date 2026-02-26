@@ -1,6 +1,6 @@
-import { Component, GameObject, Scene } from '@atmos/core';
-import { MeshRenderer, createMaterial } from '@atmos/renderer';
-import type { Material, MeshRendererContext } from '@atmos/renderer';
+import { Component, GameObject, Scene } from '@certe/atmos-core';
+import { MeshRenderer, createMaterial } from '@certe/atmos-renderer';
+import type { Material, MeshRendererContext } from '@certe/atmos-renderer';
 import { TerrainChunk } from './chunk.js';
 import { chunkKey } from './chunk-key.js';
 import { applyEdit } from './terrain-editor.js';
@@ -36,7 +36,7 @@ export class TerrainVolume extends Component {
 
   init(
     device: GPUDevice,
-    pipelineResources: import('@atmos/renderer').PipelineResources,
+    pipelineResources: import('@certe/atmos-renderer').PipelineResources,
     scene: Scene,
     material?: Material,
   ): void {
@@ -136,7 +136,7 @@ export class TerrainVolume extends Component {
   }
 
   private _createChunkObject(
-    cx: number, cy: number, cz: number, mesh: import('@atmos/renderer').Mesh,
+    cx: number, cy: number, cz: number, mesh: import('@certe/atmos-renderer').Mesh,
   ): GameObject {
     const chunkWorldSize = this.config.chunkSize * this.config.voxelSize;
     const go = new GameObject(`Chunk_${cx}_${cy}_${cz}`);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { EditorState } from '../editor-state.js';
 import type { AssetEntry, ScriptAsset } from '../asset-types.js';
-import type { GameObject } from '@atmos/core';
+import type { GameObject } from '@certe/atmos-core';
 
 interface AssetBrowserPanelProps {
   editorState: EditorState;

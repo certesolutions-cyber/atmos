@@ -1,4 +1,4 @@
-# @atmos/editor
+# @certe/atmos-editor
 
 Unity-style editor for the Atmos Engine, built with React. Provides scene hierarchy, inspector, gizmos, object picking, orbit camera, project file I/O, and material asset management — all running in the browser.
 
@@ -16,7 +16,7 @@ npm init -y
 ### 2. Install dependencies
 
 ```bash
-npm install @atmos/editor @atmos/core @atmos/math @atmos/renderer @atmos/physics
+npm install @certe/atmos-editor @certe/atmos-core @certe/atmos-math @certe/atmos-renderer @certe/atmos-physics
 npm install -D vite @vitejs/plugin-react
 ```
 
@@ -27,7 +27,7 @@ Create `vite.config.ts`:
 ```ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { atmosPlugin } from '@atmos/editor/vite';
+import { atmosPlugin } from '@certe/atmos-editor/vite';
 
 export default defineConfig({
   plugins: [react(), atmosPlugin()],
@@ -39,7 +39,7 @@ export default defineConfig({
 Create `src/main.ts`:
 
 ```ts
-import { startEditor, createEditorPhysics } from '@atmos/editor';
+import { startEditor, createEditorPhysics } from '@certe/atmos-editor';
 
 await startEditor({
   physics: await createEditorPhysics(),
@@ -198,9 +198,9 @@ atmosPlugin({
 
 ## Dependencies
 
-- `@atmos/core` — Component, GameObject, Scene, serialization
-- `@atmos/renderer` — RenderSystem, Camera, Material, lights, pipelines
-- `@atmos/math` — Vec3, Mat4, Quat, Ray
-- `@atmos/assets` — glTF model loading
-- `@atmos/animation` — AnimationMixer registration
+- `@certe/atmos-core` — Component, GameObject, Scene, serialization
+- `@certe/atmos-renderer` — RenderSystem, Camera, Material, lights, pipelines
+- `@certe/atmos-math` — Vec3, Mat4, Quat, Ray
+- `@certe/atmos-assets` — glTF model loading
+- `@certe/atmos-animation` — AnimationMixer registration
 - `react` / `react-dom` — Editor UI (not included in game builds)

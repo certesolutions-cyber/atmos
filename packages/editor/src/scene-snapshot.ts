@@ -1,5 +1,5 @@
-import type { Scene, GameObject, PropertyDef } from '@atmos/core';
-import { getComponentDef } from '@atmos/core';
+import type { Scene, GameObject, PropertyDef } from '@certe/atmos-core';
+import { getComponentDef } from '@certe/atmos-core';
 import { getProperty, setProperty } from './property-setters.js';
 
 interface TransformSnapshot {

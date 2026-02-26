@@ -1,5 +1,5 @@
-import type { GameObject } from '@atmos/core';
-import { Mat4, Quat } from '@atmos/math';
+import type { GameObject } from '@certe/atmos-core';
+import { Mat4, Quat } from '@certe/atmos-math';
 
 export interface ColliderOffset {
   tx: number; ty: number; tz: number;

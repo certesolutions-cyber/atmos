@@ -33,7 +33,7 @@ Open `http://localhost:5173` in Chrome (requires File System Access API for proj
 ## 💡 Key Code
 
 ```ts
-import { startEditor } from '@atmos/editor';
+import { startEditor } from '@certe/atmos-editor';
 
 // That's it — the editor handles everything
 const app = await startEditor({

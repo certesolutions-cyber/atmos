@@ -1,4 +1,4 @@
-import type { GameObject, Component } from '@atmos/core';
+import type { GameObject, Component } from '@certe/atmos-core';
 
 /** Walk up the parent chain (including self) to find the first component of type Ctor. */
 export function findAncestorComponent<T extends Component>(

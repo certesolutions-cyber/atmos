@@ -1,5 +1,5 @@
 import React from 'react';
-import type { NumberPropertyDef } from '@atmos/core';
+import type { NumberPropertyDef } from '@certe/atmos-core';
 import { DecimalInput } from './decimal-input.js';
 
 interface NumberFieldProps {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Scene, GameObject } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Scene, GameObject } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 import { PhysicsWorld } from '../physics-world.js';
 import { RigidBody } from '../rigid-body.js';
 import { Collider } from '../collider.js';

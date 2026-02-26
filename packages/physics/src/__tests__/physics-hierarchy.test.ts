@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameObject, resetGameObjectIds, Component } from '@atmos/core';
+import { GameObject, resetGameObjectIds, Component } from '@certe/atmos-core';
 import {
   findAncestorComponent,
   hasAncestorComponent,

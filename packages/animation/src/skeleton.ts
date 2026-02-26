@@ -1,4 +1,4 @@
-import type { Mat4Type } from '@atmos/math';
+import type { Mat4Type } from '@certe/atmos-math';
 
 /** A single joint in a skeleton. */
 export interface Joint {

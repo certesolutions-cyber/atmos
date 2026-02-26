@@ -1,7 +1,7 @@
-import type { Material } from '@atmos/renderer';
-import { createMaterial, decodeImageToRGBA, createTextureFromRGBA } from '@atmos/renderer';
-import type { GPUTextureHandle } from '@atmos/renderer';
-import { deserializeMaterialAsset } from '@atmos/renderer';
+import type { Material } from '@certe/atmos-renderer';
+import { createMaterial, decodeImageToRGBA, createTextureFromRGBA } from '@certe/atmos-renderer';
+import type { GPUTextureHandle } from '@certe/atmos-renderer';
+import { deserializeMaterialAsset } from '@certe/atmos-renderer';
 
 /**
  * Lightweight material loader for the standalone player runtime.

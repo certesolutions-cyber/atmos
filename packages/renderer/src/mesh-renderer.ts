@@ -1,6 +1,6 @@
-import { Component } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { Mesh } from './mesh.js';
 import type { PipelineResources } from './pipeline.js';
 import type { Material } from './material.js';

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Scene, GameObject, resetGameObjectIds } from '@atmos/core';
+import { Scene, GameObject, resetGameObjectIds } from '@certe/atmos-core';
 import { EditorState } from '../editor-state.js';
 
 let scene: Scene;

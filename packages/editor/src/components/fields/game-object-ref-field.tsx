@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import type { GameObject, Scene } from '@atmos/core';
+import type { GameObject, Scene } from '@certe/atmos-core';
 
 interface GameObjectRefFieldProps {
   label: string;

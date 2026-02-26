@@ -1,7 +1,7 @@
-import { Component } from "@atmos/core";
-import type { GameObject, PropertyDef } from "@atmos/core";
-import { Vec3, Quat } from "@atmos/math";
-import type { Vec3Type, QuatType } from "@atmos/math";
+import { Component } from "@certe/atmos-core";
+import type { GameObject, PropertyDef } from "@certe/atmos-core";
+import { Vec3, Quat } from "@certe/atmos-math";
+import type { Vec3Type, QuatType } from "@certe/atmos-math";
 
 // Scratch arrays — zero alloc in hot path
 const _targetPos: Vec3Type = Vec3.create();

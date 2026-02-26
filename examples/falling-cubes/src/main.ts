@@ -1,5 +1,5 @@
-import { Engine, Scene, GameObject } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Engine, Scene, GameObject } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 import {
   initWebGPU,
   createRenderPipeline,
@@ -11,14 +11,14 @@ import {
   MeshRenderer,
   RenderSystem,
   createDefaultCamera,
-} from '@atmos/renderer';
+} from '@certe/atmos-renderer';
 import {
   initRapier,
   PhysicsWorld,
   PhysicsSystem,
   RigidBody,
   Collider,
-} from '@atmos/physics';
+} from '@certe/atmos-physics';
 
 const CUBE_COLORS: [number, number, number, number][] = [
   [1.0, 0.2, 0.2, 1],

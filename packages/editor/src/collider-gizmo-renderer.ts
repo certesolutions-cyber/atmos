@@ -1,5 +1,5 @@
-import { createUnlitPipeline } from '@atmos/renderer';
-import type { UnlitPipelineResources } from '@atmos/renderer';
+import { createUnlitPipeline } from '@certe/atmos-renderer';
+import type { UnlitPipelineResources } from '@certe/atmos-renderer';
 import type { ColliderGizmoData } from './bootstrap/types.js';
 
 /** Bright green wireframe color. */

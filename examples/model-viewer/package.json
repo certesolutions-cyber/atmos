@@ -1,13 +1,13 @@
 {
-  "name": "@atmos/example-model-viewer",
+  "name": "@certe/atmos-example-model-viewer",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*",
-    "@atmos/renderer": "*",
-    "@atmos/assets": "*"
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-assets": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0"

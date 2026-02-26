@@ -1,6 +1,6 @@
-import { createWireframePipeline } from '@atmos/renderer';
-import type { WireframePipelineResources } from '@atmos/renderer';
-import type { MeshRenderer, Mesh } from '@atmos/renderer';
+import { createWireframePipeline } from '@certe/atmos-renderer';
+import type { WireframePipelineResources } from '@certe/atmos-renderer';
+import type { MeshRenderer, Mesh } from '@certe/atmos-renderer';
 
 /**
  * Converts triangle indices to line-list indices with edge deduplication.

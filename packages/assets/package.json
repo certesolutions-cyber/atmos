@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/assets",
+  "name": "@certe/atmos-assets",
   "description": "glTF 2.0 / GLB asset pipeline for the Atmos Engine",
   "version": "0.1.0",
   "repository": {
@@ -19,10 +19,10 @@
   },
   "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
   "dependencies": {
-    "@atmos/core": "^0.1.0",
-    "@atmos/math": "^0.1.0",
-    "@atmos/renderer": "^0.1.0",
-    "@atmos/animation": "^0.1.0"
+    "@certe/atmos-core": "^0.1.0",
+    "@certe/atmos-math": "^0.1.0",
+    "@certe/atmos-renderer": "^0.1.0",
+    "@certe/atmos-animation": "^0.1.0"
   },
   "scripts": {
     "test": "vitest run"

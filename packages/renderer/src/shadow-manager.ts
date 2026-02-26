@@ -3,9 +3,9 @@
  * rendering for up to 2 dir, 2 point, and 4 spot shadow casters.
  */
 
-import type { Scene } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import type { Scene } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { SceneLightData } from './light.js';
 import { DirectionalLight } from './directional-light.js';
 import { PointLight } from './point-light.js';

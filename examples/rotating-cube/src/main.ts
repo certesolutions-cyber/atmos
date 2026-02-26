@@ -1,4 +1,4 @@
-import { Engine, Scene, GameObject } from '@atmos/core';
+import { Engine, Scene, GameObject } from '@certe/atmos-core';
 import {
   initWebGPU,
   createRenderPipeline,
@@ -9,7 +9,7 @@ import {
   MeshRenderer,
   RenderSystem,
   createDefaultCamera,
-} from '@atmos/renderer';
+} from '@certe/atmos-renderer';
 import { Rotator } from './rotator.js';
 
 async function main() {

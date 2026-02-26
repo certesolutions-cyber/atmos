@@ -1,5 +1,5 @@
-import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@atmos/core';
-import type { PhysicsStepper } from '@atmos/core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@certe/atmos-core';
+import type { PhysicsStepper } from '@certe/atmos-core';
 import {
   initWebGPU,
   createRenderPipeline,
@@ -16,11 +16,11 @@ import {
   resizeGPU,
   createMesh,
   SKINNED_VERTEX_STRIDE_FLOATS,
-} from '@atmos/renderer';
-import type { ModelAsset } from '@atmos/assets';
-import { Vec3 } from '@atmos/math';
-import { parseGltfModel, instantiateModel } from '@atmos/assets';
-import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@atmos/animation';
+} from '@certe/atmos-renderer';
+import type { ModelAsset } from '@certe/atmos-assets';
+import { Vec3 } from '@certe/atmos-math';
+import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
+import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@certe/atmos-animation';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -123,7 +123,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   };
 
   const loadModelMesh = async (source: string): Promise<{
-    mesh: import('@atmos/renderer').Mesh; skinned: boolean; skinIndex?: number;
+    mesh: import('@certe/atmos-renderer').Mesh; skinned: boolean; skinIndex?: number;
   } | null> => {
     const parsed = parseModelSource(source);
     if (!parsed) return null;
@@ -138,7 +138,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   };
 
   const loadModelData = async (source: string): Promise<{
-    mesh: import('@atmos/renderer').Mesh; asset: ModelAsset; meshIndex: number;
+    mesh: import('@certe/atmos-renderer').Mesh; asset: ModelAsset; meshIndex: number;
   } | null> => {
     const parsed = parseModelSource(source);
     if (!parsed) return null;
@@ -172,7 +172,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   });
 
   // Helper: load a .glb and return the instantiated root GameObject
-  const loadModel = async (path: string): Promise<import('@atmos/core').GameObject | null> => {
+  const loadModel = async (path: string): Promise<import('@certe/atmos-core').GameObject | null> => {
     try {
       const res = await fetch(`/${path}`);
       if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
@@ -191,7 +191,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
       // Tag MeshRenderers/SkinnedMeshRenderers with meshSource + assign material assets
       const tagMeshRenderers = async (
-        go: import('@atmos/core').GameObject,
+        go: import('@certe/atmos-core').GameObject,
         modelPath: string,
         idx: { n: number },
       ) => {
@@ -234,7 +234,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   };
 
   // Drag-and-drop model callback (hierarchy or inspector)
-  const onDropModel = async (path: string, target: import('@atmos/core').GameObject | null) => {
+  const onDropModel = async (path: string, target: import('@certe/atmos-core').GameObject | null) => {
     const edState = lazyState.current;
     if (!edState) return;
     const root = await loadModel(path);
@@ -434,7 +434,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   engine.paused = true;
 
   // Skip GPU-owning and physics components when cycling play/pause lifecycle
-  const isEngineComponent = (c: import('@atmos/core').Component) =>
+  const isEngineComponent = (c: import('@certe/atmos-core').Component) =>
     c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
     || c instanceof Camera || c instanceof DirectionalLight
     || c instanceof PointLight || c instanceof SpotLight

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { computeBoneMatrices } from '../pose.js';
 import { createSkeleton } from '../skeleton.js';
-import { Mat4 } from '@atmos/math';
+import { Mat4 } from '@certe/atmos-math';
 
 describe('computeBoneMatrices', () => {
   it('produces identity for a single joint at rest pose with identity IBM', () => {

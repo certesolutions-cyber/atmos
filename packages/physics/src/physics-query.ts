@@ -1,12 +1,12 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Scene } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Scene } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 import type { PhysicsWorld } from './physics-world.js';
 import { Collider } from './collider.js';
 
 export interface HitResult {
   collider: Collider;
-  gameObject: import('@atmos/core').GameObject;
+  gameObject: import('@certe/atmos-core').GameObject;
   point: Float32Array;   // Vec3 – world-space hit point
   normal: Float32Array;  // Vec3 – surface normal at hit
   distance: number;

@@ -1,5 +1,5 @@
-import type { PropertyDef } from '@atmos/core';
-import { Transform } from '@atmos/core';
+import type { PropertyDef } from '@certe/atmos-core';
+import { Transform } from '@certe/atmos-core';
 
 function navigatePath(obj: unknown, parts: string[]): { target: Record<string, unknown>; key: string } | null {
   let current: unknown = obj;

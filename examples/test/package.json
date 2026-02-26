@@ -1,14 +1,14 @@
 {
-  "name": "@atmos/example-test",
+  "name": "@certe/atmos-example-test",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*",
-    "@atmos/renderer": "*",
-    "@atmos/physics": "*",
-    "@atmos/editor": "*"
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-physics": "*",
+    "@certe/atmos-editor": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0",

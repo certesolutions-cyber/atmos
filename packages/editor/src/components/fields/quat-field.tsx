@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Quat, Vec3 } from '@atmos/math';
+import { Quat, Vec3 } from '@certe/atmos-math';
 import { DecimalInput } from './decimal-input.js';
 
 interface QuatFieldProps {

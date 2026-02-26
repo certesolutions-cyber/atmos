@@ -6,7 +6,7 @@
 import type { GltfDocument } from './gltf-parser.js';
 import { readAccessor } from './gltf-parser.js';
 import type { ModelSkin } from './types.js';
-import { Mat4 } from '@atmos/math';
+import { Mat4 } from '@certe/atmos-math';
 
 /**
  * Extract all skins from the glTF document.

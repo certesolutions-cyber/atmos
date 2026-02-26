@@ -1,4 +1,4 @@
-import { Component } from '@atmos/core';
+import { Component } from '@certe/atmos-core';
 
 /**
  * Point light component.

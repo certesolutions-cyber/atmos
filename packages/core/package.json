@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/core",
+  "name": "@certe/atmos-core",
   "description": "Component model, scene graph, game loop, and serialization for the Atmos Engine",
   "version": "0.1.0",
   "repository": {
@@ -19,7 +19,7 @@
   },
   "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
   "dependencies": {
-    "@atmos/math": "^0.1.0"
+    "@certe/atmos-math": "^0.1.0"
   },
   "scripts": {
     "test": "vitest run"

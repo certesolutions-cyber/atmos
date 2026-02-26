@@ -30,7 +30,7 @@ Open `http://localhost:5173` in Chrome.
 ## 💡 Key Code
 
 ```ts
-import { TerrainWorld, noiseTerrain, registerTerrainBuiltins } from '@atmos/terrain';
+import { TerrainWorld, noiseTerrain, registerTerrainBuiltins } from '@certe/atmos-terrain';
 
 registerTerrainBuiltins();
 

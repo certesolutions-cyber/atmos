@@ -1,7 +1,7 @@
-import type { Scene, GameObject, Component } from '@atmos/core';
-import { GameObject as GameObjectClass, getComponentDef } from '@atmos/core';
-import { Mat4, Quat } from '@atmos/math';
-import type { Mat4Type, QuatType } from '@atmos/math';
+import type { Scene, GameObject, Component } from '@certe/atmos-core';
+import { GameObject as GameObjectClass, getComponentDef } from '@certe/atmos-core';
+import { Mat4, Quat } from '@certe/atmos-math';
+import type { Mat4Type, QuatType } from '@certe/atmos-math';
 import type { EditorState } from './editor-state.js';
 
 // Scratch data for reparenting (no heap allocs)

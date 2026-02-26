@@ -1,15 +1,15 @@
-import { GameObject } from "@atmos/core";
-import { Vec3 } from "@atmos/math";
+import { GameObject } from "@certe/atmos-core";
+import { Vec3 } from "@certe/atmos-math";
 import {
   createMaterial,
   createTerrainPipeline,
   createTextureFromRGBA,
   PipelineResources,
   TerrainPipelineResources,
-} from "@atmos/renderer";
-import type { SplatWeightFn, SplatTextures } from "@atmos/terrain";
-import { startEditor } from "@atmos/editor";
-import { TerrainWorld, registerTerrainBuiltins } from "@atmos/terrain";
+} from "@certe/atmos-renderer";
+import type { SplatWeightFn, SplatTextures } from "@certe/atmos-terrain";
+import { startEditor } from "@certe/atmos-editor";
+import { TerrainWorld, registerTerrainBuiltins } from "@certe/atmos-terrain";
 import { terrainDensity } from "./scripts/terrain-density.js";
 registerTerrainBuiltins();
 
@@ -67,7 +67,7 @@ function initTerrainWorld(
   world: InstanceType<typeof TerrainWorld>,
   device: GPUDevice,
   pipeline: PipelineResources,
-  scene: import("@atmos/core").Scene,
+  scene: import("@certe/atmos-core").Scene,
 ): void {
   world.config.chunkSize = 16;
   world.config.voxelSize = 1;

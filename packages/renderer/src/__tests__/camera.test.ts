@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Camera } from '../camera.js';
-import { GameObject, resetGameObjectIds, Scene } from '@atmos/core';
-import { Mat4 } from '@atmos/math';
+import { GameObject, resetGameObjectIds, Scene } from '@certe/atmos-core';
+import { Mat4 } from '@certe/atmos-math';
 
 describe('Camera', () => {
   beforeEach(() => resetGameObjectIds());

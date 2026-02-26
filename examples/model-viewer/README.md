@@ -27,7 +27,7 @@ Open `http://localhost:5173`, then drag a `.glb` file onto the viewport (or it a
 ## 💡 Key Code
 
 ```ts
-import { parseGltfModel, instantiateModel } from '@atmos/assets';
+import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
 
 async function loadModel(buffer: ArrayBuffer, name: string) {
   const asset = parseGltfModel(buffer, name);

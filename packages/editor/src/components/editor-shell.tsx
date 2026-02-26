@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess } from '@atmos/core';
-import type { DeserializeContext, Component, GameObject } from '@atmos/core';
+import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess } from '@certe/atmos-core';
+import type { DeserializeContext, Component, GameObject } from '@certe/atmos-core';
 import type { EditorState } from '../editor-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
 import type { ProjectFileSystem } from '../project-fs.js';
@@ -32,7 +32,7 @@ interface EditorShellProps {
   onLoadModel?: (entry: AssetEntry) => void;
   onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
-  renderSystem?: import('@atmos/renderer').RenderSystem;
+  renderSystem?: import('@certe/atmos-renderer').RenderSystem;
 }
 
 /* ── Layout ─────────────────────────────────────────── */

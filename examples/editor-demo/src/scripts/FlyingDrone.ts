@@ -1,7 +1,7 @@
-import { Component, Input } from "@atmos/core";
-import type { PropertyDef } from "@atmos/core";
-import { Vec3, Quat } from "@atmos/math";
-import type { Vec3Type, QuatType } from "@atmos/math";
+import { Component, Input } from "@certe/atmos-core";
+import type { PropertyDef } from "@certe/atmos-core";
+import { Vec3, Quat } from "@certe/atmos-math";
+import type { Vec3Type, QuatType } from "@certe/atmos-math";
 
 /**
  * Flying drone controller.

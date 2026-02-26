@@ -1,4 +1,4 @@
-import type { GameObject } from '@atmos/core';
+import type { GameObject } from '@certe/atmos-core';
 
 /** Compute the centroid of world positions for a set of objects. */
 export function computeSelectionCenter(

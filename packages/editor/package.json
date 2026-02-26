@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/editor",
+  "name": "@certe/atmos-editor",
   "description": "Browser-based Unity-style editor for the Atmos Engine — hierarchy, inspector, gizmos",
   "version": "0.1.0",
   "repository": {
@@ -18,7 +18,8 @@
     "./player": "./src/player-entry.ts",
     "./vite": {
       "types": "./vite-plugin.d.ts",
-      "import": "./vite-plugin.mjs"
+      "import": "./vite-plugin.mjs",
+      "require": "./vite-plugin.cjs"
     }
   },
   "publishConfig": {
@@ -35,11 +36,12 @@
       },
       "./vite": {
         "types": "./vite-plugin.d.ts",
-        "import": "./vite-plugin.mjs"
+        "import": "./vite-plugin.mjs",
+        "require": "./vite-plugin.cjs"
       }
     }
   },
-  "files": ["dist", "!dist/__tests__", "vite-plugin.mjs", "vite-plugin.d.ts", "package.json", "README.md", "LICENCE"],
+  "files": ["dist", "!dist/__tests__", "vite-plugin.mjs", "vite-plugin.cjs", "vite-plugin.d.ts", "package.json", "README.md", "LICENCE"],
   "peerDependencies": {
     "vite": ">=5.0.0"
   },
@@ -47,11 +49,11 @@
     "vite": { "optional": true }
   },
   "dependencies": {
-    "@atmos/animation": "^0.1.0",
-    "@atmos/assets": "^0.1.0",
-    "@atmos/core": "^0.1.0",
-    "@atmos/math": "^0.1.0",
-    "@atmos/renderer": "^0.1.0",
+    "@certe/atmos-animation": "^0.1.0",
+    "@certe/atmos-assets": "^0.1.0",
+    "@certe/atmos-core": "^0.1.0",
+    "@certe/atmos-math": "^0.1.0",
+    "@certe/atmos-renderer": "^0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

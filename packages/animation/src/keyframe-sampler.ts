@@ -3,7 +3,7 @@
  * Hot-path code – zero heap allocations via module-level scratch arrays.
  */
 
-import { Vec3, Quat } from '@atmos/math';
+import { Vec3, Quat } from '@certe/atmos-math';
 import type { KeyframeTrack } from './animation-clip.js';
 
 // Scratch arrays for interpolation (never exposed)

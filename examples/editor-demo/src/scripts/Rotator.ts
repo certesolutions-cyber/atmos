@@ -1,7 +1,7 @@
-import { Component } from '@atmos/core';
-import type { PropertyDef } from '@atmos/core';
-import { Quat } from '@atmos/math';
-import type { QuatType } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import type { PropertyDef } from '@certe/atmos-core';
+import { Quat } from '@certe/atmos-math';
+import type { QuatType } from '@certe/atmos-math';
 
 export class Rotator extends Component {
   speed = 1.0;

@@ -1,5 +1,5 @@
 {
-  "name": "@atmos/renderer",
+  "name": "@certe/atmos-renderer",
   "description": "WebGPU PBR renderer for the Atmos Engine — lights, shadows, skinning, post-processing",
   "version": "0.1.0",
   "repository": {
@@ -19,8 +19,8 @@
   },
   "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
   "dependencies": {
-    "@atmos/core": "^0.1.0",
-    "@atmos/math": "^0.1.0"
+    "@certe/atmos-core": "^0.1.0",
+    "@certe/atmos-math": "^0.1.0"
   },
   "scripts": {
     "test": "vitest run"

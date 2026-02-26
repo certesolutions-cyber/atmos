@@ -1,8 +1,8 @@
-import type { Scene, GameObject } from '@atmos/core';
-import { Mat4, Ray, Vec3 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
-import type { CameraSettings } from '@atmos/renderer';
-import { MeshRenderer } from '@atmos/renderer';
+import type { Scene, GameObject } from '@certe/atmos-core';
+import { Mat4, Ray, Vec3 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
+import type { CameraSettings } from '@certe/atmos-renderer';
+import { MeshRenderer } from '@certe/atmos-renderer';
 
 export interface PickResult {
   gameObject: GameObject;

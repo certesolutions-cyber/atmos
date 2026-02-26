@@ -5,7 +5,7 @@
  * VP matrix rows. Planes point inward (positive half-space = inside frustum).
  */
 
-import type { Mat4Type } from '@atmos/math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { BoundingSphere } from './bounds.js';
 
 /** 6 planes × 4 coefficients (a, b, c, d) where ax+by+cz+d >= 0 is inside. */

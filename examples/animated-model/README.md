@@ -28,7 +28,7 @@ Open `http://localhost:5173`. The example auto-loads `models/model.glb`.
 ## 💡 Key Code
 
 ```ts
-import { AnimationMixer } from '@atmos/animation';
+import { AnimationMixer } from '@certe/atmos-animation';
 
 // After instantiateModel(), find all mixers in the hierarchy
 function findAllMixers(root: GameObject): AnimationMixer[] {

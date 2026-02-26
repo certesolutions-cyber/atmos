@@ -1,4 +1,4 @@
-import { registerComponent } from '@atmos/core';
+import { registerComponent } from '@certe/atmos-core';
 import { RigidBody } from './rigid-body.js';
 import { Collider } from './collider.js';
 import { FixedJoint } from './fixed-joint.js';

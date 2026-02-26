@@ -3,8 +3,8 @@
  * Pre-allocated scratch arrays at module level for zero heap allocs on hot path.
  */
 
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { Skeleton } from './skeleton.js';
 
 // Module-level scratch matrices (reused every frame)

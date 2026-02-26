@@ -7,7 +7,7 @@
 
 import { SSAO_SHADER, SSAO_BLUR_SHADER, SSAO_KERNEL_SIZE } from './ssao-shader.js';
 import { drawFullscreenTriangle } from './fullscreen-quad.js';
-import type { Mat4Type } from '@atmos/math';
+import type { Mat4Type } from '@certe/atmos-math';
 
 const AO_FORMAT: GPUTextureFormat = 'r8unorm';
 

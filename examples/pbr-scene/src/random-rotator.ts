@@ -1,6 +1,6 @@
-import { Component } from '@atmos/core';
-import { Quat } from '@atmos/math';
-import type { QuatType } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import { Quat } from '@certe/atmos-math';
+import type { QuatType } from '@certe/atmos-math';
 
 /** Rotates at a random speed around Y and X axes */
 export class RandomRotator extends Component {

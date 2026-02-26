@@ -1,5 +1,5 @@
-import { Engine, Scene, GameObject, registerCoreBuiltins } from "@atmos/core";
-import { Vec3, Quat } from "@atmos/math";
+import { Engine, Scene, GameObject, registerCoreBuiltins } from "@certe/atmos-core";
+import { Vec3, Quat } from "@certe/atmos-math";
 import {
   initWebGPU,
   createRenderPipeline,
@@ -12,19 +12,19 @@ import {
   RenderSystem,
   createDefaultCamera,
   registerRendererBuiltins,
-} from "@atmos/renderer";
-import { parseGltfModel, instantiateModel } from "@atmos/assets";
+} from "@certe/atmos-renderer";
+import { parseGltfModel, instantiateModel } from "@certe/atmos-assets";
 import {
   registerAnimationBuiltins,
   AnimationMixer,
   createAnimationClip,
-} from "@atmos/animation";
+} from "@certe/atmos-animation";
 import type {
   AnimationClip,
   AnimationLayer,
   AnimationChannel,
   KeyframeTrack,
-} from "@atmos/animation";
+} from "@certe/atmos-animation";
 
 async function main() {
   registerCoreBuiltins();

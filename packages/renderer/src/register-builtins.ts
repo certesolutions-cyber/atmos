@@ -1,4 +1,4 @@
-import { registerComponent } from '@atmos/core';
+import { registerComponent } from '@certe/atmos-core';
 import { MeshRenderer } from './mesh-renderer.js';
 import { SkinnedMeshRenderer } from './skinned-mesh-renderer.js';
 import { TerrainMeshRenderer } from './terrain-mesh-renderer.js';

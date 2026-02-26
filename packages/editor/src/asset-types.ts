@@ -1,4 +1,4 @@
-import type { Component } from '@atmos/core';
+import type { Component } from '@certe/atmos-core';
 
 /** A single file or folder in the project asset tree */
 export interface AssetEntry {

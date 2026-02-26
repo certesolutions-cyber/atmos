@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
+const fs = require('node:fs');
+const path = require('node:path');
 
 const DEFAULT_EXCLUDE = new Set([
   'node_modules', '.git', 'dist', '.vite', '.turbo', '__pycache__',
@@ -108,7 +108,7 @@ function collectBody(req) {
 }
 
 /** @param {import('./vite-plugin.d.ts').AtmosPluginOptions} [options] */
-export function atmosPlugin(options) {
+function atmosPlugin(options) {
   const include = options?.include ?? ['src'];
   const exclude = new Set([...DEFAULT_EXCLUDE, ...(options?.exclude ?? [])]);
   const entry = options?.entry ?? 'src/main.ts';
@@ -306,7 +306,7 @@ try {
         }
         // Also notify for project files (materials, scenes, etc.)
         if (relPath.startsWith('materials/') || relPath.startsWith('scenes/') || relPath.startsWith('textures/')) {
-          server.hot.send('atmos:project-change', { kind: event, path: relPath });
+          server.hot.send('atmos:project-change', { kind, path: relPath });
         }
       });
     },
@@ -392,4 +392,6 @@ function listRecursive(dirPath, prefix) {
 }
 
 /** @deprecated Use atmosPlugin() instead */
-export const atmosAssetsPlugin = atmosPlugin;
+const atmosAssetsPlugin = atmosPlugin;
+
+module.exports = { atmosPlugin, atmosAssetsPlugin };

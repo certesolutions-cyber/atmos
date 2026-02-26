@@ -1,7 +1,7 @@
-import { Mat4 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
-import { Camera, createUnlitPipeline } from '@atmos/renderer';
-import type { UnlitPipelineResources } from '@atmos/renderer';
+import { Mat4 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
+import { Camera, createUnlitPipeline } from '@certe/atmos-renderer';
+import type { UnlitPipelineResources } from '@certe/atmos-renderer';
 
 /** Fixed distance for the far-plane visualization (keeps the frustum compact). */
 const FAR_VIZ = 5;

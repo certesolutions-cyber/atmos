@@ -1,7 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { Component } from '@atmos/core';
-import type { GameObject } from '@atmos/core';
-import { Vec3 } from '@atmos/math';
+import { Component } from '@certe/atmos-core';
+import type { GameObject } from '@certe/atmos-core';
+import { Vec3 } from '@certe/atmos-math';
 import type { PhysicsWorld } from './physics-world.js';
 import { RigidBody } from './rigid-body.js';
 

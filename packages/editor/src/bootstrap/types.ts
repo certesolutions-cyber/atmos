@@ -1,5 +1,5 @@
-import type { Component, Engine, Scene, GameObject, DeserializeContext, PhysicsStepper } from '@atmos/core';
-import type { GPUContext, PipelineResources, Mesh, RenderSystem } from '@atmos/renderer';
+import type { Component, Engine, Scene, GameObject, DeserializeContext, PhysicsStepper } from '@certe/atmos-core';
+import type { GPUContext, PipelineResources, Mesh, RenderSystem } from '@certe/atmos-renderer';
 import type { EditorState } from '../editor-state.js';
 import type { GizmoState } from '../gizmo-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
@@ -9,7 +9,7 @@ import type { PrimitiveType } from '../editor-mount.js';
 import type { ScriptAsset } from '../asset-types.js';
 import type { PhysicsSettings } from '../project-settings.js';
 
-// ---- Physics plugin (implemented by @atmos/physics) ---- //
+// ---- Physics plugin (implemented by @certe/atmos-physics) ---- //
 
 /** Data for rendering joint axis gizmos. Positions/directions in world space. */
 export interface JointGizmoData {
@@ -33,7 +33,7 @@ export interface ColliderGizmoData {
   halfHeight?: number;
 }
 
-/** Minimal mesh interface for collider auto-sizing (avoids importing @atmos/renderer in physics) */
+/** Minimal mesh interface for collider auto-sizing (avoids importing @certe/atmos-renderer in physics) */
 export interface MeshLike {
   vertices?: Float32Array;
   vertexStride?: number;
@@ -43,11 +43,11 @@ export interface MeshLike {
 export interface PhysicsInitContext {
   /** Named primitive meshes — keys: cube, plane, sphere, cylinder */
   meshes: Record<string, unknown>;
-  /** Read MeshRenderer.mesh from a GameObject without importing @atmos/renderer */
+  /** Read MeshRenderer.mesh from a GameObject without importing @certe/atmos-renderer */
   getMesh(go: GameObject): MeshLike | null;
 }
 
-/** Physics plugin interface. @atmos/physics provides createEditorPhysics() that returns this. */
+/** Physics plugin interface. @certe/atmos-physics provides createEditorPhysics() that returns this. */
 export interface EditorPhysicsPlugin {
   /** Initialize: map meshes to collider shapes. */
   init(ctx: PhysicsInitContext): void;
@@ -108,7 +108,7 @@ export interface EditorConfig {
   canvas?: HTMLCanvasElement;
   /** Container element for the React editor UI. Created automatically if omitted. */
   container?: HTMLElement;
-  /** Optional physics plugin (from @atmos/physics createEditorPhysics()). */
+  /** Optional physics plugin (from @certe/atmos-physics createEditorPhysics()). */
   physics?: EditorPhysicsPlugin;
   /** Optional callback to populate the initial scene. */
   setupScene?: (ctx: SceneSetupContext) => void;

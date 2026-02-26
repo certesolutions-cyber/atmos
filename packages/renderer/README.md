@@ -1,4 +1,4 @@
-# 🎨 @atmos/renderer
+# 🎨 @certe/atmos-renderer
 
 WebGPU-first rendering package for the Atmos Engine. Handles GPU initialization, PBR shading, multi-light systems, cascaded shadow maps, skeletal animation (GPU skinning), terrain rendering, and a full HDR post-processing pipeline.
 
@@ -20,7 +20,7 @@ WebGPU-first rendering package for the Atmos Engine. Handles GPU initialization,
 
 ```ts
 import { initWebGPU, createRenderPipeline, createMesh, createMaterial,
-         RenderSystem, Camera, MeshRenderer, createCubeGeometry } from '@atmos/renderer';
+         RenderSystem, Camera, MeshRenderer, createCubeGeometry } from '@certe/atmos-renderer';
 
 const gpu = await initWebGPU(canvas);
 const pipeline = createRenderPipeline(gpu);
@@ -162,5 +162,5 @@ packages/renderer/src/
 
 ## 🔗 Dependencies
 
-- `@atmos/core` — Component, GameObject, Transform, Scene
-- `@atmos/math` — Vec3, Mat4, Quat for camera/light math
+- `@certe/atmos-core` — Component, GameObject, Transform, Scene
+- `@certe/atmos-math` — Vec3, Mat4, Quat for camera/light math

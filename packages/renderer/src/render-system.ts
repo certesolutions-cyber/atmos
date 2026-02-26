@@ -1,7 +1,7 @@
-import type { Scene } from '@atmos/core';
-import type { Renderer } from '@atmos/core';
-import { Mat4, Vec3 } from '@atmos/math';
-import type { Mat4Type } from '@atmos/math';
+import type { Scene } from '@certe/atmos-core';
+import type { Renderer } from '@certe/atmos-core';
+import { Mat4, Vec3 } from '@certe/atmos-math';
+import type { Mat4Type } from '@certe/atmos-math';
 import type { GPUContext } from './webgpu-device.js';
 import type { PipelineResources } from './pipeline.js';
 import type { LightSettings } from './light.js';
@@ -568,9 +568,9 @@ async function resolveReadback(rb: ActiveReadback): Promise<void> {
 
 /**
  * Find bone matrices on a sibling component (AnimationMixer).
- * Uses duck-typing to avoid importing from @atmos/animation (circular dep).
+ * Uses duck-typing to avoid importing from @certe/atmos-animation (circular dep).
  */
-function findBoneMatrices(obj: import('@atmos/core').GameObject): Float32Array | null {
+function findBoneMatrices(obj: import('@certe/atmos-core').GameObject): Float32Array | null {
   for (const c of obj.getComponents()) {
     const bm = (c as unknown as { boneMatrices?: Float32Array | null }).boneMatrices;
     if (bm instanceof Float32Array) return bm;

@@ -1,6 +1,6 @@
-import { Component, Input } from "@atmos/core";
-import type { PropertyDef } from "@atmos/core";
-import { HingeJoint } from "@atmos/physics";
+import { Component, Input } from "@certe/atmos-core";
+import type { PropertyDef } from "@certe/atmos-core";
+import { HingeJoint } from "@certe/atmos-physics";
 
 export class Steer extends Component {
   /** Properties exposed in the editor inspector */
