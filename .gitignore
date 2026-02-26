@@ -2,3 +2,12 @@ node_modules/
 dist/
 *.tsbuildinfo
 .claude/
+
+# Large binary assets – use Git LFS or keep outside repo
+*.glb
+*.gltf
+*.fbx
+
+# Exception: example models
+!examples/animated-model/models/*.glb
+!examples/editor-demo/models/*.glb
