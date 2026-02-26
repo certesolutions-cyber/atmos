@@ -18,6 +18,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 echo "Building packages..."
 npm run build --prefix "$ROOT"
 
+# Run tests
+echo "Running tests..."
+npx vitest run --root "$ROOT"
+
 # Publish in dependency order (leaves first)
 PACKAGES=(math core renderer physics animation assets terrain editor)
 

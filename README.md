@@ -58,29 +58,29 @@ Each package:
 
 # 📦 Packages
 
-| Package | Description | README |
-|---|---|---|
-| [@atmos/math](packages/math/) | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc | [README](packages/math/README.md) |
-| [@atmos/core](packages/core/) | Component lifecycle, GameObject, Scene, Engine, Input, Time | [README](packages/core/README.md) |
-| [@atmos/renderer](packages/renderer/) | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning | [README](packages/renderer/README.md) |
-| [@atmos/physics](packages/physics/) | Rapier WASM wrapper, RigidBody, Collider, joints, queries | [README](packages/physics/README.md) |
-| [@atmos/animation](packages/animation/) | Skeleton, AnimationClip, AnimationMixer, keyframe blending | [README](packages/animation/README.md) |
-| [@atmos/assets](packages/assets/) | glTF 2.0 / GLB parser, mesh/material/skin/animation extraction | [README](packages/assets/README.md) |
-| [@atmos/editor](packages/editor/) | React editor: hierarchy, inspector, gizmos, picking, project I/O | [README](packages/editor/README.md) |
-| [@atmos/terrain](packages/terrain/) | Voxel density fields, marching cubes, LOD streaming, splat textures | [README](packages/terrain/README.md) |
+| Package                                 | Description                                                         | README                                 |
+| --------------------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
+| [@atmos/math](packages/math/)           | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc             | [README](packages/math/README.md)      |
+| [@atmos/core](packages/core/)           | Component lifecycle, GameObject, Scene, Engine, Input, Time         | [README](packages/core/README.md)      |
+| [@atmos/renderer](packages/renderer/)   | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning   | [README](packages/renderer/README.md)  |
+| [@atmos/physics](packages/physics/)     | Rapier WASM wrapper, RigidBody, Collider, joints, queries           | [README](packages/physics/README.md)   |
+| [@atmos/animation](packages/animation/) | Skeleton, AnimationClip, AnimationMixer, keyframe blending          | [README](packages/animation/README.md) |
+| [@atmos/assets](packages/assets/)       | glTF 2.0 / GLB parser, mesh/material/skin/animation extraction      | [README](packages/assets/README.md)    |
+| [@atmos/editor](packages/editor/)       | React editor: hierarchy, inspector, gizmos, picking, project I/O    | [README](packages/editor/README.md)    |
+| [@atmos/terrain](packages/terrain/)     | Voxel density fields, marching cubes, LOD streaming, splat textures | [README](packages/terrain/README.md)   |
 
 ---
 
 # 🎮 Examples
 
-| Example | Description | README |
-|---|---|---|
-| [rotating-cube](examples/rotating-cube/) | Minimal engine setup with a spinning cube | [README](examples/rotating-cube/README.md) |
-| [pbr-scene](examples/pbr-scene/) | 100 objects with PBR materials at 60fps | [README](examples/pbr-scene/README.md) |
-| [falling-cubes](examples/falling-cubes/) | Physics simulation with Rapier | [README](examples/falling-cubes/README.md) |
-| [model-viewer](examples/model-viewer/) | Drag-and-drop glTF/GLB viewer | [README](examples/model-viewer/README.md) |
-| [animated-model](examples/animated-model/) | Skeletal animation with clip cross-fade | [README](examples/animated-model/README.md) |
-| [editor-demo](examples/editor-demo/) | Full editor with all packages integrated | [README](examples/editor-demo/README.md) |
+| Example                                    | Description                                | README                                      |
+| ------------------------------------------ | ------------------------------------------ | ------------------------------------------- |
+| [rotating-cube](examples/rotating-cube/)   | Minimal engine setup with a spinning cube  | [README](examples/rotating-cube/README.md)  |
+| [pbr-scene](examples/pbr-scene/)           | 100 objects with PBR materials at 60fps    | [README](examples/pbr-scene/README.md)      |
+| [falling-cubes](examples/falling-cubes/)   | Physics simulation with Rapier             | [README](examples/falling-cubes/README.md)  |
+| [model-viewer](examples/model-viewer/)     | Drag-and-drop glTF/GLB viewer              | [README](examples/model-viewer/README.md)   |
+| [animated-model](examples/animated-model/) | Skeletal animation with clip cross-fade    | [README](examples/animated-model/README.md) |
+| [editor-demo](examples/editor-demo/)       | Full editor with all packages integrated   | [README](examples/editor-demo/README.md)    |
 | [terrain-editor](examples/terrain-editor/) | Voxel terrain with splat textures + editor | [README](examples/terrain-editor/README.md) |
 
 ---
@@ -227,6 +227,7 @@ Tonemap (ACES + gamma 2.2 + vignette) → Swapchain
 ## Materials
 
 PBR Cook-Torrance with:
+
 - Albedo (color + texture)
 - Metallic / Roughness (uniform + map)
 - Normal maps (TBN from derivatives)
@@ -366,7 +367,7 @@ engine.start(scene);
 
 # 📜 License
 
-MIT
+GPL-3.0-or-later
 
 ---
 
