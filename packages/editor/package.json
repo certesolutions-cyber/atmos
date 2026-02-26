@@ -55,6 +55,7 @@
     "vite-plugin.mjs",
     "vite-plugin.cjs",
     "vite-plugin.d.ts",
+    "bin",
     "package.json",
     "README.md",
     "LICENCE"
@@ -79,6 +80,9 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0"
+  },
+  "bin": {
+    "atmos-init": "./bin/atmos-init.mjs"
   },
   "scripts": {
     "test": "vitest run"

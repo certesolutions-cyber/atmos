@@ -6,52 +6,47 @@ Unity-style editor for the Atmos Engine, built with React. Provides scene hierar
 
 ## Getting Started
 
-### 1. Create a new project
-
 ```bash
 mkdir my-game && cd my-game
-npm init -y
+npm install @certe/atmos-editor
+npx atmos-init
+npm run dev
 ```
 
-### 2. Install dependencies
+That's it. `atmos-init` creates `vite.config.ts`, `src/main.ts`, `tsconfig.json`, installs dev dependencies, and adds npm scripts. The editor opens at `http://localhost:5173`.
 
-```bash
-npm install @certe/atmos-editor @certe/atmos-core @certe/atmos-math @certe/atmos-renderer @certe/atmos-physics
-npm install -D vite @vitejs/plugin-react
-```
+### Manual setup
 
-### 3. Configure Vite
+If you prefer to set things up yourself:
 
-Create `vite.config.ts`:
+1. Install dependencies:
+   ```bash
+   npm install @certe/atmos-editor
+   npm install -D vite @vitejs/plugin-react typescript
+   ```
 
-```ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { atmosPlugin } from '@certe/atmos-editor/vite';
+2. Create `vite.config.ts`:
+   ```ts
+   import { defineConfig } from 'vite';
+   import react from '@vitejs/plugin-react';
+   import { atmosPlugin } from '@certe/atmos-editor/vite';
 
-export default defineConfig({
-  plugins: [react(), atmosPlugin()],
-});
-```
+   export default defineConfig({
+     plugins: [react(), atmosPlugin()],
+   });
+   ```
 
-### 4. Create the entry point
+3. Create `src/main.ts`:
+   ```ts
+   import { startEditor, createEditorPhysics } from '@certe/atmos-editor';
 
-Create `src/main.ts`:
+   await startEditor({
+     physics: await createEditorPhysics(),
+     scriptModules: import.meta.glob('./scripts/*.ts', { eager: true }),
+   });
+   ```
 
-```ts
-import { startEditor, createEditorPhysics } from '@certe/atmos-editor';
-
-await startEditor({
-  physics: await createEditorPhysics(),
-  scriptModules: import.meta.glob('./scripts/*.ts', { eager: true }),
-});
-```
-
-### 5. Run the editor
-
-```bash
-npx vite
-```
+4. Run: `npx vite`
 
 The editor opens with a WebGPU viewport, scene hierarchy, inspector, and gizmo tools. Place game scripts in `src/scripts/` and they'll be automatically discovered.
 
