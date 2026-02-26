@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ShaderType, MaterialAssetData } from '@atmos/renderer';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorState } from '../editor-state.js';
+import { DecimalInput } from './fields/decimal-input.js';
 
 interface MaterialInspectorProps {
   editorState: EditorState;
@@ -130,19 +131,36 @@ export function MaterialInspector({ editorState, materialManager, path }: Materi
       <div style={sectionStyle}>
         <div style={titleStyle}>Properties</div>
         <AlbedoRow albedo={data.albedo} onSave={save} />
-        <TextureRow
-          texturePath={data.albedoTexture}
-          materialManager={materialManager}
-          onSave={save}
-        />
+        <TextureSelectRow label="Albedo Tex" assetKey="albedoTexture"
+          texturePath={data.albedoTexture} materialManager={materialManager} onSave={save} />
         {isPbr && (
           <>
             <SliderRow label="Metallic" value={data.metallic} min={0} max={1} step={0.01}
               onChange={(v) => save({ metallic: v })} />
             <SliderRow label="Roughness" value={data.roughness} min={0} max={1} step={0.01}
               onChange={(v) => save({ roughness: v })} />
+            <TextureSelectRow label="Normal Map" assetKey="normalTexture"
+              texturePath={data.normalTexture} materialManager={materialManager} onSave={save} />
+            <TextureSelectRow label="Met/Rough" assetKey="metallicRoughnessTexture"
+              texturePath={data.metallicRoughnessTexture} materialManager={materialManager} onSave={save} />
           </>
         )}
+      </div>
+
+      <div style={sectionStyle}>
+        <div style={titleStyle}>Emissive</div>
+        <ColorRow label="Color" color={data.emissive ?? [0, 0, 0]}
+          onChange={(c) => save({ emissive: c })} />
+        <SliderRow label="Intensity" value={data.emissiveIntensity ?? 0} min={0} max={20} step={0.1}
+          onChange={(v) => save({ emissiveIntensity: v })} />
+      </div>
+
+      <div style={sectionStyle}>
+        <div style={titleStyle}>Tiling</div>
+        <NumberInputRow label="Tile X" value={data.texTilingX ?? 1} step={0.1}
+          onChange={(v) => save({ texTilingX: v })} />
+        <NumberInputRow label="Tile Y" value={data.texTilingY ?? 1} step={0.1}
+          onChange={(v) => save({ texTilingY: v })} />
       </div>
     </>
   );
@@ -185,9 +203,11 @@ function AlbedoRow({ albedo, onSave }: {
   );
 }
 
-/* ── Texture field row ── */
+/* ── Generic texture select row ── */
 
-function TextureRow({ texturePath, materialManager, onSave }: {
+function TextureSelectRow({ label, assetKey, texturePath, materialManager, onSave }: {
+  label: string;
+  assetKey: 'albedoTexture' | 'normalTexture' | 'metallicRoughnessTexture';
   texturePath: string | undefined;
   materialManager: MaterialManager;
   onSave: (changes: Partial<MaterialAssetData>) => void;
@@ -217,17 +237,17 @@ function TextureRow({ texturePath, materialManager, onSave }: {
         const path = e.dataTransfer.getData('application/x-atmos-texture');
         if (path) {
           e.preventDefault();
-          onSave({ albedoTexture: path });
+          onSave({ [assetKey]: path });
         }
       }}
     >
-      <span style={labelStyle}>Texture</span>
+      <span style={labelStyle}>{label}</span>
       <select
         style={selectStyle}
         value={texturePath ?? ''}
         onChange={(e) => {
           const val = e.target.value;
-          onSave({ albedoTexture: val || undefined });
+          onSave({ [assetKey]: val || undefined });
         }}
       >
         <option value="">None</option>
@@ -235,6 +255,57 @@ function TextureRow({ texturePath, materialManager, onSave }: {
           <option key={t} value={t}>{t.split('/').pop()}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+/* ── Color row (generic) ── */
+
+function ColorRow({ label, color, onChange }: {
+  label: string;
+  color: [number, number, number];
+  onChange: (c: [number, number, number]) => void;
+}) {
+  const toHex = (r: number, g: number, b: number): string => {
+    const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255);
+    return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`;
+  };
+
+  const fromHex = (hex: string): [number, number, number] => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [r, g, b];
+  };
+
+  return (
+    <div style={rowStyle}>
+      <span style={labelStyle}>{label}</span>
+      <input
+        type="color"
+        value={toHex(color[0], color[1], color[2])}
+        onChange={(e) => onChange(fromHex(e.target.value))}
+        style={{ ...colorSwatchStyle, padding: 0, background: 'none' }}
+      />
+      <span style={{ fontSize: '10px', color: '#888' }}>
+        {color.map((v) => v.toFixed(2)).join(', ')}
+      </span>
+    </div>
+  );
+}
+
+/* ── Number input row (uses shared DecimalInput) ── */
+
+function NumberInputRow({ label, value, step, onChange }: {
+  label: string;
+  value: number;
+  step: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div style={rowStyle}>
+      <span style={labelStyle}>{label}</span>
+      <DecimalInput value={value} step={step} onChange={onChange} style={inputStyle} />
     </div>
   );
 }

@@ -35,8 +35,9 @@ describe('createMaterial', () => {
   });
 
   it('uniform layout matches expected size', () => {
-    // vec4 albedo(16) + f32 metallic(4) + f32 roughness(4) + pad(8) + vec4 emissive(16) = 48
-    expect(MATERIAL_UNIFORM_SIZE).toBe(48);
+    // vec4 albedo(16) + f32 metallic(4) + f32 roughness(4) + pad(8)
+    // + vec4 emissive(16) + vec2 texTiling(8) + pad(8) = 64
+    expect(MATERIAL_UNIFORM_SIZE).toBe(64);
   });
 
   it('writeMaterialUniforms fills buffer correctly', () => {

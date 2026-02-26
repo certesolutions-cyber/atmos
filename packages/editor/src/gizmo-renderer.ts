@@ -1,4 +1,3 @@
-import type { GameObject } from '@atmos/core';
 import { Mat4, Vec3 } from '@atmos/math';
 import type { Mat4Type } from '@atmos/math';
 import { createUnlitPipeline } from '@atmos/renderer';
@@ -73,21 +72,20 @@ export class GizmoRenderer {
   render(
     pass: GPURenderPassEncoder,
     vp: Float32Array,
-    target: GameObject,
+    center: Float32Array,
     mode: GizmoMode,
     _activeAxis: GizmoAxis,
     cameraDistance: number,
   ): void {
-    // Position gizmo at object's world position, scaled by camera distance
-    const worldMat = target.transform.worldMatrix;
+    // Position gizmo at selection center, scaled by camera distance
     const gizmoScale = cameraDistance * 0.15;
     Vec3.set(this._scaleVec, gizmoScale, gizmoScale, gizmoScale);
 
-    // Build model matrix: translate to object position, scale uniformly
+    // Build model matrix: translate to center position, scale uniformly
     Mat4.identity(this._model);
-    this._model[12] = worldMat[12]!;
-    this._model[13] = worldMat[13]!;
-    this._model[14] = worldMat[14]!;
+    this._model[12] = center[0]!;
+    this._model[13] = center[1]!;
+    this._model[14] = center[2]!;
     this._model[0] = gizmoScale;
     this._model[5] = gizmoScale;
     this._model[10] = gizmoScale;

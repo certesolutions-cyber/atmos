@@ -15,13 +15,7 @@ import { TerrainMeshRenderer } from './terrain-mesh-renderer.js';
 import { TERRAIN_VERTEX_STRIDE_BYTES } from './terrain-pipeline.js';
 import { SHADOW_VERTEX_SHADER } from './shadow-shader.js';
 import { DirectionalLight } from './directional-light.js';
-import { PointLight } from './point-light.js';
-import { SpotLight } from './spot-light.js';
-import { DirectionalShadowPass } from './shadow-pass.js';
-import { PointShadowPass } from './point-shadow-pass.js';
-import { SpotShadowPass } from './spot-shadow-pass.js';
-import { SHADOW_UNIFORM_SIZE, createDummyShadowResources } from './shadow-uniforms.js';
-import type { DummyShadowResources } from './shadow-uniforms.js';
+import { ShadowManager } from './shadow-manager.js';
 import { Camera } from './camera.js';
 import { extractFrustumPlanes, isSphereInFrustum } from './frustum.js';
 import type { FrustumPlanes } from './frustum.js';
@@ -75,27 +69,11 @@ export class RenderSystem implements Renderer {
   private _activeCamera: Camera | null = null;
   private readonly _eyeScratch = new Float32Array(3);
 
-  // Directional shadow mapping (2 cascades)
-  private _shadowPass0: DirectionalShadowPass | null = null;
-  private _shadowPass1: DirectionalShadowPass | null = null;
-  private _dummyShadow: DummyShadowResources | null = null;
-  private _shadowUniformBuffer: GPUBuffer | null = null;
-  private _shadowBindGroup: GPUBindGroup | null = null;
+  // Shadow manager (owns all shadow passes and bind groups)
+  private _shadowManager: ShadowManager | null = null;
   private readonly _lightView: Mat4Type = Mat4.create();
   private readonly _lightProj: Mat4Type = Mat4.create();
-  private readonly _lightVP0: Mat4Type = Mat4.create();
-  private readonly _lightVP1: Mat4Type = Mat4.create();
   private readonly _lightDirScratch = new Float32Array(3);
-  private readonly _shadowUniformData = new ArrayBuffer(SHADOW_UNIFORM_SIZE);
-
-  // Point light shadow mapping
-  private _pointShadowPass: PointShadowPass | null = null;
-  private readonly _pointLightPosScratch = new Float32Array(3);
-
-  // Spot light shadow mapping
-  private _spotShadowPass: SpotShadowPass | null = null;
-  private readonly _spotLightPosScratch = new Float32Array(3);
-  private readonly _spotLightDirScratch = new Float32Array(3);
 
   // Frustum culling
   private readonly _frustumPlanes: FrustumPlanes = new Float32Array(24);
@@ -221,6 +199,7 @@ export class RenderSystem implements Renderer {
     for (const obj of this._scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
       if (mr && mr.enabled) {
+        mr.ensureGPU(this);
         const bs = mr.worldBoundingSphere;
         if (!bs || isSphereInFrustum(this._frustumPlanes, bs)) {
           mr.initMaterialBindGroup(this._sceneBuffer);
@@ -253,76 +232,19 @@ export class RenderSystem implements Renderer {
 
     this._encoder = device.createCommandEncoder();
 
-    // Ensure dummy shadow resources exist (needed when no shadow lights are active)
-    if (!this._dummyShadow) {
-      this._dummyShadow = createDummyShadowResources(
+    // --- Shadow passes (via ShadowManager) ---
+    if (!this._shadowManager) {
+      this._shadowManager = new ShadowManager(
         device,
+        this._pipelineResources.objectBindGroupLayout,
         this._pipelineResources.shadowBindGroupLayout,
       );
     }
-
-    // --- Shadow passes ---
-    const dirLight = this._findShadowLight(DirectionalLight);
-    let dirShadowEnabled = false;
-    if (dirLight) {
-      const objBGL = this._pipelineResources.objectBindGroupLayout;
-      if (!this._shadowPass0) {
-        this._shadowPass0 = new DirectionalShadowPass(device, objBGL, dirLight.shadowResolution);
-        this._shadowBindGroup = null;
-      }
-      if (!this._shadowPass1) {
-        this._shadowPass1 = new DirectionalShadowPass(device, objBGL, dirLight.shadowResolution);
-        this._shadowBindGroup = null;
-      }
-      this._computeCascadeVP(this._lightVP0, dirLight, cameraEye, dirLight.shadowSize, dirLight.shadowDistance);
-      this._computeCascadeVP(this._lightVP1, dirLight, cameraEye, dirLight.shadowFarSize, dirLight.shadowFarDistance);
-      const extraDraw0 = this._makeExtraShadowDraw();
-      this._shadowPass0.execute(this._encoder, this._scene, this._lightVP0, extraDraw0);
-      this._shadowPass1.execute(this._encoder, this._scene, this._lightVP1, extraDraw0);
-      dirShadowEnabled = true;
-    }
-    const pointLight = this._findShadowLight(PointLight);
-    let pointShadowEnabled = false;
-    const pointPos = this._pointLightPosScratch;
-    let pointFar = 10;
-    if (pointLight) {
-      if (!this._pointShadowPass) {
-        this._pointShadowPass = new PointShadowPass(device, this._pipelineResources.objectBindGroupLayout, pointLight.shadowResolution);
-        this._shadowBindGroup = null;
-      }
-      pointLight.getWorldPosition(pointPos);
-      pointFar = pointLight.range;
-      const ptExtraDraw = this._makeExtraShadowDraw();
-      this._pointShadowPass.execute(this._encoder, this._scene, pointPos, pointFar, ptExtraDraw);
-      pointShadowEnabled = true;
-    }
-
-    // Spot light shadow
-    const spotLight = this._findShadowLight(SpotLight);
-    let spotShadowEnabled = false;
-    const spotPos = this._spotLightPosScratch;
-    const spotDir = this._spotLightDirScratch;
-    let spotFar = 10;
-    let spotOuterAngle = Math.PI / 4;
-    if (spotLight) {
-      if (!this._spotShadowPass) {
-        this._spotShadowPass = new SpotShadowPass(device, this._pipelineResources.objectBindGroupLayout, spotLight.shadowResolution);
-        this._shadowBindGroup = null;
-      }
-      spotLight.getWorldPosition(spotPos);
-      spotLight.getWorldDirection(spotDir);
-      spotFar = spotLight.range;
-      spotOuterAngle = spotLight.outerAngle;
-      const spotExtraDraw = this._makeExtraShadowDraw();
-      this._spotShadowPass.execute(this._encoder, this._scene, spotPos, spotDir, spotOuterAngle, spotFar, spotExtraDraw);
-      spotShadowEnabled = true;
-    }
-
-    const shadowBindGroup = this._buildShadowBindGroup(
-      dirLight, dirShadowEnabled, pointShadowEnabled, pointPos, pointFar,
-      pointLight?.shadowIntensity ?? 1,
-      spotShadowEnabled, spotPos, spotFar,
-      spotLight?.shadowIntensity ?? 1,
+    const extraShadowDraw = this._makeExtraShadowDraw();
+    const computeCascadeVP = this._computeCascadeVP.bind(this);
+    const { bindGroup: shadowBindGroup } = this._shadowManager.update(
+      this._encoder, this._scene, cameraEye, sceneLights,
+      extraShadowDraw, computeCascadeVP,
     );
 
     // --- Depth pre-pass for SSAO ---
@@ -519,14 +441,6 @@ export class RenderSystem implements Renderer {
     });
   }
 
-  private _findShadowLight<T>(ctor: new () => T): (T & { enabled: boolean; castShadows: boolean }) | null {
-    for (const obj of this._scene.getAllObjects()) {
-      const c = obj.getComponent(ctor as unknown as new () => import('@atmos/core').Component) as unknown as T & { enabled: boolean; castShadows: boolean } | null;
-      if (c && c.enabled && c.castShadows) return c;
-    }
-    return null;
-  }
-
   private _computeCascadeVP(
     out: Mat4Type, light: DirectionalLight, cameraCenter: Float32Array,
     size: number, distance: number,
@@ -540,64 +454,6 @@ export class RenderSystem implements Renderer {
     Mat4.lookAt(this._lightView, eye, Vec3.fromValues(cx, cy, cz), up);
     Mat4.ortho(this._lightProj, -size, size, -size, size, 0.1, distance);
     Mat4.multiply(out, this._lightProj, this._lightView);
-  }
-
-  private _buildShadowBindGroup(
-    dirLight: DirectionalLight | null, dirEnabled: boolean,
-    pointEnabled: boolean, pointPos: Float32Array, pointFar: number,
-    pointShadowIntensity: number,
-    spotEnabled: boolean, spotPos: Float32Array, spotFar: number,
-    spotShadowIntensity: number,
-  ): GPUBindGroup {
-    const f32 = new Float32Array(this._shadowUniformData);
-    const u32 = new Uint32Array(this._shadowUniformData);
-    // Cascade 0 VP (float indices 0-15), Cascade 1 VP (float indices 16-31)
-    if (dirEnabled) {
-      f32.set(this._lightVP0 as Float32Array, 0);
-      f32.set(this._lightVP1 as Float32Array, 16);
-    } else { f32.fill(0, 0, 32); }
-    // Offsets in float indices: 128/4=32, 132/4=33, etc.
-    f32[32] = 0.002; u32[33] = dirEnabled ? 1 : 0;
-    f32[34] = 0.007; u32[35] = pointEnabled ? 1 : 0;
-    f32[36] = pointPos[0]!; f32[37] = pointPos[1]!; f32[38] = pointPos[2]!; f32[39] = pointFar;
-    f32[40] = dirLight?.shadowIntensity ?? 1;
-    f32[41] = pointShadowIntensity;
-    f32[42] = dirLight ? dirLight.shadowSize * 0.9 : 20;  // cascade split
-    f32[43] = dirLight ? dirLight.shadowSize * 0.3 : 5;   // blend width
-
-    // Spot shadow VP (float indices 44-59) = bytes 176-239
-    if (spotEnabled && this._spotShadowPass) {
-      f32.set(this._spotShadowPass.getViewProjection() as Float32Array, 44);
-    } else { f32.fill(0, 44, 60); }
-    // spotLightPosAndFar (float indices 60-63) = bytes 240-255
-    f32[60] = spotPos[0]!; f32[61] = spotPos[1]!; f32[62] = spotPos[2]!; f32[63] = spotFar;
-    // spotShadowBias, spotShadowEnabled, spotShadowIntensity (float indices 64-67) = bytes 256-271
-    f32[64] = 0.002; u32[65] = spotEnabled ? 1 : 0;
-    f32[66] = spotShadowIntensity;
-    f32[67] = 0; // pad
-
-    if (!this._shadowUniformBuffer) {
-      this._shadowUniformBuffer = this._gpu.device.createBuffer({
-        size: SHADOW_UNIFORM_SIZE, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-    }
-    this._gpu.device.queue.writeBuffer(this._shadowUniformBuffer, 0, this._shadowUniformData);
-
-    if (!this._shadowBindGroup) {
-      const d = this._dummyShadow!;
-      this._shadowBindGroup = this._gpu.device.createBindGroup({
-        layout: this._pipelineResources.shadowBindGroupLayout,
-        entries: [
-          { binding: 0, resource: { buffer: this._shadowUniformBuffer } },
-          { binding: 1, resource: this._shadowPass0?.shadowMapView ?? d.textureView },
-          { binding: 2, resource: this._shadowPass0?.shadowSampler ?? d.sampler },
-          { binding: 3, resource: this._pointShadowPass?.cubeMapView ?? d.cubeTextureView },
-          { binding: 4, resource: this._shadowPass1?.shadowMapView ?? d.textureView1 },
-          { binding: 5, resource: this._spotShadowPass?.shadowMapView ?? d.spotTextureView },
-        ],
-      });
-    }
-    return this._shadowBindGroup;
   }
 
   /**

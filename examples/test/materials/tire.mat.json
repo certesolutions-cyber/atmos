@@ -1,0 +1,12 @@
+{
+  "name": "tire",
+  "shader": "pbr",
+  "albedo": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5
+}

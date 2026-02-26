@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import RAPIER from '@dimforge/rapier3d-compat';
 import { GameObject } from '@atmos/core';
 import { Quat } from '@atmos/math';
 import { PhysicsWorld } from '../physics-world.js';
@@ -8,9 +7,10 @@ import { Collider } from '../collider.js';
 import { FixedJoint } from '../fixed-joint.js';
 import { HingeJoint } from '../hinge-joint.js';
 import { SpringJoint } from '../spring-joint.js';
+import { initRapier } from '../init.js';
 
 beforeAll(async () => {
-  await RAPIER.init();
+  await initRapier();
 });
 
 /** Helper: create a GameObject with RigidBody + box Collider */

@@ -54,8 +54,12 @@ export class MaterialManager {
     const entry = this._cache.get(path);
     if (!entry) return;
 
-    const textureChanged = 'albedoTexture' in changes
+    const albedoChanged = 'albedoTexture' in changes
       && changes.albedoTexture !== entry.data.albedoTexture;
+    const normalChanged = 'normalTexture' in changes
+      && changes.normalTexture !== entry.data.normalTexture;
+    const mrChanged = 'metallicRoughnessTexture' in changes
+      && changes.metallicRoughnessTexture !== entry.data.metallicRoughnessTexture;
 
     // Merge changes into cached data
     Object.assign(entry.data, changes);
@@ -63,10 +67,10 @@ export class MaterialManager {
     // Sync GPU material from updated data
     this._syncGPUMaterial(entry.material, entry.data);
 
-    // Load/clear texture if it changed
-    if (textureChanged) {
-      await this._syncTexture(entry.material, entry.data.albedoTexture);
-    }
+    // Load/clear textures if changed
+    if (albedoChanged) await this._syncTexture(entry.material, 'albedoTexture', entry.data.albedoTexture);
+    if (normalChanged) await this._syncTexture(entry.material, 'normalTexture', entry.data.normalTexture);
+    if (mrChanged) await this._syncTexture(entry.material, 'metallicRoughnessTexture', entry.data.metallicRoughnessTexture);
 
     // Write to disk
     const json = serializeMaterialAsset(entry.data);
@@ -100,26 +104,38 @@ export class MaterialManager {
       albedo: [data.albedo[0], data.albedo[1], data.albedo[2], data.albedo[3]],
       metallic: data.metallic,
       roughness: data.roughness,
+      emissive: data.emissive ? [data.emissive[0], data.emissive[1], data.emissive[2]] : undefined,
+      emissiveIntensity: data.emissiveIntensity,
+      texTilingX: data.texTilingX,
+      texTilingY: data.texTilingY,
     });
 
     if (data.albedoTexture) {
-      await this._syncTexture(material, data.albedoTexture);
+      await this._syncTexture(material, 'albedoTexture', data.albedoTexture);
+    }
+    if (data.normalTexture) {
+      await this._syncTexture(material, 'normalTexture', data.normalTexture);
+    }
+    if (data.metallicRoughnessTexture) {
+      await this._syncTexture(material, 'metallicRoughnessTexture', data.metallicRoughnessTexture);
     }
 
     return material;
   }
 
-  private async _syncTexture(mat: Material, texturePath: string | undefined): Promise<void> {
+  private async _syncTexture(
+    mat: Material, prop: 'albedoTexture' | 'normalTexture' | 'metallicRoughnessTexture',
+    texturePath: string | undefined,
+  ): Promise<void> {
     if (!texturePath) {
-      mat.albedoTexture = null;
+      mat[prop] = null;
       mat.textureVersion++;
       return;
     }
 
-    // Check texture cache
     const cached = this._textureCache.get(texturePath);
     if (cached) {
-      mat.albedoTexture = cached;
+      mat[prop] = cached;
       mat.textureVersion++;
       return;
     }
@@ -132,11 +148,11 @@ export class MaterialManager {
       const decoded = await decodeImageToRGBA(blob);
       const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height);
       this._textureCache.set(texturePath, handle);
-      mat.albedoTexture = handle;
+      mat[prop] = handle;
       mat.textureVersion++;
     } catch (err) {
       console.warn(`[MaterialManager] Failed to load texture: ${texturePath}`, err);
-      mat.albedoTexture = null;
+      mat[prop] = null;
       mat.textureVersion++;
     }
   }
@@ -148,6 +164,14 @@ export class MaterialManager {
     mat.albedo[3] = data.albedo[3];
     mat.metallic = data.metallic;
     mat.roughness = data.roughness;
+    if (data.emissive) {
+      mat.emissive[0] = data.emissive[0];
+      mat.emissive[1] = data.emissive[1];
+      mat.emissive[2] = data.emissive[2];
+    }
+    if (data.emissiveIntensity !== undefined) mat.emissiveIntensity = data.emissiveIntensity;
+    if (data.texTilingX !== undefined) mat.texTilingX = data.texTilingX;
+    if (data.texTilingY !== undefined) mat.texTilingY = data.texTilingY;
     mat.dirty = true;
   }
 }

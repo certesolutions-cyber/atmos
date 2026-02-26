@@ -26,6 +26,7 @@ import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
 import { MaterialManager } from '../material-manager.js';
 import { seedProject } from '../project-seed.js';
+import { ProjectSettingsManager } from '../project-settings.js';
 import { AssetBrowserClient } from '../asset-browser-client.js';
 import { createGeometryCache } from './geometry-cache.js';
 import {
@@ -37,7 +38,7 @@ import {
 } from './default-factories.js';
 import type { FactoryDeps } from './default-factories.js';
 import { installKeyboardShortcuts } from './keyboard-shortcuts.js';
-import { setReparentValidator, setOnReparent } from '../scene-operations.js';
+import { setReparentValidator, setOnReparent, setOnDuplicate } from '../scene-operations.js';
 import { discoverScripts, autoDiscoverScripts } from '../script-discovery.js';
 import { importModelAssets } from './model-import.js';
 import type { EditorConfig, EditorApp, MeshLike } from './types.js';
@@ -97,6 +98,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   const projectFs = new ProjectFileSystem();
   const lazyState: { current: EditorState | null } = { current: null };
   const lazyMM: { current: MaterialManager | null } = { current: null };
+  const lazySM: { current: ProjectSettingsManager | null } = { current: null };
 
   // Model mesh cache for deserialize (model:path.glb:index)
   const modelCache = new Map<string, ModelAsset>();
@@ -265,25 +267,42 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     await seedProject(projectFs);
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
+    const sm = new ProjectSettingsManager(projectFs);
+    await sm.load();
+    lazySM.current = sm;
+    config.physics?.applyPhysicsSettings?.(sm.settings.physics);
+    sm.onChange(() => {
+      config.physics?.applyPhysicsSettings?.(sm.settings.physics);
+    });
     // setProjectFs triggers 'projectChanged' → EditorShell re-renders with gate gone
     lazyState.current?.setProjectFs(projectFs, mm);
+    lazyState.current?.setSettingsManager(sm);
   };
 
   // Pre-init project before mount (so ProjectGate doesn't flash)
   // Priority: 1) Vite dev server  2) Restored FS handle  3) Show gate
   const devConnected = await projectFs.tryConnectDevServer();
   let preInited = false;
-  if (devConnected) {
+  const preInitProject = async () => {
     await seedProject(projectFs);
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
+    const sm = new ProjectSettingsManager(projectFs);
+    await sm.load();
+    lazySM.current = sm;
+    config.physics?.applyPhysicsSettings?.(sm.settings.physics);
+    sm.onChange(() => {
+      config.physics?.applyPhysicsSettings?.(sm.settings.physics);
+    });
+  };
+
+  if (devConnected) {
+    await preInitProject();
     preInited = true;
   } else {
     const restored = await projectFs.tryRestore();
     if (restored) {
-      await seedProject(projectFs);
-      const mm = new MaterialManager(projectFs, gpu.device);
-      lazyMM.current = mm;
+      await preInitProject();
       preInited = true;
     }
   }
@@ -323,6 +342,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       componentFactory,
       componentFilter,
       componentRemover,
+      physics: config.physics,
     },
   );
   cleanups.push(unmount);
@@ -332,10 +352,14 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   // If pre-initialized before mount, set projectFs on editorState now
   if (preInited) {
     editorState.setProjectFs(projectFs, lazyMM.current!);
+    if (lazySM.current) editorState.setSettingsManager(lazySM.current);
   }
 
-  // 9. Physics reparent hooks
+  // 9. Physics reparent + duplicate hooks
   config.physics?.installReparentHooks(setReparentValidator, setOnReparent);
+  if (config.physics) {
+    setOnDuplicate((copy, source) => config.physics!.handleDuplicate(copy, source));
+  }
 
   // 10. Asset browser + script discovery
   const assetClient = new AssetBrowserClient();
@@ -408,18 +432,22 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
   engine.paused = true;
 
-  // Skip GPU-owning components when cycling play/pause lifecycle
+  // Skip GPU-owning and physics components when cycling play/pause lifecycle
   const isEngineComponent = (c: import('@atmos/core').Component) =>
     c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
     || c instanceof Camera || c instanceof DirectionalLight
     || c instanceof PointLight || c instanceof SpotLight
     || c instanceof AnimationMixer
-    || c instanceof AnimationHandler;
+    || c instanceof AnimationHandler
+    || (config.physics?.isPhysicsComponent(c) ?? false);
 
   cleanups.push(editorState.on('pauseChanged', () => {
     engine.paused = editorState.paused;
     if (!editorState.paused) {
-      // Entering play mode — awake + start all components
+      // Entering play mode — teleport bodies + sync joints before first step
+      config.physics?.onSceneRestored(editorState.scene);
+      config.physics?.syncAllJoints?.(editorState.scene);
+      // Awake + start all components
       editorState.scene.awakeAll();
       editorState.scene.startAll();
     }

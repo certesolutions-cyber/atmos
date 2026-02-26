@@ -10,6 +10,9 @@ export interface CanvasLike {
 }
 
 export class Input {
+  /** The currently active Input instance, set automatically by Engine. */
+  static current: Input | null = null;
+
   private readonly _keysDown: Set<string> = new Set();
   private readonly _keysPressed: Set<string> = new Set();
   private readonly _keysJustDown: Set<string> = new Set();

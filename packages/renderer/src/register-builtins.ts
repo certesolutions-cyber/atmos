@@ -18,6 +18,8 @@ export function registerRendererBuiltins(): void {
       { key: 'material.roughness', type: 'number', min: 0, max: 1, step: 0.01 },
       { key: 'material.emissive', type: 'color' },
       { key: 'material.emissiveIntensity', type: 'number', min: 0, max: 20, step: 0.1 },
+      { key: 'material.texTilingX', type: 'number', min: 0.01, max: 100, step: 0.1 },
+      { key: 'material.texTilingY', type: 'number', min: 0.01, max: 100, step: 0.1 },
       { key: 'castShadow', type: 'boolean' },
       { key: 'receiveSSAO', type: 'boolean' },
     ],
@@ -33,6 +35,8 @@ export function registerRendererBuiltins(): void {
       { key: 'material.roughness', type: 'number', min: 0, max: 1, step: 0.01 },
       { key: 'material.emissive', type: 'color' },
       { key: 'material.emissiveIntensity', type: 'number', min: 0, max: 20, step: 0.1 },
+      { key: 'material.texTilingX', type: 'number', min: 0.01, max: 100, step: 0.1 },
+      { key: 'material.texTilingY', type: 'number', min: 0.01, max: 100, step: 0.1 },
       { key: 'castShadow', type: 'boolean' },
     ],
   });

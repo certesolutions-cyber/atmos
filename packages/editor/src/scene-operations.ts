@@ -1,5 +1,5 @@
-import type { Scene, GameObject } from '@atmos/core';
-import { GameObject as GameObjectClass } from '@atmos/core';
+import type { Scene, GameObject, Component } from '@atmos/core';
+import { GameObject as GameObjectClass, getComponentDef } from '@atmos/core';
 import { Mat4, Quat } from '@atmos/math';
 import type { Mat4Type, QuatType } from '@atmos/math';
 import type { EditorState } from './editor-state.js';
@@ -11,9 +11,11 @@ const _tmpQuat: QuatType = Quat.create();
 
 export type ReparentValidator = (child: GameObject, newParent: GameObject | null) => boolean;
 export type ReparentCallback = (child: GameObject) => void;
+export type DuplicateCallback = (copy: GameObject, source: GameObject) => void;
 
 let _reparentValidator: ReparentValidator | null = null;
 let _onReparent: ReparentCallback | null = null;
+let _onDuplicate: DuplicateCallback | null = null;
 
 export function setReparentValidator(fn: ReparentValidator | null): void {
   _reparentValidator = fn;
@@ -23,6 +25,10 @@ export function setOnReparent(fn: ReparentCallback | null): void {
   _onReparent = fn;
 }
 
+export function setOnDuplicate(fn: DuplicateCallback | null): void {
+  _onDuplicate = fn;
+}
+
 export function findObjectById(scene: Scene, id: number): GameObject | null {
   for (const obj of scene.getAllObjects()) {
     if (obj.id === id) return obj;
@@ -30,7 +36,40 @@ export function findObjectById(scene: Scene, id: number): GameObject | null {
   return null;
 }
 
-export function duplicateGameObject(scene: Scene, source: GameObject): GameObject {
+function resolvePropertyPath(obj: unknown, path: string): unknown {
+  let current: unknown = obj;
+  for (const part of path.split('.')) {
+    if (current == null || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+function setPropertyPath(target: unknown, path: string, value: unknown): void {
+  const parts = path.split('.');
+  let current: unknown = target;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (current == null || typeof current !== 'object') return;
+    current = (current as Record<string, unknown>)[parts[i]!];
+  }
+  if (current == null || typeof current !== 'object') return;
+  const key = parts[parts.length - 1]!;
+  const existing = (current as Record<string, unknown>)[key];
+  if (existing instanceof Float32Array && Array.isArray(value)) {
+    for (let i = 0; i < value.length && i < existing.length; i++) existing[i] = value[i] as number;
+    (current as Record<string, unknown>)[key] = existing;
+  } else {
+    (current as Record<string, unknown>)[key] = value;
+  }
+}
+
+function clonePropertyValue(value: unknown): unknown {
+  if (value instanceof Float32Array) return new Float32Array(value);
+  if (Array.isArray(value)) return [...value];
+  return value;
+}
+
+function cloneObjectShallow(source: GameObject): GameObject {
   const copy = new GameObjectClass(source.name + ' (Copy)');
 
   // Copy transform
@@ -38,12 +77,64 @@ export function duplicateGameObject(scene: Scene, source: GameObject): GameObjec
   copy.transform.setRotationFrom(source.transform.rotation);
   copy.transform.setScaleFrom(source.transform.scale);
 
-  // Same parent
+  // Copy components with registered properties
+  for (const comp of source.getComponents()) {
+    const Ctor = comp.constructor as new () => Component;
+    const def = getComponentDef(Ctor);
+    const newComp = copy.addComponent(Ctor);
+    if (def) {
+      for (const prop of def.properties) {
+        const value = resolvePropertyPath(comp, prop.key);
+        if (value !== undefined) {
+          setPropertyPath(newComp, prop.key, clonePropertyValue(value));
+        }
+      }
+    }
+    // Copy shared GPU resource references (not registered but needed for rendering)
+    const src = comp as Record<string, unknown>;
+    const dst = newComp as Record<string, unknown>;
+    if (src['mesh'] !== undefined) dst['mesh'] = src['mesh'];
+    if (src['material'] !== undefined) dst['material'] = src['material'];
+  }
+
+  return copy;
+}
+
+function cloneObjectDeep(scene: Scene, source: GameObject): GameObject {
+  const copy = cloneObjectShallow(source);
+
+  // Recursively duplicate children and parent them under the copy
+  for (const child of source.children) {
+    const childCopy = cloneObjectDeep(scene, child);
+    childCopy.setParent(copy);
+  }
+
+  return copy;
+}
+
+export function duplicateGameObject(scene: Scene, source: GameObject): GameObject {
+  const copy = cloneObjectDeep(scene, source);
+
+  // Place copy under same parent as source
   if (source.parent) {
     copy.setParent(source.parent);
   }
 
   scene.add(copy);
+
+  // Post-duplicate hook: initialize physics components etc.
+  if (_onDuplicate) {
+    const initSubtree = (c: GameObject, s: GameObject) => {
+      _onDuplicate!(c, s);
+      const copyChildren = c.children;
+      const srcChildren = s.children;
+      for (let i = 0; i < copyChildren.length; i++) {
+        initSubtree(copyChildren[i]!, srcChildren[i]!);
+      }
+    };
+    initSubtree(copy, source);
+  }
+
   return copy;
 }
 
@@ -58,10 +149,8 @@ export function deleteGameObject(
     deleteGameObject(scene, child, editorState);
   }
 
-  // Deselect if target was selected
-  if (editorState.selected === target) {
-    editorState.deselect();
-  }
+  // Remove from selection if target was selected
+  editorState.removeFromSelection(target);
 
   // Remove from parent
   target.setParent(null);

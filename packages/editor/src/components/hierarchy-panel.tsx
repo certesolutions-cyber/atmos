@@ -74,8 +74,22 @@ function collectMatchingIds(
   return false;
 }
 
+function flattenHierarchy(
+  roots: readonly import('@atmos/core').GameObject[],
+  filterMatch: Set<number> | null,
+): import('@atmos/core').GameObject[] {
+  const result: import('@atmos/core').GameObject[] = [];
+  const visit = (obj: import('@atmos/core').GameObject) => {
+    if (filterMatch && !filterMatch.has(obj.id)) return;
+    result.push(obj);
+    for (const child of obj.children) visit(child);
+  };
+  for (const root of roots) visit(root);
+  return result;
+}
+
 export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel, style }: HierarchyPanelProps) {
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; obj: import('@atmos/core').GameObject | null } | null>(null);
   const [renameId, setRenameId] = useState<number | null>(null);
@@ -91,7 +105,16 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
-  const selectedId = editorState.selected?.id ?? null;
+  const [lastClickedId, setLastClickedId] = useState<number | null>(null);
+
+  // tick in deps forces recalc whenever selectionChanged fires a re-render
+  const selectedIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const obj of editorState.selection) ids.add(obj.id);
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorState, tick]);
+
   const roots = editorState.scene.roots;
 
   // Compute filter match set
@@ -129,6 +152,27 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
     setRenameId(null);
     refresh();
   }, [refresh]);
+
+  const handleSelect = useCallback((obj: import('@atmos/core').GameObject, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      editorState.toggleSelect(obj);
+      setLastClickedId(obj.id);
+    } else if (e.shiftKey && lastClickedId !== null) {
+      const flat = flattenHierarchy(roots, filterMatch);
+      const anchorIdx = flat.findIndex((o) => o.id === lastClickedId);
+      const targetIdx = flat.findIndex((o) => o.id === obj.id);
+      if (anchorIdx >= 0 && targetIdx >= 0) {
+        const lo = Math.min(anchorIdx, targetIdx);
+        const hi = Math.max(anchorIdx, targetIdx);
+        editorState.addToSelection(flat.slice(lo, hi + 1));
+      } else {
+        editorState.select(obj);
+      }
+    } else {
+      editorState.select(obj);
+      setLastClickedId(obj.id);
+    }
+  }, [editorState, lastClickedId, roots, filterMatch]);
 
   const primitiveTypes: PrimitiveType[] = ['cube', 'sphere', 'cylinder', 'plane', 'camera', 'directionalLight', 'pointLight', 'spotLight'];
 
@@ -236,9 +280,9 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
           <HierarchyNode
             key={root.id}
             gameObject={root}
-            selectedId={selectedId}
+            selectedIds={selectedIds}
             depth={0}
-            onSelect={(obj) => editorState.select(obj)}
+            onSelect={handleSelect}
             onDoubleClick={onFocusObject}
             onReparent={handleReparent}
             onContextMenu={handleContextMenu}

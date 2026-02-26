@@ -1,0 +1,19 @@
+{
+  "name": "Default",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    0,
+    0,
+    1
+  ],
+  "metallic": 0.48,
+  "roughness": 0.5,
+  "emissive": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "emissiveIntensity": 0
+}

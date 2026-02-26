@@ -1,4 +1,4 @@
-export { initRapier } from './init.js';
+export { initRapier, getWasmMemory, getLockedAxesOffset } from './init.js';
 export { PhysicsWorld } from './physics-world.js';
 export type { PhysicsWorldOptions } from './physics-world.js';
 export { RigidBody } from './rigid-body.js';

@@ -8,8 +8,12 @@ export interface PhysicsWorldOptions {
 
 export class PhysicsWorld {
   readonly world: RAPIER.World;
-  readonly fixedTimestep: number;
+  fixedTimestep: number;
+  substeps = 1;
   private _accumulator = 0;
+
+  /** Time remaining after the last fixed step (for interpolation/extrapolation). */
+  get accumulator(): number { return this._accumulator; }
 
   constructor(options: PhysicsWorldOptions = {}) {
     const g = options.gravity ?? { x: 0, y: -9.81, z: 0 };
@@ -20,12 +24,25 @@ export class PhysicsWorld {
     }
   }
 
+  setGravity(x: number, y: number, z: number): void {
+    this.world.gravity = new RAPIER.Vector3(x, y, z);
+  }
+
+  setSolverIterations(n: number): void {
+    this.world.numSolverIterations = n;
+  }
+
   /** Advance the simulation by dt seconds using fixed timestep accumulator. Returns steps taken. */
   step(dt: number): number {
     this._accumulator += dt;
     let steps = 0;
+    const sub = Math.max(1, this.substeps);
     while (this._accumulator >= this.fixedTimestep) {
-      this.world.step();
+      const subDt = this.fixedTimestep / sub;
+      for (let s = 0; s < sub; s++) {
+        this.world.timestep = subDt;
+        this.world.step();
+      }
       this._accumulator -= this.fixedTimestep;
       steps++;
     }
@@ -61,6 +78,11 @@ export class PhysicsWorld {
 
   removeJoint(joint: RAPIER.ImpulseJoint): void {
     this.world.removeImpulseJoint(joint, true);
+  }
+
+  /** Reset the fixed-timestep accumulator (e.g. after pause→play). */
+  resetAccumulator(): void {
+    this._accumulator = 0;
   }
 
   destroy(): void {

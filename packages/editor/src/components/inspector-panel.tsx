@@ -290,6 +290,17 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
     );
   }
 
+  const selectionSize = editorState.selection.size;
+
+  if (selectionSize > 1) {
+    return (
+      <div style={panelStyle}>
+        <div style={headerStyle}>Inspector</div>
+        <div style={{ padding: '16px', color: '#888', fontSize: '11px' }}>{selectionSize} objects selected</div>
+      </div>
+    );
+  }
+
   if (!selected) {
     return (
       <div style={panelStyle}>
@@ -343,7 +354,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
   const allRegistered = getAllRegisteredComponents();
   const addableComponents: Array<{ ctor: new () => Component; name: string; disabledReason: string | null }> = [];
   for (const [ctor, def] of allRegistered) {
-    if (!existingCtors.has(ctor)) {
+    if (def.allowMultiple || !existingCtors.has(ctor)) {
       const reason = componentFilter ? componentFilter(ctor as new () => Component, selected) : null;
       addableComponents.push({ ctor: ctor as new () => Component, name: def.name, disabledReason: reason });
     }

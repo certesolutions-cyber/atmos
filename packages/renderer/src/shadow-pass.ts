@@ -138,3 +138,34 @@ export class DirectionalShadowPass {
     this._lightVPBuffer.destroy();
   }
 }
+
+/**
+ * Wraps a pair of DirectionalShadowPass (cascade 0 near + cascade 1 far)
+ * for a single directional light shadow slot.
+ */
+export class DirectionalShadowPassPair {
+  private readonly _cascade0: DirectionalShadowPass;
+  private readonly _cascade1: DirectionalShadowPass;
+
+  constructor(device: GPUDevice, objectBGL: GPUBindGroupLayout, resolution: number) {
+    this._cascade0 = new DirectionalShadowPass(device, objectBGL, resolution);
+    this._cascade1 = new DirectionalShadowPass(device, objectBGL, resolution);
+  }
+
+  get cascade0View(): GPUTextureView { return this._cascade0.shadowMapView; }
+  get cascade1View(): GPUTextureView { return this._cascade1.shadowMapView; }
+
+  execute(
+    encoder: GPUCommandEncoder, scene: Scene,
+    vp0: Mat4Type, vp1: Mat4Type,
+    extraDraw?: (pass: GPURenderPassEncoder) => void,
+  ): void {
+    this._cascade0.execute(encoder, scene, vp0, extraDraw);
+    this._cascade1.execute(encoder, scene, vp1, extraDraw);
+  }
+
+  destroy(): void {
+    this._cascade0.destroy();
+    this._cascade1.destroy();
+  }
+}

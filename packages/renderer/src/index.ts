@@ -50,10 +50,20 @@ export {
 export type { GPUTextureHandle } from './texture.js';
 export { extractFrustumPlanes, isSphereInFrustum } from './frustum.js';
 export type { FrustumPlanes } from './frustum.js';
-export { DirectionalShadowPass } from './shadow-pass.js';
+export { DirectionalShadowPass, DirectionalShadowPassPair } from './shadow-pass.js';
 export { PointShadowPass } from './point-shadow-pass.js';
 export { SpotShadowPass } from './spot-shadow-pass.js';
-export { SHADOW_UNIFORM_SIZE, createShadowBindGroupLayout } from './shadow-uniforms.js';
+export {
+  SHADOW_UNIFORM_SIZE,
+  MAX_DIR_SHADOW_SLOTS,
+  MAX_POINT_SHADOW_SLOTS,
+  MAX_SPOT_SHADOW_SLOTS,
+  SHADOW_SLOT_NONE,
+  createShadowBindGroupLayout,
+} from './shadow-uniforms.js';
+export { ShadowManager } from './shadow-manager.js';
+export type { ShadowManagerResult } from './shadow-manager.js';
+export { SHADOW_FRAGMENT_WGSL } from './shadow-fragment-wgsl.js';
 export { SHADOW_VERTEX_SHADER } from './shadow-shader.js';
 export { POINT_SHADOW_SHADER } from './point-shadow-shader.js';
 export { generateMipmaps } from './mipmap-generator.js';

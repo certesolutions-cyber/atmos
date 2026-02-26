@@ -50,14 +50,6 @@ export function DecimalInput({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       inputRef.current?.blur();
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const delta = e.key === 'ArrowUp' ? step : -step;
-      const current = parseFloat(text) || 0;
-      const next = parseFloat((current + delta).toFixed(decimals));
-      const clamped = clamp(next, min, max);
-      setText(String(clamped));
-      onChange(clamped);
     } else if (e.key === 'Escape') {
       setEditing(false);
       inputRef.current?.blur();
@@ -69,6 +61,7 @@ export function DecimalInput({
       ref={inputRef}
       type="text"
       inputMode="decimal"
+      autoComplete="off"
       style={style}
       value={display}
       onFocus={() => {

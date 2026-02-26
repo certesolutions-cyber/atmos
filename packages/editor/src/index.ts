@@ -6,6 +6,7 @@ export { getProperty, setProperty } from './property-setters.js';
 export { OrbitCamera } from './orbit-camera.js';
 export { ObjectPicker } from './object-picker.js';
 export type { PickResult } from './object-picker.js';
+export { computeSelectionCenter } from './selection-utils.js';
 export { GizmoState } from './gizmo-state.js';
 export type { GizmoMode, GizmoAxis } from './gizmo-state.js';
 export { GizmoRenderer } from './gizmo-renderer.js';
@@ -20,8 +21,9 @@ export {
   reparentGameObject,
   setReparentValidator,
   setOnReparent,
+  setOnDuplicate,
 } from './scene-operations.js';
-export type { ReparentValidator, ReparentCallback } from './scene-operations.js';
+export type { ReparentValidator, ReparentCallback, DuplicateCallback } from './scene-operations.js';
 export { takeSnapshot, restoreSnapshot } from './scene-snapshot.js';
 export type { SceneSnapshot } from './scene-snapshot.js';
 export { AssetBrowserClient } from './asset-browser-client.js';
@@ -29,6 +31,8 @@ export type { AssetEntry, AssetListResponse, AssetChangeEvent, ScriptAsset } fro
 export { discoverScripts, autoDiscoverScripts } from './script-discovery.js';
 export { ProjectFileSystem } from './project-fs.js';
 export { MaterialManager } from './material-manager.js';
+export { ProjectSettingsManager } from './project-settings.js';
+export type { PhysicsSettings, ProjectSettings } from './project-settings.js';
 export { startEditor } from './bootstrap/start-editor.js';
 export { createEditorPhysics } from './bootstrap/editor-physics.js';
 export type {

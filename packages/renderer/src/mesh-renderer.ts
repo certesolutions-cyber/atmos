@@ -69,6 +69,22 @@ export class MeshRenderer extends Component {
     });
   }
 
+  /** Lazily initialise GPU buffers if mesh+material exist but init() was never called. */
+  ensureGPU(ctx: MeshRendererContext): void {
+    if (this._device || !this.mesh) return;
+    const { device, pipelineResources } = ctx;
+    this._device = device;
+    this._pipelineResources = pipelineResources;
+    this.uniformBuffer = device.createBuffer({
+      size: OBJECT_UNIFORM_SIZE,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.bindGroup = device.createBindGroup({
+      layout: pipelineResources.objectBindGroupLayout,
+      entries: [{ binding: 0, resource: { buffer: this.uniformBuffer } }],
+    });
+  }
+
   /** Create material bind group lazily, once the shared scene buffer is available */
   initMaterialBindGroup(sceneBuffer: GPUBuffer): void {
     if (!this._device || !this._pipelineResources || !this.material) return;

@@ -11,6 +11,8 @@ export interface MaterialAssetData {
   emissiveIntensity?: number;
   normalTexture?: string;
   metallicRoughnessTexture?: string;
+  texTilingX?: number;
+  texTilingY?: number;
 }
 
 export function createDefaultMaterialAsset(name: string): MaterialAssetData {
@@ -40,5 +42,7 @@ export function deserializeMaterialAsset(json: string): MaterialAssetData {
     emissiveIntensity: (raw['emissiveIntensity'] as number) ?? undefined,
     normalTexture: (raw['normalTexture'] as string) ?? undefined,
     metallicRoughnessTexture: (raw['metallicRoughnessTexture'] as string) ?? undefined,
+    texTilingX: (raw['texTilingX'] as number) ?? undefined,
+    texTilingY: (raw['texTilingY'] as number) ?? undefined,
   };
 }

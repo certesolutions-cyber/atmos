@@ -10,6 +10,7 @@ import { InspectorPanel } from './inspector-panel.js';
 import { AssetBrowserPanel } from './asset-browser-panel.js';
 import { ProjectGate } from './project-gate.js';
 import { PostProcessPanel } from './post-process-panel.js';
+import { SettingsPanel } from './settings-panel.js';
 import { useSplitter } from './use-splitter.js';
 import type { GizmoMode } from '../gizmo-state.js';
 import type { PrimitiveType } from '../editor-mount.js';
@@ -155,6 +156,7 @@ export function EditorShell({
 }: EditorShellProps) {
   const [, setTick] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -206,7 +208,8 @@ export function EditorShell({
     const unsub1 = editorState.on('pauseChanged', () => setTick((t) => t + 1));
     const unsub2 = editorState.on('gizmoModeChanged', () => setTick((t) => t + 1));
     const unsub3 = editorState.on('projectChanged', () => setTick((t) => t + 1));
-    return () => { unsub1(); unsub2(); unsub3(); };
+    const unsub4 = editorState.on('settingsChanged', () => setTick((t) => t + 1));
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
   }, [editorState]);
 
   const handleSave = useCallback(async () => {
@@ -426,6 +429,18 @@ export function EditorShell({
             </select>
           </>
         )}
+
+        <div style={{ flex: 1 }} />
+
+        {editorState.settingsManager && (
+          <button
+            style={btnBase}
+            onClick={() => setSettingsOpen(true)}
+            title="Project Settings"
+          >
+            {'\u2699'}
+          </button>
+        )}
       </div>
 
       {/* ── Body: Hierarchy | Splitter | Viewport+Assets | Splitter | Inspector ── */}
@@ -495,6 +510,13 @@ export function EditorShell({
           {renderSystem && <PostProcessPanel renderSystem={renderSystem} editorState={editorState} />}
         </div>
       </div>
+
+      {settingsOpen && editorState.settingsManager && (
+        <SettingsPanel
+          settingsManager={editorState.settingsManager}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   );
 }

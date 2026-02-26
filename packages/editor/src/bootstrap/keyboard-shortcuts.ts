@@ -29,8 +29,11 @@ export function installKeyboardShortcuts(
         break;
       case 'delete':
       case 'backspace':
-        if (editorState.selected) {
-          deleteGameObject(editorState.scene, editorState.selected, editorState);
+        if (editorState.selection.size > 0) {
+          const toDelete = [...editorState.selection];
+          for (const obj of toDelete) {
+            deleteGameObject(editorState.scene, obj, editorState);
+          }
         }
         break;
     }

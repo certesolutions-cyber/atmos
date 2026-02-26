@@ -12,6 +12,8 @@ export interface MaterialParams {
   splatSharpness?: number;
   /** Fragments with alpha below this value are discarded. 0 = no cutoff. */
   alphaCutoff?: number;
+  texTilingX?: number;
+  texTilingY?: number;
 }
 
 export interface Material {
@@ -24,6 +26,8 @@ export interface Material {
   splatSharpness: number;
   /** Fragments with alpha below this value are discarded. 0 = no cutoff. */
   alphaCutoff: number;
+  texTilingX: number;
+  texTilingY: number;
   dirty: boolean;
   uniformBuffer: GPUBuffer | null;
   bindGroup: GPUBindGroup | null;
@@ -35,9 +39,10 @@ export interface Material {
 
 /**
  * Bytes: vec4 albedo(16) + f32 metallic(4) + f32 roughness(4) + 8B pad
- *      + vec4 emissive(16: rgb + intensity in w) = 48
+ *      + vec4 emissive(16: rgb + intensity in w)
+ *      + vec2 texTiling(8) + 8B pad = 64
  */
-export const MATERIAL_UNIFORM_SIZE = 48;
+export const MATERIAL_UNIFORM_SIZE = 64;
 
 export function createMaterial(params?: MaterialParams): Material {
   return {
@@ -48,6 +53,8 @@ export function createMaterial(params?: MaterialParams): Material {
     emissiveIntensity: params?.emissiveIntensity ?? 0,
     splatSharpness: params?.splatSharpness ?? 1,
     alphaCutoff: params?.alphaCutoff ?? 0,
+    texTilingX: params?.texTilingX ?? 1,
+    texTilingY: params?.texTilingY ?? 1,
     dirty: true,
     uniformBuffer: null,
     bindGroup: null,
@@ -60,7 +67,8 @@ export function createMaterial(params?: MaterialParams): Material {
 
 /**
  * Write material uniforms into a Float32Array for GPU upload.
- * Layout: [albedo(4), metallic, roughness, pad, pad, emissive.rgb(3), emissiveIntensity]
+ * Layout: [albedo(4), metallic, roughness, splatSharpness, alphaCutoff,
+ *          emissive.rgb(3), emissiveIntensity, texTilingX, texTilingY, pad, pad]
  */
 export function writeMaterialUniforms(out: Float32Array, mat: Material): void {
   out[0] = mat.albedo[0]!;
@@ -75,4 +83,6 @@ export function writeMaterialUniforms(out: Float32Array, mat: Material): void {
   out[9] = mat.emissive[1]!;
   out[10] = mat.emissive[2]!;
   out[11] = mat.emissiveIntensity;
+  out[12] = mat.texTilingX;
+  out[13] = mat.texTilingY;
 }

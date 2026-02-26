@@ -7,8 +7,31 @@ import type { ProjectFileSystem } from '../project-fs.js';
 import type { MaterialManager } from '../material-manager.js';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { ScriptAsset } from '../asset-types.js';
+import type { PhysicsSettings } from '../project-settings.js';
 
 // ---- Physics plugin (implemented by @atmos/physics) ---- //
+
+/** Data for rendering joint axis gizmos. Positions/directions in world space. */
+export interface JointGizmoData {
+  /** World-space anchor position on body 1. */
+  origin1: { x: number; y: number; z: number };
+  /** World-space axis direction on body 1 (unit vector). */
+  dir1: { x: number; y: number; z: number };
+  /** World-space anchor position on body 2. */
+  origin2: { x: number; y: number; z: number };
+  /** World-space axis direction on body 2 (unit vector). */
+  dir2: { x: number; y: number; z: number };
+}
+
+/** Data for rendering collider wireframe gizmos. Positions/rotations in world space. */
+export interface ColliderGizmoData {
+  shapeType: 'box' | 'sphere' | 'capsule' | 'cylinder';
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number; w: number };
+  halfExtents?: { x: number; y: number; z: number };
+  radius?: number;
+  halfHeight?: number;
+}
 
 /** Minimal mesh interface for collider auto-sizing (avoids importing @atmos/renderer in physics) */
 export interface MeshLike {
@@ -43,6 +66,8 @@ export interface EditorPhysicsPlugin {
   ): boolean;
   /** Flush deferred operations (e.g. joint connectedObject). */
   flushDeferred(ops: Array<() => void>): void;
+  /** Initialize physics components on a duplicated GameObject (copy) using the source as reference. */
+  handleDuplicate(copy: GameObject, source: GameObject): void;
   /** Install reparent validator + callback for nested-RigidBody prevention. */
   installReparentHooks(
     setValidator: (fn: ((child: GameObject, newParent: GameObject | null) => boolean) | null) => void,
@@ -50,8 +75,22 @@ export interface EditorPhysicsPlugin {
   ): void;
   /** Sync physics system when scene changes. */
   onSceneChanged(scene: Scene): void;
+  /** Returns true if the component belongs to the physics plugin (RigidBody, Collider, Joint). */
+  isPhysicsComponent(comp: Component): boolean;
   /** Teleport RigidBodies after play-mode snapshot restore. */
   onSceneRestored(scene: Scene): void;
+  /** Get joint axis gizmo data for a selected GameObject, or null if it has no hinge joints. */
+  getJointGizmoData(go: GameObject): JointGizmoData[] | null;
+  /** Get collider wireframe gizmo data for a selected GameObject, or null if it has no colliders. */
+  getColliderGizmoData(go: GameObject): ColliderGizmoData[] | null;
+  /** Recreate joints on/connected-to the given objects so auto-configured anchors/axes update. */
+  syncJointsForObjects?(objects: readonly GameObject[]): void;
+  /** Push transform changes (scale→collider, position→fixed body) while engine is paused. */
+  syncTransformsForObjects?(objects: readonly GameObject[]): void;
+  /** Recreate all auto-configured joints in the scene (e.g. before first physics step). */
+  syncAllJoints?(scene: Scene): void;
+  /** Apply project-wide physics settings to the physics world. */
+  applyPhysicsSettings?(settings: PhysicsSettings): void;
 }
 
 // ---- startEditor config & result ---- //

@@ -1,0 +1,16 @@
+{
+  "name": "ground",
+  "shader": "pbr",
+  "albedo": [
+    0.27058823529411763,
+    0.27058823529411763,
+    0.27058823529411763,
+    1
+  ],
+  "metallic": 0.29,
+  "roughness": 0.28,
+  "albedoTexture": "textures/asphalt.jpg",
+  "normalTexture": "textures/asphalt_normal.jpg",
+  "texTilingX": 80,
+  "texTilingY": 80
+}

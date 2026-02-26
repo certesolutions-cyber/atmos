@@ -6,6 +6,14 @@ import type { CameraSettings } from '@atmos/renderer';
 export type GizmoMode = 'translate' | 'rotate' | 'scale';
 export type GizmoAxis = 'x' | 'y' | 'z' | null;
 
+interface ObjectDragStart {
+  obj: GameObject;
+  pos: Float32Array;   // local position at drag start
+  rot: Float32Array;   // local rotation at drag start
+  scale: Float32Array;  // local scale at drag start
+  worldPos: Float32Array; // world position at drag start
+}
+
 // Pre-allocated scratch data
 const _ray = Ray.create();
 const _viewMatrix: Mat4Type = Mat4.create();
@@ -116,11 +124,31 @@ function planeAngle(axisKey: string): number {
   return Math.atan2(_planeHit[1]!, _planeHit[0]!); // z
 }
 
+/** Rotate a vector by a quaternion: v' = q * v * q^-1 */
+function rotateVecByQuat(
+  out: Float32Array,
+  q: Float32Array,
+  vx: number, vy: number, vz: number,
+): void {
+  const qx = q[0]!, qy = q[1]!, qz = q[2]!, qw = q[3]!;
+  // t = 2 * cross(q.xyz, v)
+  const tx = 2 * (qy * vz - qz * vy);
+  const ty = 2 * (qz * vx - qx * vz);
+  const tz = 2 * (qx * vy - qy * vx);
+  // v' = v + qw * t + cross(q.xyz, t)
+  out[0] = vx + qw * tx + (qy * tz - qz * ty);
+  out[1] = vy + qw * ty + (qz * tx - qx * tz);
+  out[2] = vz + qw * tz + (qx * ty - qy * tx);
+}
+
 const _axisVecs: Record<string, Float32Array> = {
   x: Vec3.fromValues(1, 0, 0),
   y: Vec3.fromValues(0, 1, 0),
   z: Vec3.fromValues(0, 0, 1),
 };
+
+// Scratch for rotateVecByQuat output
+const _rotatedOffset = Vec3.create();
 
 export class GizmoState {
   mode: GizmoMode = 'translate';
@@ -131,25 +159,21 @@ export class GizmoState {
 
   private _startValue = 0;
   private _startAngle = 0;
-  private _startPos = Vec3.create();
-  private _startRot = new Float32Array(4);
-  private _startScale = Vec3.create();
   private _startWorldOrigin = Vec3.create();
+  private _targets: ObjectDragStart[] = [];
+  private _gizmoScale = 1;
 
   hitTest(
     screenX: number, screenY: number,
     camera: CameraSettings, canvas: HTMLCanvasElement,
-    target: GameObject, gizmoScale: number,
+    center: Float32Array, gizmoScale: number,
   ): GizmoAxis {
     if (!buildRay(screenX, screenY, camera, canvas)) return null;
 
-    const pos = target.transform.worldMatrix;
-    const origin = Vec3.fromValues(pos[12]!, pos[13]!, pos[14]!);
-
     if (this.mode === 'rotate') {
-      return this._hitTestRing(origin, gizmoScale);
+      return this._hitTestRing(center, gizmoScale);
     }
-    return this._hitTestAxis(origin, gizmoScale);
+    return this._hitTestAxis(center, gizmoScale);
   }
 
   private _hitTestAxis(origin: Float32Array, gizmoScale: number): GizmoAxis {
@@ -200,21 +224,30 @@ export class GizmoState {
     axis: GizmoAxis,
     screenX: number, screenY: number,
     camera: CameraSettings, canvas: HTMLCanvasElement,
-    target: GameObject, gizmoScale: number,
+    targets: readonly GameObject[], gizmoScale: number,
+    center: Float32Array,
   ): void {
-    if (!axis) return;
+    if (!axis || targets.length === 0) return;
     this.activeAxis = axis;
     this.dragging = true;
+    this._gizmoScale = gizmoScale;
 
     if (!buildRay(screenX, screenY, camera, canvas)) return;
 
-    // Save world origin — use this throughout the drag to avoid feedback
-    const pos = target.transform.worldMatrix;
-    Vec3.set(this._startWorldOrigin, pos[12]!, pos[13]!, pos[14]!);
+    // Save shared center as world origin for the entire drag
+    Vec3.copy(this._startWorldOrigin, center);
 
-    Vec3.copy(this._startPos, target.transform.position);
-    this._startRot.set(target.transform.rotation);
-    Vec3.copy(this._startScale, target.transform.scale);
+    // Save per-object start state
+    this._targets = targets.map((obj) => {
+      const wm = obj.transform.worldMatrix;
+      return {
+        obj,
+        pos: new Float32Array(obj.transform.position),
+        rot: new Float32Array(obj.transform.rotation),
+        scale: new Float32Array(obj.transform.scale),
+        worldPos: Vec3.fromValues(wm[12]!, wm[13]!, wm[14]!),
+      };
+    });
 
     if (this.mode === 'rotate') {
       const axisVec = _axisVecs[axis]!;
@@ -232,19 +265,18 @@ export class GizmoState {
   updateDrag(
     screenX: number, screenY: number,
     camera: CameraSettings, canvas: HTMLCanvasElement,
-    target: GameObject, gizmoScale: number,
   ): void {
-    if (!this.dragging || !this.activeAxis) return;
+    if (!this.dragging || !this.activeAxis || this._targets.length === 0) return;
     if (!buildRay(screenX, screenY, camera, canvas)) return;
 
     if (this.mode === 'rotate') {
-      this._updateRotation(target);
+      this._updateRotation();
     } else {
-      this._updateLinear(target, gizmoScale);
+      this._updateLinear();
     }
   }
 
-  private _updateLinear(target: GameObject, gizmoScale: number): void {
+  private _updateLinear(): void {
     const axisVec = _axisVecs[this.activeAxis!]!;
     const currentValue = projectOnAxis(_ray, this._startWorldOrigin, axisVec);
     let delta = currentValue - this._startValue;
@@ -255,15 +287,17 @@ export class GizmoState {
 
     const axisIdx = this.activeAxis === 'x' ? 0 : this.activeAxis === 'y' ? 1 : 2;
 
-    if (this.mode === 'translate') {
-      target.transform.setPositionComponent(axisIdx, this._startPos[axisIdx]! + delta);
-    } else {
-      const scaleDelta = delta / gizmoScale;
-      target.transform.setScaleComponent(axisIdx, Math.max(0.01, this._startScale[axisIdx]! + scaleDelta));
+    for (const t of this._targets) {
+      if (this.mode === 'translate') {
+        t.obj.transform.setPositionComponent(axisIdx, t.pos[axisIdx]! + delta);
+      } else {
+        const scaleDelta = delta / this._gizmoScale;
+        t.obj.transform.setScaleComponent(axisIdx, Math.max(0.01, t.scale[axisIdx]! + scaleDelta));
+      }
     }
   }
 
-  private _updateRotation(target: GameObject): void {
+  private _updateRotation(): void {
     const axisVec = _axisVecs[this.activeAxis!]!;
     if (intersectAxisPlane(this._startWorldOrigin, axisVec) < 0) return;
 
@@ -279,13 +313,33 @@ export class GizmoState {
     }
 
     Quat.fromAxisAngle(_deltaQuat, axisVec, deltaAngle);
-    Quat.multiply(_deltaQuat, _deltaQuat, this._startRot);
-    Quat.normalize(_deltaQuat, _deltaQuat);
-    target.transform.setRotationFrom(_deltaQuat);
+
+    const isMulti = this._targets.length > 1;
+
+    for (const t of this._targets) {
+      // Apply rotation to local orientation
+      const finalRot = Quat.create();
+      Quat.multiply(finalRot, _deltaQuat, t.rot);
+      Quat.normalize(finalRot, finalRot);
+      t.obj.transform.setRotationFrom(finalRot);
+
+      // For multi-select, also orbit position around shared center
+      if (isMulti) {
+        const ox = t.worldPos[0]! - this._startWorldOrigin[0]!;
+        const oy = t.worldPos[1]! - this._startWorldOrigin[1]!;
+        const oz = t.worldPos[2]! - this._startWorldOrigin[2]!;
+        rotateVecByQuat(_rotatedOffset, _deltaQuat, ox, oy, oz);
+        const dx = _rotatedOffset[0]! - ox;
+        const dy = _rotatedOffset[1]! - oy;
+        const dz = _rotatedOffset[2]! - oz;
+        t.obj.transform.setPosition(t.pos[0]! + dx, t.pos[1]! + dy, t.pos[2]! + dz);
+      }
+    }
   }
 
   endDrag(): void {
     this.dragging = false;
     this.activeAxis = null;
+    this._targets = [];
   }
 }

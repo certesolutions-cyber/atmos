@@ -3,9 +3,9 @@ import type { GameObject } from '@atmos/core';
 
 interface HierarchyNodeProps {
   gameObject: GameObject;
-  selectedId: number | null;
+  selectedIds: ReadonlySet<number>;
   depth: number;
-  onSelect: (obj: GameObject) => void;
+  onSelect: (obj: GameObject, e: React.MouseEvent) => void;
   onDoubleClick?: (obj: GameObject) => void;
   onReparent?: (childId: number, newParentId: number | null) => void;
   onContextMenu?: (e: React.MouseEvent, obj: GameObject) => void;
@@ -25,12 +25,12 @@ const rowStyle: React.CSSProperties = {
 };
 
 export function HierarchyNode({
-  gameObject, selectedId, depth, onSelect, onDoubleClick,
+  gameObject, selectedIds, depth, onSelect, onDoubleClick,
   onReparent, onContextMenu, onDropModel, filterMatch, renameId, onRenameComplete,
 }: HierarchyNodeProps) {
   const [expanded, setExpanded] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const isSelected = gameObject.id === selectedId;
+  const isSelected = selectedIds.has(gameObject.id);
   const hasChildren = gameObject.children.length > 0;
   const isRenaming = renameId === gameObject.id;
 
@@ -41,7 +41,7 @@ export function HierarchyNode({
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', String(gameObject.id));
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.effectAllowed = 'all';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -89,7 +89,7 @@ export function HierarchyNode({
           color: isSelected ? '#e8e8e8' : '#b0b0b0',
           borderTop: dragOver ? '2px solid #3388cc' : '2px solid transparent',
         }}
-        onClick={() => onSelect(gameObject)}
+        onClick={(e) => onSelect(gameObject, e)}
         onDoubleClick={() => onDoubleClick?.(gameObject)}
       >
         {hasChildren && (
@@ -135,7 +135,7 @@ export function HierarchyNode({
           <HierarchyNode
             key={child.id}
             gameObject={child}
-            selectedId={selectedId}
+            selectedIds={selectedIds}
             depth={depth + 1}
             onSelect={onSelect}
             onDoubleClick={onDoubleClick}

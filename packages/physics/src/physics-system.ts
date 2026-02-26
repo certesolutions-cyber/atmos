@@ -49,14 +49,16 @@ export class PhysicsSystem implements PhysicsStepper {
         if (rb.bodyType === 'kinematic') {
           rb.syncFromTransform();
         } else if (rb.bodyType === 'dynamic') {
-          // Dynamic bodies are moved by Rapier — compare against WASM body pos
-          const pos = obj.transform.position;
-          const bpos = rb.body.translation();
-          const dx = pos[0]! - bpos.x;
-          const dy = pos[1]! - bpos.y;
-          const dz = pos[2]! - bpos.z;
-          if (dx * dx + dy * dy + dz * dz > 1e-6) {
-            rb.teleportToTransform();
+          // Interpolated bodies hold extrapolated positions — skip false teleport
+          if (!rb.interpolate) {
+            const pos = obj.transform.position;
+            const bpos = rb.body.translation();
+            const dx = pos[0]! - bpos.x;
+            const dy = pos[1]! - bpos.y;
+            const dz = pos[2]! - bpos.z;
+            if (dx * dx + dy * dy + dz * dz > 1e-6) {
+              rb.teleportToTransform();
+            }
           }
         } else if (rb.bodyType === 'fixed') {
           // Fixed bodies only change via editor — compare against JS-side cache
@@ -83,11 +85,16 @@ export class PhysicsSystem implements PhysicsStepper {
     this._world.step(dt);
 
     // Post-step: pull dynamic body transforms back
+    const remaining = this._world.accumulator;
     for (const obj of this._scene.getAllObjects()) {
       const rb = obj.getComponent(RigidBody);
       if (!rb || !rb.enabled || !rb.body) continue;
       if (rb.bodyType === 'dynamic') {
-        rb.syncToTransform();
+        if (rb.interpolate && remaining > 0) {
+          rb.extrapolateTransform(remaining);
+        } else {
+          rb.syncToTransform();
+        }
       }
     }
   }

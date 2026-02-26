@@ -71,6 +71,8 @@ export type PropertyDef =
 export interface ComponentDef {
   name: string;
   properties: PropertyDef[];
+  /** When true, multiple instances of this component can be added to the same GameObject. */
+  allowMultiple?: boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- registry key must accept any class (Component, Transform, etc.)

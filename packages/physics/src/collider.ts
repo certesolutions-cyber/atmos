@@ -38,8 +38,41 @@ export class Collider extends Component {
   /** The GameObject that owns the RigidBody */
   private _bodyGo: GameObject | null = null;
 
+  private _friction = 0.5;
+  private _restitution = 0;
+  private _density = 1;
+  private _isSensor = false;
+
+  get friction(): number { return this._friction; }
+  set friction(v: number) {
+    this._friction = v;
+    if (this.collider) this.collider.setFriction(v);
+  }
+
+  get restitution(): number { return this._restitution; }
+  set restitution(v: number) {
+    this._restitution = v;
+    if (this.collider) this.collider.setRestitution(v);
+  }
+
+  get density(): number { return this._density; }
+  set density(v: number) {
+    this._density = v;
+    if (this.collider) this.collider.setDensity(v);
+  }
+
+  get isSensor(): boolean { return this._isSensor; }
+  set isSensor(v: boolean) {
+    this._isSensor = v;
+    if (this.collider) this.collider.setSensor(v);
+  }
+
   get attachedBody(): RigidBody | null {
     return this._bodyRb;
+  }
+
+  get shape(): ColliderShape | null {
+    return this._baseShape;
   }
 
   get isChildCollider(): boolean {
@@ -50,6 +83,10 @@ export class Collider extends Component {
     this._world = world;
     this._baseShape = options.shape;
     this._options = options;
+    if (options.friction !== undefined) this._friction = options.friction;
+    if (options.restitution !== undefined) this._restitution = options.restitution;
+    if (options.density !== undefined) this._density = options.density;
+    if (options.isSensor !== undefined) this._isSensor = options.isSensor;
 
     // Find body: self first, then walk up hierarchy
     const rb = findAncestorComponent(this.gameObject, RigidBody);

@@ -5,6 +5,7 @@ import type { SceneSnapshot } from './scene-snapshot.js';
 import type { AssetEntry, ScriptAsset } from './asset-types.js';
 import type { ProjectFileSystem } from './project-fs.js';
 import type { MaterialManager } from './material-manager.js';
+import type { ProjectSettingsManager } from './project-settings.js';
 
 export type EditorEvent =
   | 'selectionChanged'
@@ -18,13 +19,13 @@ export type EditorEvent =
   | 'scriptsChanged'
   | 'projectChanged'
   | 'materialSelected'
-  | 'wireframeChanged';
+  | 'wireframeChanged'
+  | 'settingsChanged';
 
 type Listener = () => void;
 
 export class EditorState {
   scene: Scene;
-  selected: GameObject | null = null;
   paused = true;
   gizmoMode: GizmoMode = 'translate';
   snapEnabled = false;
@@ -33,6 +34,7 @@ export class EditorState {
   scriptAssets: ScriptAsset[] = [];
   projectFs: ProjectFileSystem | null = null;
   materialManager: MaterialManager | null = null;
+  settingsManager: ProjectSettingsManager | null = null;
   selectedMaterialPath: string | null = null;
   wireframeEnabled = false;
   private _sceneName = _getSessionItem('atmos:sceneName') ?? 'main';
@@ -43,25 +45,71 @@ export class EditorState {
     _setSessionItem('atmos:sceneName', v);
   }
 
+  private readonly _selection = new Set<GameObject>();
   private _playSnapshot: SceneSnapshot | null = null;
   private readonly _listeners = new Map<EditorEvent, Set<Listener>>();
+
+  /** Single-selection backward compat: returns the object when exactly one is selected. */
+  get selected(): GameObject | null {
+    if (this._selection.size === 1) return this._selection.values().next().value!;
+    return null;
+  }
+
+  /** The full selection set (read-only). */
+  get selection(): ReadonlySet<GameObject> {
+    return this._selection;
+  }
 
   constructor(scene: Scene) {
     this.scene = scene;
   }
 
   select(obj: GameObject | null): void {
-    if (this.selected === obj) return;
-    this.selected = obj;
+    if (obj) {
+      if (this._selection.size === 1 && this._selection.has(obj)) return;
+      this._selection.clear();
+      this._selection.add(obj);
+    } else {
+      if (this._selection.size === 0) return;
+      this._selection.clear();
+    }
     this.selectedMaterialPath = null;
     this._emit('selectionChanged');
     this._emit('materialSelected');
   }
 
+  toggleSelect(obj: GameObject): void {
+    if (this._selection.has(obj)) {
+      this._selection.delete(obj);
+    } else {
+      this._selection.add(obj);
+    }
+    this.selectedMaterialPath = null;
+    this._emit('selectionChanged');
+    this._emit('materialSelected');
+  }
+
+  addToSelection(objects: GameObject[]): void {
+    for (const obj of objects) this._selection.add(obj);
+    this.selectedMaterialPath = null;
+    this._emit('selectionChanged');
+    this._emit('materialSelected');
+  }
+
+  isSelected(obj: GameObject): boolean {
+    return this._selection.has(obj);
+  }
+
+  removeFromSelection(obj: GameObject): void {
+    if (this._selection.delete(obj)) {
+      this._emit('selectionChanged');
+    }
+  }
+
   selectMaterial(path: string | null): void {
     if (this.selectedMaterialPath === path) return;
     this.selectedMaterialPath = path;
-    this.selected = null;
+    this._selection.clear();
     this._emit('materialSelected');
     this._emit('selectionChanged');
   }
@@ -87,7 +135,7 @@ export class EditorState {
 
   setScene(scene: Scene): void {
     this.scene = scene;
-    this.selected = null;
+    this._selection.clear();
     this._emit('sceneChanged');
     this._emit('selectionChanged');
   }
@@ -128,6 +176,11 @@ export class EditorState {
     this.projectFs = fs;
     this.materialManager = mm;
     this._emit('projectChanged');
+  }
+
+  setSettingsManager(sm: ProjectSettingsManager): void {
+    this.settingsManager = sm;
+    this._emit('settingsChanged');
   }
 
   on(event: EditorEvent, fn: Listener): () => void {

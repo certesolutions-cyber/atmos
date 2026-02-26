@@ -1,0 +1,12 @@
+{
+  "physics": {
+    "gravity": [
+      0,
+      -9.81,
+      0
+    ],
+    "fixedTimestep": 0.016666666666666666,
+    "solverIterations": 14,
+    "substeps": 8
+  }
+}

@@ -44,22 +44,31 @@ export function restoreSnapshot(scene: Scene, snapshot: SceneSnapshot): void {
     byId.set(go.id, go);
   }
 
+  // Pass 1: Restore ALL transforms first so that auto-computed properties
+  // (e.g. HingeJoint.connectedAxis) see correct world matrices for all objects.
   for (const entry of snapshot) {
     const go = byId.get(entry.id);
     if (!go) continue;
 
-    // Restore transform
     const t = go.transform;
     t.setPositionFrom(entry.transform.position);
     t.setRotationFrom(entry.transform.rotation);
     t.setScaleFrom(entry.transform.scale);
+  }
 
-    // Restore component properties
-    for (const compSnap of entry.components) {
-      const comp = go.getComponents().find(
-        (c) => c.constructor.name === compSnap.ctorName,
-      );
-      if (!comp) continue;
+  // Pass 2: Restore component properties (setters may trigger joint recreation
+  // that depends on other objects' transforms being correct).
+  for (const entry of snapshot) {
+    const go = byId.get(entry.id);
+    if (!go) continue;
+
+    const liveComponents = go.getComponents();
+    for (let ci = 0; ci < entry.components.length; ci++) {
+      const compSnap = entry.components[ci]!;
+      // Match by index — components are snapshotted in getComponents() order,
+      // so the same index maps to the same instance (supports multiple of one type).
+      const comp = liveComponents[ci];
+      if (!comp || comp.constructor.name !== compSnap.ctorName) continue;
 
       const def = getComponentDef(comp.constructor as new () => typeof comp);
       if (!def) continue;

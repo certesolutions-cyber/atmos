@@ -1,6 +1,7 @@
 import type { MaterialAssetData } from '@atmos/renderer';
 import { serializeMaterialAsset } from '@atmos/renderer';
 import type { ProjectFileSystem } from './project-fs.js';
+import { DEFAULT_PROJECT_SETTINGS } from './project-settings.js';
 
 const SEED_MATERIALS: Record<string, Omit<MaterialAssetData, 'name'>> = {
   default: { shader: 'pbr', albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 },
@@ -32,6 +33,14 @@ export async function seedProject(projectFs: ProjectFileSystem): Promise<void> {
 
   // Empty scene
   writes.push(projectFs.writeFile('scenes/main.scene.json', '{}'));
+
+  // Default project settings
+  if (!(await projectFs.exists('project-settings.json'))) {
+    writes.push(projectFs.writeFile(
+      'project-settings.json',
+      JSON.stringify(DEFAULT_PROJECT_SETTINGS, null, 2),
+    ));
+  }
 
   await Promise.all(writes);
 }

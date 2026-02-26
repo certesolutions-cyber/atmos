@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import type { GameObject, Scene } from '@atmos/core';
 
 interface GameObjectRefFieldProps {
@@ -26,7 +26,16 @@ const rowStyle: React.CSSProperties = {
   padding: '2px 0',
 };
 
+const dropHighlightStyle: React.CSSProperties = {
+  ...rowStyle,
+  outline: '1px solid #5bf',
+  borderRadius: '3px',
+  background: 'rgba(85, 187, 255, 0.1)',
+};
+
 export function GameObjectRefField({ label, value, scene, selfId, onChange }: GameObjectRefFieldProps) {
+  const [dragOver, setDragOver] = useState(false);
+
   const objects: GameObject[] = [];
   for (const obj of scene.getAllObjects()) {
     if (obj.id !== selfId) objects.push(obj);
@@ -35,8 +44,43 @@ export function GameObjectRefField({ label, value, scene, selfId, onChange }: Ga
 
   const selectedId = value ? String(value.id) : '';
 
+  const findObject = useCallback((id: number): GameObject | null => {
+    for (const obj of scene.getAllObjects()) {
+      if (obj.id === id) return obj;
+    }
+    return null;
+  }, [scene]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    // Only accept hierarchy drags (text/plain with numeric ID)
+    if (!e.dataTransfer.types.includes('text/plain')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'link';
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const raw = e.dataTransfer.getData('text/plain');
+    const id = parseInt(raw, 10);
+    if (isNaN(id) || id === selfId) return;
+    const obj = findObject(id);
+    if (obj) onChange(obj);
+  }, [selfId, findObject, onChange]);
+
   return (
-    <div style={rowStyle}>
+    <div
+      style={dragOver ? dropHighlightStyle : rowStyle}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <span style={{ fontSize: '12px', color: '#aaa' }}>{label}</span>
       <select
         style={selectStyle}
@@ -47,14 +91,8 @@ export function GameObjectRefField({ label, value, scene, selfId, onChange }: Ga
             onChange(null);
             return;
           }
-          const numId = Number(id);
-          for (const obj of scene.getAllObjects()) {
-            if (obj.id === numId) {
-              onChange(obj);
-              return;
-            }
-          }
-          onChange(null);
+          const obj = findObject(Number(id));
+          onChange(obj);
         }}
       >
         <option value="">None</option>

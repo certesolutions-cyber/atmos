@@ -1,0 +1,19 @@
+{
+  "name": "Gold",
+  "shader": "pbr",
+  "albedo": [
+    1,
+    0.76,
+    0.34,
+    1
+  ],
+  "metallic": 1,
+  "roughness": 0.35,
+  "emissive": [
+    0.984313725490196,
+    1,
+    0,
+    1
+  ],
+  "emissiveIntensity": 0.5
+}

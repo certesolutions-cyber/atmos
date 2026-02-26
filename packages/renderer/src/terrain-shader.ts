@@ -6,6 +6,8 @@
  *   w0 = grass, w1 = rock, w2 = 1 - w0 - w1 (snow/dirt).
  */
 
+import { SHADOW_FRAGMENT_WGSL } from './shadow-fragment-wgsl.js';
+
 export const TERRAIN_VERTEX_SHADER = /* wgsl */`
 struct ObjectUniforms {
   mvp: mat4x4<f32>,
@@ -56,6 +58,8 @@ struct MaterialUniforms {
   splatSharpness: f32,
   _pad1: f32,
   emissive: vec4<f32>,
+  texTiling: vec2<f32>,
+  _pad2: vec2<f32>,
 };
 
 struct DirLight {
@@ -100,120 +104,7 @@ struct SceneUniforms {
 @group(1) @binding(4) var splatTex2: texture_2d<f32>;
 @group(1) @binding(5) var splatSampler: sampler;
 
-struct ShadowUniforms {
-  cascade0VP: mat4x4<f32>,
-  cascade1VP: mat4x4<f32>,
-  dirShadowBias: f32,
-  dirShadowEnabled: u32,
-  pointShadowBias: f32,
-  pointShadowEnabled: u32,
-  pointLightPos: vec4<f32>,
-  dirShadowIntensity: f32,
-  pointShadowIntensity: f32,
-  cascadeSplit: f32,
-  cascadeBlendWidth: f32,
-  spotShadowVP: mat4x4<f32>,
-  spotLightPosAndFar: vec4<f32>,
-  spotShadowBias: f32,
-  spotShadowEnabled: u32,
-  spotShadowIntensity: f32,
-  _spotPad: f32,
-};
-
-@group(2) @binding(0) var<uniform> shadow: ShadowUniforms;
-@group(2) @binding(1) var shadowMap0: texture_depth_2d;
-@group(2) @binding(2) var shadowSampler: sampler_comparison;
-@group(2) @binding(3) var pointShadowMap: texture_depth_cube;
-@group(2) @binding(4) var shadowMap1: texture_depth_2d;
-@group(2) @binding(5) var spotShadowMap: texture_depth_2d;
-
-fn pcfCascade0(worldPos: vec3<f32>) -> f32 {
-  let clip = shadow.cascade0VP * vec4<f32>(worldPos, 1.0);
-  let ndc = clip.xyz / clip.w;
-  let uv = ndc.xy * vec2(0.5, -0.5) + 0.5;
-  let depth = ndc.z - shadow.dirShadowBias;
-  let texelSize = 1.0 / f32(textureDimensions(shadowMap0, 0).x);
-  var vis = 0.0;
-  for (var y: i32 = -1; y <= 1; y++) { for (var x: i32 = -1; x <= 1; x++) {
-    vis += textureSampleCompare(shadowMap0, shadowSampler, uv + vec2(f32(x), f32(y)) * texelSize, depth);
-  }}
-  return vis / 9.0;
-}
-
-fn pcfCascade1(worldPos: vec3<f32>) -> f32 {
-  let clip = shadow.cascade1VP * vec4<f32>(worldPos, 1.0);
-  let ndc = clip.xyz / clip.w;
-  let uv = ndc.xy * vec2(0.5, -0.5) + 0.5;
-  let depth = ndc.z - shadow.dirShadowBias;
-  let texelSize = 1.0 / f32(textureDimensions(shadowMap1, 0).x);
-  var vis = 0.0;
-  for (var y: i32 = -1; y <= 1; y++) { for (var x: i32 = -1; x <= 1; x++) {
-    vis += textureSampleCompare(shadowMap1, shadowSampler, uv + vec2(f32(x), f32(y)) * texelSize, depth);
-  }}
-  return vis / 9.0;
-}
-
-fn cascadeUV(worldPos: vec3<f32>, lightVP: mat4x4<f32>) -> vec3<f32> {
-  let clip = lightVP * vec4(worldPos, 1.0);
-  let ndc = clip.xyz / clip.w;
-  return vec3(ndc.xy * vec2(0.5, -0.5) + 0.5, ndc.z);
-}
-
-fn cascadeCoverageXY(uv: vec2<f32>, fade: f32) -> f32 {
-  let fx = min(smoothstep(0.0, fade, uv.x), smoothstep(0.0, fade, 1.0 - uv.x));
-  let fy = min(smoothstep(0.0, fade, uv.y), smoothstep(0.0, fade, 1.0 - uv.y));
-  return fx * fy;
-}
-
-fn sampleShadow(worldPos: vec3<f32>) -> f32 {
-  let vis0 = pcfCascade0(worldPos);
-  let vis1 = pcfCascade1(worldPos);
-  let uv0 = cascadeUV(worldPos, shadow.cascade0VP);
-  let c0xy = cascadeCoverageXY(uv0.xy, 0.05);
-  let c0z = smoothstep(0.0, 0.02, uv0.z) * smoothstep(0.0, 0.02, 1.0 - uv0.z);
-  let c0 = c0xy * c0z;
-  let uv1 = cascadeUV(worldPos, shadow.cascade1VP);
-  let c1xy = cascadeCoverageXY(uv1.xy, 0.15);
-  let c1z = smoothstep(0.0, 0.15, 1.0 - uv1.z);
-  let c1 = c1xy * c1z;
-  let vis1Faded = mix(1.0, vis1, c1);
-  let visibility = mix(vis1Faded, vis0, c0);
-  let result = mix(1.0, visibility, shadow.dirShadowIntensity);
-  let enabled = shadow.dirShadowEnabled != 0u;
-  return select(1.0, result, enabled);
-}
-
-fn samplePointShadow(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
-  let toFrag = worldPos - shadow.pointLightPos.xyz;
-  let dist = length(toFrag);
-  let far = shadow.pointLightPos.w;
-  let lightDir = toFrag / max(dist, 0.0001);
-  let cosTheta = abs(dot(lightDir, N));
-  let bias = shadow.pointShadowBias * max(1.0, 2.0 / max(cosTheta, 0.05));
-  let refDepth = dist / far - bias;
-  let vis = textureSampleCompare(pointShadowMap, shadowSampler, toFrag, refDepth);
-  let adjusted = mix(1.0, vis, shadow.pointShadowIntensity);
-  let enabled = shadow.pointShadowEnabled != 0u;
-  let inRange = dist < far;
-  return select(1.0, adjusted, enabled && inRange);
-}
-
-fn sampleSpotShadow(worldPos: vec3<f32>) -> f32 {
-  let clip = shadow.spotShadowVP * vec4<f32>(worldPos, 1.0);
-  let ndc = clip.xyz / clip.w;
-  let uv = ndc.xy * vec2(0.5, -0.5) + 0.5;
-  let depth = ndc.z - shadow.spotShadowBias;
-  let inBounds = uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && ndc.z >= 0.0 && ndc.z <= 1.0;
-  let texelSize = 1.0 / f32(textureDimensions(spotShadowMap, 0).x);
-  var vis = 0.0;
-  for (var y: i32 = -1; y <= 1; y++) { for (var x: i32 = -1; x <= 1; x++) {
-    vis += textureSampleCompare(spotShadowMap, shadowSampler, uv + vec2(f32(x), f32(y)) * texelSize, depth);
-  }}
-  vis = vis / 9.0;
-  let adjusted = mix(1.0, vis, shadow.spotShadowIntensity);
-  let enabled = shadow.spotShadowEnabled != 0u;
-  return select(1.0, adjusted, enabled && inBounds);
-}
+` + SHADOW_FRAGMENT_WGSL + /* wgsl */`
 
 struct FragmentInput {
   @location(0) worldPosition: vec3<f32>,
@@ -268,9 +159,10 @@ fn computePBR(
 @fragment
 fn main(input: FragmentInput) -> @location(0) vec4<f32> {
   // Blend 3 splat textures with sharpening
-  let c0 = textureSample(splatTex0, splatSampler, input.uv);
-  let c1 = textureSample(splatTex1, splatSampler, input.uv);
-  let c2 = textureSample(splatTex2, splatSampler, input.uv);
+  let uv = input.uv * material.texTiling;
+  let c0 = textureSample(splatTex0, splatSampler, uv);
+  let c1 = textureSample(splatTex1, splatSampler, uv);
+  let c2 = textureSample(splatTex2, splatSampler, uv);
   let rw0 = max(input.splatWeights.x, 0.0);
   let rw1 = max(input.splatWeights.y, 0.0);
   let rw2 = max(1.0 - rw0 - rw1, 0.0);
@@ -300,7 +192,10 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     let intensity = light.color.w;
     let radiance = light.color.rgb * intensity;
     var contribution = computePBR(N, V, L, albedo, metallic, roughness, F0, radiance);
-    if (i == 0u) { contribution = contribution * sampleShadow(input.worldPosition); }
+    let dirSlot = shadow.dirLightToSlot[i];
+    if (dirSlot != 0xFFFFFFFFu) {
+      contribution = contribution * sampleDirShadow(dirSlot, input.worldPosition);
+    }
     Lo = Lo + contribution;
   }
 
@@ -315,7 +210,10 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     let attenuation = max(1.0 - (dist * dist) / (range * range), 0.0);
     let radiance = light.color.rgb * intensity * attenuation * attenuation;
     var contribution = computePBR(N, V, L, albedo, metallic, roughness, F0, radiance);
-    if (i == 0u) { contribution = contribution * samplePointShadow(input.worldPosition, N); }
+    let pointSlot = shadow.pointLightToSlot[i];
+    if (pointSlot != 0xFFFFFFFFu) {
+      contribution = contribution * samplePointShadow(pointSlot, input.worldPosition, N);
+    }
     Lo = Lo + contribution;
   }
 
@@ -336,7 +234,10 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     let attenuation = distAtt * distAtt * coneAtt;
     let radiance = light.color.rgb * intensity * attenuation;
     var contribution = computePBR(N, V, L, albedo, metallic, roughness, F0, radiance);
-    if (i == 0u) { contribution = contribution * sampleSpotShadow(input.worldPosition); }
+    let spotSlot = shadow.spotLightToSlot[i];
+    if (spotSlot != 0xFFFFFFFFu) {
+      contribution = contribution * sampleSpotShadow(spotSlot, input.worldPosition);
+    }
     Lo = Lo + contribution;
   }
 

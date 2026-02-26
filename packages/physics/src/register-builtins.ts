@@ -10,31 +10,44 @@ export function registerPhysicsBuiltins(): void {
     name: 'RigidBody',
     properties: [
       { key: 'bodyType', type: 'enum', options: ['dynamic', 'fixed', 'kinematic'] },
+      { key: 'linearDamping', type: 'number', min: 0, max: 100, step: 0.1 },
+      { key: 'angularDamping', type: 'number', min: 0, max: 100, step: 0.1 },
+      { key: 'gravityScale', type: 'number', min: -10, max: 10, step: 0.1 },
+      { key: 'interpolate', type: 'boolean' },
     ],
   });
 
   registerComponent(Collider, {
     name: 'Collider',
-    properties: [],
+    properties: [
+      { key: 'friction', type: 'number', min: 0, max: 2, step: 0.05 },
+      { key: 'restitution', type: 'number', min: 0, max: 1, step: 0.05 },
+      { key: 'density', type: 'number', min: 0.01, max: 100, step: 0.1 },
+      { key: 'isSensor', type: 'boolean' },
+    ],
   });
 
   registerComponent(FixedJoint, {
     name: 'FixedJoint',
+    allowMultiple: true,
     properties: [
       { key: 'connectedObject', type: 'gameObjectRef' },
       { key: 'anchor', type: 'vec3' },
-      { key: 'connectedAnchor', type: 'vec3' },
       { key: 'autoConfigureConnectedAnchor', type: 'boolean' },
+      { key: 'connectedAnchor', type: 'vec3',
+        visibleWhen: (c) => !(c as FixedJoint).autoConfigureConnectedAnchor },
     ],
   });
 
   registerComponent(HingeJoint, {
     name: 'HingeJoint',
+    allowMultiple: true,
     properties: [
       { key: 'connectedObject', type: 'gameObjectRef' },
       { key: 'anchor', type: 'vec3' },
-      { key: 'connectedAnchor', type: 'vec3' },
       { key: 'autoConfigureConnectedAnchor', type: 'boolean' },
+      { key: 'connectedAnchor', type: 'vec3',
+        visibleWhen: (c) => !(c as HingeJoint).autoConfigureConnectedAnchor },
       { key: 'axis', type: 'vec3' },
       { key: 'connectedAxis', type: 'vec3',
         visibleWhen: (c) => !(c as HingeJoint).autoConfigureConnectedAxis },
@@ -60,11 +73,13 @@ export function registerPhysicsBuiltins(): void {
 
   registerComponent(SpringJoint, {
     name: 'SpringJoint',
+    allowMultiple: true,
     properties: [
       { key: 'connectedObject', type: 'gameObjectRef' },
       { key: 'anchor', type: 'vec3' },
-      { key: 'connectedAnchor', type: 'vec3' },
       { key: 'autoConfigureConnectedAnchor', type: 'boolean' },
+      { key: 'connectedAnchor', type: 'vec3',
+        visibleWhen: (c) => !(c as SpringJoint).autoConfigureConnectedAnchor },
       { key: 'restLength', type: 'number', min: 0, max: 100, step: 0.1 },
       { key: 'stiffness', type: 'number', min: 0, max: 1000, step: 1 },
       { key: 'damping', type: 'number', min: 0, max: 100, step: 0.1 },

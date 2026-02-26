@@ -11,20 +11,21 @@ import { OrbitCamera } from './orbit-camera.js';
 import { ObjectPicker } from './object-picker.js';
 import { GizmoState } from './gizmo-state.js';
 import { OverlayRenderer } from './overlay-renderer.js';
+import { computeSelectionCenter } from './selection-utils.js';
 import type { GameObject } from '@atmos/core';
 import type { ScriptAsset, AssetEntry } from './asset-types.js';
 import type { ProjectFileSystem } from './project-fs.js';
+import type { EditorPhysicsPlugin } from './bootstrap/types.js';
 
 export type PrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'camera' | 'directionalLight' | 'pointLight' | 'spotLight';
 
 const GIZMO_SCREEN_SCALE = 0.15;
 
-/** Scratch vec3 for world position extraction (avoids per-frame alloc) */
-const _worldPos = Vec3.create();
+/** Scratch vec3 for selection center (avoids per-frame alloc) */
+const _center = Vec3.create();
 
-function gizmoScaleFor(eye: Float32Array, worldMatrix: Float32Array): number {
-  Vec3.set(_worldPos, worldMatrix[12]!, worldMatrix[13]!, worldMatrix[14]!);
-  return Vec3.distance(eye, _worldPos) * GIZMO_SCREEN_SCALE;
+function gizmoScaleFor(eye: Float32Array, center: Float32Array): number {
+  return Vec3.distance(eye, center) * GIZMO_SCREEN_SCALE;
 }
 
 export interface MountEditorOptions {
@@ -43,6 +44,7 @@ export interface MountEditorOptions {
   onLoadModel?: (entry: AssetEntry) => void;
   onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
+  physics?: EditorPhysicsPlugin;
 }
 
 export interface MountEditorResult {
@@ -78,7 +80,7 @@ export function mountEditor(
     gizmoState = new GizmoState();
 
     // Overlay rendering (grid + gizmos)
-    const overlay = new OverlayRenderer(options.renderSystem, editorState, gizmoState);
+    const overlay = new OverlayRenderer(options.renderSystem, editorState, gizmoState, options.physics);
     cleanups.push(() => overlay.destroy());
 
     // Canvas click -> pick object
@@ -92,34 +94,46 @@ export function mountEditor(
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
 
-      // First check gizmo hit
-      if (editorState.selected && gizmoState) {
-        const gizmoScale = gizmoScaleFor(camera.eye, editorState.selected.transform.worldMatrix);
+      const selection = editorState.selection;
 
-        const axis = gizmoState.hitTest(sx, sy, camera, canvas, editorState.selected, gizmoScale);
+      // First check gizmo hit when something is selected
+      if (selection.size > 0 && gizmoState) {
+        computeSelectionCenter(selection, _center);
+        const gizmoScale = gizmoScaleFor(camera.eye, _center);
+
+        const axis = gizmoState.hitTest(sx, sy, camera, canvas, _center, gizmoScale);
         if (axis) {
-          gizmoState.beginDrag(axis, sx, sy, camera, canvas, editorState.selected, gizmoScale);
+          gizmoState.beginDrag(axis, sx, sy, camera, canvas, [...selection], gizmoScale, _center);
           return;
         }
       }
 
       // Then try object picking
       const result = picker.pick(sx, sy, editorState.scene, camera, canvas);
-      editorState.select(result?.gameObject ?? null);
+      const hitObj = result?.gameObject ?? null;
+
+      if (hitObj && (e.ctrlKey || e.metaKey)) {
+        editorState.toggleSelect(hitObj);
+      } else if (hitObj && e.shiftKey) {
+        editorState.addToSelection([hitObj]);
+      } else {
+        editorState.select(hitObj);
+      }
     };
 
     // Mouse move for gizmo drag
     const onMouseMove = (e: MouseEvent) => {
       if (!editorState.paused) return;
-      if (!gizmoState?.dragging || !editorState.selected) return;
+      if (!gizmoState?.dragging) return;
 
       const rect = canvas.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
 
-      const gizmoScale = gizmoScaleFor(camera.eye, editorState.selected.transform.worldMatrix);
-
-      gizmoState.updateDrag(sx, sy, camera, canvas, editorState.selected, gizmoScale);
+      gizmoState.updateDrag(sx, sy, camera, canvas);
+      const sel = [...editorState.selection];
+      options.physics?.syncTransformsForObjects?.(sel);
+      options.physics?.syncJointsForObjects?.(sel);
       editorState.notifyInspectorChanged();
     };
 
@@ -162,7 +176,13 @@ export function mountEditor(
     const unsubSceneCam = editorState.on('sceneChanged', () => {
       options.renderSystem!.activeCamera = null;
     });
-    cleanups.push(unsubMode, unsubSnap, unsubPause, unsubSceneCam);
+    // Sync collider scales + fixed body positions when inspector changes a transform
+    const unsubInspectorPhysics = editorState.on('inspectorChanged', () => {
+      if (editorState.selection.size > 0 && options.physics) {
+        options.physics.syncTransformsForObjects?.([...editorState.selection]);
+      }
+    });
+    cleanups.push(unsubMode, unsubSnap, unsubPause, unsubSceneCam, unsubInspectorPhysics);
   }
 
   root.render(

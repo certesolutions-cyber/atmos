@@ -1,0 +1,1906 @@
+{
+  "gameObjects": [
+    {
+      "name": "Plane",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0.27416715025901794,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:plane",
+            "materialSource": "materials/ground.mat.json",
+            "material.albedo": [
+              0.2705882489681244,
+              0.2705882489681244,
+              0.2705882489681244,
+              1
+            ],
+            "material.metallic": 0.29,
+            "material.roughness": 0.28,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 80,
+            "material.texTilingY": 80,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.7,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              1.1222097873687744,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0.48,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              1,
+              1,
+              1
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "Drive",
+          "data": {
+            "leftWheel": 6,
+            "rightWheel": 5,
+            "maxTorque": 200,
+            "maxSpeed": 40,
+            "lsdRatio": 1.5,
+            "brakeTorque": 5000,
+            "coastBrake": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder",
+      "id": 3,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0.9119661450386047,
+              0.5760148167610168,
+              0.8762000203132629
+            ],
+            "rotation": [
+              0,
+              0,
+              0.7071067690849304,
+              0.7071067690849304
+            ],
+            "scale": [
+              0.5,
+              0.10000000149011612,
+              0.5
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/tire.mat.json",
+            "material.albedo": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.9,
+            "restitution": 0.1,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 8,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              0.26196616888046265,
+              -0.12554484605789185,
+              -0.000027298927307128906
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              -1,
+              3.422854177870249e-8,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 1,
+            "motorMaxForce": 200,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder (Copy)",
+      "id": 4,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.9350950121879578,
+              0.5760148167610168,
+              0.8762000203132629
+            ],
+            "rotation": [
+              0,
+              0,
+              0.7071067690849304,
+              0.7071067690849304
+            ],
+            "scale": [
+              0.5,
+              0.10000000149011612,
+              0.5
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/tire.mat.json",
+            "material.albedo": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.9,
+            "restitution": 0.1,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 7,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              -0.2850950360298157,
+              -0.12554484605789185,
+              -0.000027298927307128906
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              -1,
+              3.422854177870249e-8,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 1,
+            "motorMaxForce": 200,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "rightW",
+      "id": 5,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.9313457012176514,
+              0.5760148167610168,
+              -1.2109981775283813
+            ],
+            "rotation": [
+              0,
+              0,
+              0.7071067690849304,
+              0.7071067690849304
+            ],
+            "scale": [
+              0.5,
+              0.10000000149011612,
+              0.5
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/tire.mat.json",
+            "material.albedo": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.9,
+            "restitution": 0.1,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 2,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              -0.9313457012176514,
+              -0.5461949706077576,
+              -1.2109981775283813
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              -1,
+              3.422854177870249e-8,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "leftW",
+      "id": 6,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0.8652198314666748,
+              0.5760148167610168,
+              -1.213877558708191
+            ],
+            "rotation": [
+              0,
+              0,
+              0.7071067690849304,
+              0.7071067690849304
+            ],
+            "scale": [
+              0.5,
+              0.10000000149011612,
+              0.5
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/tire.mat.json",
+            "material.albedo": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.9,
+            "restitution": 0.1,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 2,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              0.8652198314666748,
+              -0.5461949706077576,
+              -1.213877558708191
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              -1,
+              3.422854177870249e-8,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "steerR",
+      "id": 7,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.6499999761581421,
+              0.7015596628189087,
+              0.8762273192405701
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.20000000298023224,
+              0.20000000298023224,
+              0.20000000298023224
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0.48,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              1,
+              1,
+              1
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 2,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              -0.6499999761581421,
+              -0.4206501245498657,
+              0.8762273192405701
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              0,
+              1,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": true,
+            "motorMode": "position",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 200,
+            "motorDamping": 50
+          }
+        },
+        {
+          "type": "Steer",
+          "data": {
+            "maxAngle": 30,
+            "steerSpeed": 10,
+            "stiffness": 50000,
+            "damping": 2000
+          }
+        }
+      ]
+    },
+    {
+      "name": "steerL",
+      "id": 8,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0.6499999761581421,
+              0.7015596628189087,
+              0.8762273192405701
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.20000000298023224,
+              0.20000000298023224,
+              0.20000000298023224
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0.48,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              1,
+              1,
+              1
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 2,
+            "anchor": [
+              0,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              0.6499999761581421,
+              -0.4206501245498657,
+              0.8762273192405701
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              0,
+              1,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": true,
+            "motorMode": "position",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 200,
+            "motorDamping": 50
+          }
+        },
+        {
+          "type": "Steer",
+          "data": {
+            "maxAngle": 30,
+            "steerSpeed": 10,
+            "stiffness": 50000,
+            "damping": 2000
+          }
+        }
+      ]
+    },
+    {
+      "name": "steerRod",
+      "id": 9,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0.7432887554168701,
+              1.1785789728164673
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1.2999999523162842,
+              0.10000000149011612,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              1,
+              0,
+              0,
+              1
+            ],
+            "material.metallic": 0.48,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              1,
+              1,
+              1
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "dynamic",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": true
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 7,
+            "anchor": [
+              -0.6499999761581421,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              0,
+              0.041729092597961426,
+              0.3023516535758972
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              0,
+              1,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        },
+        {
+          "type": "HingeJoint",
+          "data": {
+            "connectedObject": 8,
+            "anchor": [
+              0.6499999761581421,
+              0,
+              0
+            ],
+            "autoConfigureConnectedAnchor": true,
+            "connectedAnchor": [
+              0,
+              0.041729092597961426,
+              0.3023516535758972
+            ],
+            "axis": [
+              0,
+              1,
+              0
+            ],
+            "connectedAxis": [
+              0,
+              1,
+              0
+            ],
+            "autoConfigureConnectedAxis": true,
+            "limitsEnabled": false,
+            "limitMin": -3.141592653589793,
+            "limitMax": 3.141592653589793,
+            "motorEnabled": false,
+            "motorMode": "velocity",
+            "motorTargetVelocity": 0,
+            "motorMaxForce": 0,
+            "motorTargetPosition": 0,
+            "motorStiffness": 0,
+            "motorDamping": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder",
+      "id": 10,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.644582986831665,
+              8.926153182983398
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.10000000149011612,
+              5,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/metal.mat.json",
+            "material.albedo": [
+              0.800000011920929,
+              0.800000011920929,
+              0.8500000238418579,
+              1
+            ],
+            "material.metallic": 1,
+            "material.roughness": 0.3,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere",
+      "id": 11,
+      "parentId": 10,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.1963891237974167,
+              0.5995995402336121,
+              0.06710433959960938
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              10,
+              0.20000000298023224,
+              10
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/glass.mat.json",
+            "material.albedo": [
+              0.8999999761581421,
+              0.949999988079071,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.1,
+            "material.emissive": [
+              0.9960784316062927,
+              1,
+              0.800000011920929
+            ],
+            "material.emissiveIntensity": 1,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": false,
+            "receiveSSAO": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Light",
+      "id": 12,
+      "parentId": 11,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.417032390832901,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "PointLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 2,
+            "range": 10,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 512
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder (Copy)",
+      "id": 13,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.644582986831665,
+              -7.54965877532959
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.10000000149011612,
+              5,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/metal.mat.json",
+            "material.albedo": [
+              0.800000011920929,
+              0.800000011920929,
+              0.8500000238418579,
+              1
+            ],
+            "material.metallic": 1,
+            "material.roughness": 0.3,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere (Copy)",
+      "id": 14,
+      "parentId": 13,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.1963891237974167,
+              0.5995995402336121,
+              0.06710433959960938
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              10,
+              0.20000000298023224,
+              10
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/glass.mat.json",
+            "material.albedo": [
+              0.8999999761581421,
+              0.949999988079071,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.1,
+            "material.emissive": [
+              0.9960784316062927,
+              1,
+              0.800000011920929
+            ],
+            "material.emissiveIntensity": 1,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": false,
+            "receiveSSAO": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Light (Copy)",
+      "id": 15,
+      "parentId": 14,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.417032390832901,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "PointLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 2,
+            "range": 10,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 512
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder (Copy) (Copy)",
+      "id": 16,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.644582986831665,
+              -23.476459503173828
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.10000000149011612,
+              5,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/metal.mat.json",
+            "material.albedo": [
+              0.800000011920929,
+              0.800000011920929,
+              0.8500000238418579,
+              1
+            ],
+            "material.metallic": 1,
+            "material.roughness": 0.3,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere (Copy) (Copy)",
+      "id": 17,
+      "parentId": 16,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.1963891237974167,
+              0.5995995402336121,
+              0.06710433959960938
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              10,
+              0.20000000298023224,
+              10
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/glass.mat.json",
+            "material.albedo": [
+              0.8999999761581421,
+              0.949999988079071,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.1,
+            "material.emissive": [
+              0.9960784316062927,
+              1,
+              0.800000011920929
+            ],
+            "material.emissiveIntensity": 1,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": false,
+            "receiveSSAO": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Light (Copy) (Copy)",
+      "id": 18,
+      "parentId": 17,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.417032390832901,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "PointLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 2,
+            "range": 10,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 512
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cylinder (Copy)",
+      "id": 19,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.644582986831665,
+              24.31618309020996
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.10000000149011612,
+              5,
+              0.10000000149011612
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cylinder",
+            "materialSource": "materials/metal.mat.json",
+            "material.albedo": [
+              0.800000011920929,
+              0.800000011920929,
+              0.8500000238418579,
+              1
+            ],
+            "material.metallic": 1,
+            "material.roughness": 0.3,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere (Copy)",
+      "id": 20,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -0.1963891237974167,
+              0.5995995402336121,
+              0.06710433959960938
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              10,
+              0.20000000298023224,
+              10
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/glass.mat.json",
+            "material.albedo": [
+              0.8999999761581421,
+              0.949999988079071,
+              1,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.1,
+            "material.emissive": [
+              0.9960784316062927,
+              1,
+              0.800000011920929
+            ],
+            "material.emissiveIntensity": 1,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": false,
+            "receiveSSAO": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Point Light (Copy)",
+      "id": 21,
+      "parentId": 20,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.417032390832901,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "PointLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 2,
+            "range": 10,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 512
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 22,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.612057685852051,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              0.20000000298023224,
+              0.20000000298023224,
+              0.20000000298023224
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/gold.mat.json",
+            "material.albedo": [
+              1,
+              0.7599999904632568,
+              0.3400000035762787,
+              1
+            ],
+            "material.metallic": 1,
+            "material.roughness": 0.35,
+            "material.emissive": [
+              0.9843137264251709,
+              1,
+              0
+            ],
+            "material.emissiveIntensity": 0.5,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "FollowCamera",
+          "data": {
+            "target": 2,
+            "distance": 6,
+            "height": 4,
+            "lateralOffset": 0,
+            "pitchOffset": -10,
+            "yawOffset": 180,
+            "followSmooth": 5,
+            "lookSmooth": 4
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 23,
+      "parentId": 22,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              1,
+              0,
+              6.123234262925839e-17
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.5,
+            "far": 400,
+            "isMainCamera": true,
+            "clearColor": [
+              0.003921568859368563,
+              0.003921568859368563,
+              0.01568627543747425,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spot Light",
+      "id": 24,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0.23271897435188293,
+              0.16700536012649536
+            ],
+            "rotation": [
+              0,
+              1,
+              0,
+              6.123234262925839e-17
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "SpotLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 5,
+            "range": 15,
+            "innerAngle": 0.4363323129985824,
+            "outerAngle": 0.6108652381980153,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 1024
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 25,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              -6.068362712860107,
+              1.6229100227355957,
+              -5.042208194732666
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              3,
+              3,
+              3
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/tiles.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0.11,
+            "material.roughness": 0.42,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "RigidBody",
+          "data": {
+            "bodyType": "fixed",
+            "linearDamping": 0,
+            "angularDamping": 0,
+            "gravityScale": 1,
+            "interpolate": false
+          }
+        },
+        {
+          "type": "Collider",
+          "data": {
+            "friction": 0.3,
+            "restitution": 0.3,
+            "density": 1,
+            "isSensor": false
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": true,
+    "fogMode": "linear",
+    "fogDensity": 0.02,
+    "fogStart": 50,
+    "fogEnd": 80,
+    "fogColor": [
+      0.003921568859368563,
+      0.003921568859368563,
+      0.01568627543747425
+    ]
+  }
+}

@@ -63,6 +63,10 @@ export interface SceneLightData {
   /** 4 × (posX, posY, posZ, range, dirX, dirY, dirZ, outerCos,
    *       colR, colG, colB, intensity, innerCos, pad, pad, pad) = 64 floats */
   spotLights: Float32Array;
+  /** Component references for shadow pass selection (up to MAX per type). */
+  dirComponents: DirectionalLight[];
+  pointComponents: PointLight[];
+  spotComponents: SpotLight[];
 }
 
 // Scratch arrays for collecting light data
@@ -73,12 +77,18 @@ const _dirScratch = new Float32Array(3);
 const _posScratch = new Float32Array(3);
 const _spotDirScratch = new Float32Array(3);
 const _spotPosScratch = new Float32Array(3);
+const _dirComps: DirectionalLight[] = [];
+const _pointComps: PointLight[] = [];
+const _spotComps: SpotLight[] = [];
 
 /** Gather DirectionalLight, PointLight, and SpotLight components from the scene. */
 export function collectSceneLights(scene: Scene): SceneLightData {
   let dirCount = 0;
   let pointCount = 0;
   let spotCount = 0;
+  _dirComps.length = 0;
+  _pointComps.length = 0;
+  _spotComps.length = 0;
 
   for (const obj of scene.getAllObjects()) {
     if (dirCount < MAX_DIR_LIGHTS) {
@@ -94,6 +104,7 @@ export function collectSceneLights(scene: Scene): SceneLightData {
         _dirBuf[off + 5] = dl.color[1]!;
         _dirBuf[off + 6] = dl.color[2]!;
         _dirBuf[off + 7] = dl.intensity;
+        _dirComps.push(dl);
         dirCount++;
       }
     }
@@ -110,6 +121,7 @@ export function collectSceneLights(scene: Scene): SceneLightData {
         _pointBuf[off + 5] = pl.color[1]!;
         _pointBuf[off + 6] = pl.color[2]!;
         _pointBuf[off + 7] = pl.intensity;
+        _pointComps.push(pl);
         pointCount++;
       }
     }
@@ -135,6 +147,7 @@ export function collectSceneLights(scene: Scene): SceneLightData {
         _spotBuf[off + 13] = 0;
         _spotBuf[off + 14] = 0;
         _spotBuf[off + 15] = 0;
+        _spotComps.push(sl);
         spotCount++;
       }
     }
@@ -143,6 +156,7 @@ export function collectSceneLights(scene: Scene): SceneLightData {
   return {
     dirCount, pointCount, spotCount,
     dirLights: _dirBuf, pointLights: _pointBuf, spotLights: _spotBuf,
+    dirComponents: _dirComps, pointComponents: _pointComps, spotComponents: _spotComps,
   };
 }
 

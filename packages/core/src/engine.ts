@@ -34,6 +34,7 @@ export class Engine {
     if (this._running) return;
     this._scene = scene;
     Scene.current = scene;
+    Input.current = this.input;
     this._running = true;
     this.time.reset();
 
@@ -68,6 +69,7 @@ export class Engine {
   set scene(s: Scene) {
     this._scene = s;
     Scene.current = s;
+    Input.current = this.input;
   }
 
   /** Exposed for testing: run a single frame tick manually */
