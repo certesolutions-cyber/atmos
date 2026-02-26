@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-terrain",
   "description": "Voxel terrain with marching cubes and LOD streaming for the Atmos Engine",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -32,9 +32,9 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.4.0",
-    "@certe/atmos-math": "^0.4.0",
-    "@certe/atmos-renderer": "^0.4.0"
+    "@certe/atmos-core": "^0.5.0",
+    "@certe/atmos-math": "^0.5.0",
+    "@certe/atmos-renderer": "^0.5.0"
   },
   "scripts": {
     "test": "vitest run"
