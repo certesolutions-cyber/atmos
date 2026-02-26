@@ -2,7 +2,7 @@
   "gameObjects": [
     {
       "name": "Suzanne",
-      "id": 340,
+      "id": 3,
       "parentId": null,
       "components": [
         {
@@ -32,9 +32,9 @@
             "meshSource": "model:models/monkey.glb:0",
             "materialSource": "materials/monkey_material_001.mat.json",
             "material.albedo": [
-              1,
-              1,
-              1,
+              0.2823529541492462,
+              0.2862745225429535,
+              0.1764705926179886,
               1
             ],
             "material.metallic": 0,
@@ -45,6 +45,8 @@
               0
             ],
             "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
             "castShadow": true,
             "receiveSSAO": true
           }

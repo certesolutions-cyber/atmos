@@ -15,6 +15,11 @@
     }
     #status { opacity: 0.7; }
     button { padding: 6px 12px; cursor: pointer; }
+    #credits {
+      position: fixed; bottom: 12px; left: 12px; color: #fff;
+      font: 12px sans-serif; opacity: 0.5; z-index: 1;
+    }
+    #credits a { color: #adf; }
   </style>
 </head>
 <body>
@@ -24,6 +29,10 @@
     <span id="status">Place a .glb in models/ or click Load</span>
   </div>
   <canvas id="canvas" width="800" height="600"></canvas>
+  <div id="credits">
+    Model: <a href="https://skfb.ly/pGHXu" target="_blank">"Poppy Playtime (Chapter 5) Chum Chompkins"</a>
+    by ur_daughter, licensed under <a href="http://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>
+  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -1,6 +1,15 @@
 {
   "name": "@atmos/editor",
+  "description": "Browser-based Unity-style editor for the Atmos Engine — hierarchy, inspector, gizmos",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/certesolutions-cyber/atmos.git",
+    "directory": "packages/editor"
+  },
+  "homepage": "https://github.com/certesolutions-cyber/atmos",
+  "license": "GPL-3.0-or-later",
+  "keywords": ["editor", "game-engine", "webgpu", "scene-editor", "gizmo", "inspector", "atmos"],
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -30,7 +39,7 @@
       }
     }
   },
-  "files": ["dist", "!dist/__tests__", "vite-plugin.mjs", "vite-plugin.d.ts", "package.json", "README.md"],
+  "files": ["dist", "!dist/__tests__", "vite-plugin.mjs", "vite-plugin.d.ts", "package.json", "README.md", "LICENCE"],
   "peerDependencies": {
     "vite": ">=5.0.0"
   },

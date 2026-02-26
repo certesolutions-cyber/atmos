@@ -1,103 +1,154 @@
-# 🛠️ @atmos/editor
+# @atmos/editor
 
 Unity-style editor for the Atmos Engine, built with React. Provides scene hierarchy, inspector, gizmos, object picking, orbit camera, project file I/O, and material asset management — all running in the browser.
 
 ---
 
-## 🚀 Quick Start
+## Getting Started
 
-```ts
-import { startEditor } from '@atmos/editor';
+### 1. Create a new project
 
-const app = await startEditor();
-// Editor is now running with WebGPU viewport, React UI, and all tools
+```bash
+mkdir my-game && cd my-game
+npm init -y
 ```
 
-With physics:
+### 2. Install dependencies
+
+```bash
+npm install @atmos/editor @atmos/core @atmos/math @atmos/renderer @atmos/physics
+npm install -D vite @vitejs/plugin-react
+```
+
+### 3. Configure Vite
+
+Create `vite.config.ts`:
 
 ```ts
-import { startEditor } from '@atmos/editor';
-import { createEditorPhysics } from './physics-plugin';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { atmosPlugin } from '@atmos/editor/vite';
 
-const app = await startEditor({
-  physics: await createEditorPhysics(),
+export default defineConfig({
+  plugins: [react(), atmosPlugin()],
 });
+```
+
+### 4. Create the entry point
+
+Create `src/main.ts`:
+
+```ts
+import { startEditor, createEditorPhysics } from '@atmos/editor';
+
+await startEditor({
+  physics: await createEditorPhysics(),
+  scriptModules: import.meta.glob('./scripts/*.ts', { eager: true }),
+});
+```
+
+### 5. Run the editor
+
+```bash
+npx vite
+```
+
+The editor opens with a WebGPU viewport, scene hierarchy, inspector, and gizmo tools. Place game scripts in `src/scripts/` and they'll be automatically discovered.
+
+### 6. Build a standalone game
+
+```bash
+npx vite build
+```
+
+This produces a `dist/` folder with a player-only build — no editor UI, no React. The build entry is generated automatically by `atmosPlugin`.
+
+To preview the build:
+
+```bash
+npx vite preview
 ```
 
 ---
 
-## 🔑 Key Systems
+## Project Structure
 
-### EditorState
+A typical Atmos project looks like this:
+
+```
+my-game/
+  src/
+    main.ts               # Editor entry point
+    scripts/              # Game scripts (auto-discovered)
+      player-controller.ts
+      enemy-ai.ts
+  scenes/
+    main.scene.json       # Saved from editor
+  materials/
+    metal.mat.json        # Material assets
+  textures/
+    diffuse.jpg
+  project-settings.json   # Editor settings (defaultScene, physics)
+  vite.config.ts
+  package.json
+```
+
+---
+
+## Custom HTML
+
+You can provide your own `index.html` with a game UI overlay:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    #atmos-container { position: relative; width: 100%; height: 100%; }
+    #atmos-canvas { width: 100%; height: 100%; display: block; }
+    #atmos-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    #atmos-ui * { pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <div id="atmos-container">
+    <canvas id="atmos-canvas"></canvas>
+    <div id="atmos-ui">
+      <!-- Your game UI here (health bar, minimap, etc.) -->
+    </div>
+  </div>
+</body>
+</html>
+```
+
+The `#atmos-ui` overlay renders on top of the canvas in both editor and build modes. If no `index.html` is provided, one is generated automatically.
+
+---
+
+## EditorState
 
 Central state machine with event-driven updates:
 
 ```ts
-editorState.select(gameObject);            // emits 'selectionChanged'
-editorState.setGizmoMode('rotate');        // emits 'gizmoModeChanged'
-editorState.togglePause();                 // emits 'pauseChanged'
-editorState.setScene(newScene);            // emits 'sceneChanged'
+editorState.select(gameObject);           // emits 'selectionChanged'
+editorState.setGizmoMode('rotate');       // emits 'gizmoModeChanged'
+editorState.togglePause();                // emits 'pauseChanged'
+editorState.setScene(newScene);           // emits 'sceneChanged'
 
 editorState.on('selectionChanged', () => { /* update UI */ });
 ```
 
 Events: `selectionChanged` · `sceneChanged` · `pauseChanged` · `gizmoModeChanged` · `snapChanged` · `inspectorChanged` · `sceneRestored` · `assetsChanged` · `projectChanged` · `materialSelected` · `wireframeChanged`
 
-### Object Picking
-
-Ray-triangle picking from screen coordinates:
-
-1. Build ray from screen coords via `Ray.fromScreenCoords()`
-2. Bounding sphere early-out for each MeshRenderer
-3. Triangle-level Möller-Trumbore test on CPU vertex data
-4. Return closest hit
-
-### Gizmos
-
-Translate / Rotate / Scale gizmo with:
-- Axis hit-test (ray-to-line distance) for translate & scale
-- Ring intersection (plane test + radius check) for rotation
-- Constant screen-size scaling
-- Snap-to-grid support
-
-### Orbit Camera
-
-Mouse-based camera navigation:
-- **Drag** — orbit (azimuth + elevation)
-- **Shift+Drag** — pan
-- **Wheel** — zoom
-- Camera presets: Front, Back, Left, Right, Top, Bottom
-
-### ProjectFileSystem
-
-File System Access API wrapper with Vite dev server fallback:
-
-```ts
-await projectFs.open();                          // showDirectoryPicker()
-const data = await projectFs.readFile('scenes/main.scene.json');
-await projectFs.writeFile('scenes/main.scene.json', jsonString);
-const files = await projectFs.listFiles('materials/');
-```
-
-Handles are persisted in IndexedDB for automatic reconnection.
-
-### MaterialManager
-
-CRUD for `.mat.json` material assets with GPU caching:
-
-```ts
-const path = await materialManager.createMaterial('Steel', 'pbr');
-const material = await materialManager.getMaterial(path);
-await materialManager.updateMaterial(path, { metallic: 0.9, roughness: 0.1 });
-```
-
 ---
 
-## 🖥️ UI Panels
+## UI Panels
 
 | Panel | Description |
 |---|---|
-| **Hierarchy** | Tree view with DnD reparenting, search/filter, context menu (create primitives, lights, duplicate, delete) |
+| **Hierarchy** | Tree view with drag-and-drop reparenting, search/filter, context menu (create primitives, lights, duplicate, delete) |
 | **Inspector** | Transform fields, component list with enable/disable/remove, add component button, dynamic property fields |
 | **Asset Browser** | File tree from project directory, double-click to load models |
 | **Post-Process** | Exposure, SSAO, Bloom, Vignette controls |
@@ -105,9 +156,32 @@ await materialManager.updateMaterial(path, { metallic: 0.9, roughness: 0.1 });
 
 ---
 
-## ⚙️ Configuration
+## Editor Controls
 
-`startEditor()` accepts an `EditorConfig` for customization:
+- **Left click** — select object
+- **Drag** — orbit camera
+- **Shift+Drag** — pan camera
+- **Scroll** — zoom
+- **W** — translate gizmo
+- **E** — rotate gizmo
+- **R** — scale gizmo
+- Camera presets: Front, Back, Left, Right, Top, Bottom
+
+---
+
+## Vite Plugin Options
+
+```ts
+atmosPlugin({
+  include: ['src'],        // Directories to scan for asset browser
+  exclude: ['temp'],       // Directories to exclude
+  entry: 'src/main.ts',   // Entry file (default)
+})
+```
+
+---
+
+## startEditor() Options
 
 | Option | Description |
 |---|---|
@@ -118,39 +192,15 @@ await materialManager.updateMaterial(path, { metallic: 0.9, roughness: 0.1 });
 | `componentFactory` | Custom component creation logic |
 | `deserializeContext` | Custom deserialization hooks |
 | `showAssetBrowser` | Toggle asset browser panel |
+| `scriptModules` | `import.meta.glob()` result for script discovery |
 
 ---
 
-## 📁 Structure
-
-```
-packages/editor/src/
-  index.ts                  # Public API
-  editor-state.ts           # Central state + events
-  editor-mount.ts           # React mount + mouse handlers
-  bootstrap/
-    start-editor.ts         # Main initialization
-    default-factories.ts    # Primitive/component/deserialize factories
-  object-picker.ts          # Ray-triangle picking
-  gizmo-state.ts            # Hit-test + drag math
-  gizmo-renderer.ts         # Unlit gizmo drawing
-  gizmo-meshes.ts           # Arrow/ring/cube mesh data
-  overlay-renderer.ts       # Grid + gizmo orchestration
-  orbit-camera.ts           # Mouse orbit/pan/zoom
-  project-fs.ts             # File System Access API
-  material-manager.ts       # Material CRUD + GPU cache
-  scene-operations.ts       # find/duplicate/delete/reparent
-  scene-snapshot.ts         # Play-mode save/restore
-  components/               # React UI panels
-```
-
----
-
-## 🔗 Dependencies
+## Dependencies
 
 - `@atmos/core` — Component, GameObject, Scene, serialization
 - `@atmos/renderer` — RenderSystem, Camera, Material, lights, pipelines
 - `@atmos/math` — Vec3, Mat4, Quat, Ray
 - `@atmos/assets` — glTF model loading
 - `@atmos/animation` — AnimationMixer registration
-- `react` / `react-dom` — Editor UI
+- `react` / `react-dom` — Editor UI (not included in game builds)

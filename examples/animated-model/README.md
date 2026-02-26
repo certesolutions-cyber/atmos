@@ -52,6 +52,12 @@ animSelect.addEventListener('change', () => {
 
 ---
 
+## 🎨 Model Credits
+
+The bundled model is ["Poppy Playtime (Chapter 5) Chum Chompkins"](https://skfb.ly/pGHXu) by ur_daughter, licensed under [Creative Commons Attribution 4.0](http://creativecommons.org/licenses/by/4.0/).
+
+---
+
 ## 📁 Files
 
 ```
