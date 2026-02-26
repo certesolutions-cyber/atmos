@@ -306,7 +306,7 @@ try {
         }
         // Also notify for project files (materials, scenes, etc.)
         if (relPath.startsWith('materials/') || relPath.startsWith('scenes/') || relPath.startsWith('textures/')) {
-          server.hot.send('atmos:project-change', { kind, path: relPath });
+          server.hot.send('atmos:project-change', { kind: event, path: relPath });
         }
       });
     },
