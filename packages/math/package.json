@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-math",
   "description": "Lightweight Float32Array math library for the Atmos Engine — Vec3, Mat4, Quat, Ray",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -9,7 +9,15 @@
   },
   "homepage": "https://github.com/certesolutions-cyber/atmos",
   "license": "GPL-3.0-or-later",
-  "keywords": ["math", "webgpu", "game-engine", "vec3", "mat4", "quaternion", "atmos"],
+  "keywords": [
+    "math",
+    "webgpu",
+    "game-engine",
+    "vec3",
+    "mat4",
+    "quaternion",
+    "atmos"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -17,7 +25,13 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts"
   },
-  "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
   "scripts": {
     "test": "vitest run"
   }

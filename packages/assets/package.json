@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-assets",
   "description": "glTF 2.0 / GLB asset pipeline for the Atmos Engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -9,7 +9,14 @@
   },
   "homepage": "https://github.com/certesolutions-cyber/atmos",
   "license": "GPL-3.0-or-later",
-  "keywords": ["gltf", "glb", "asset-pipeline", "game-engine", "3d-model", "atmos"],
+  "keywords": [
+    "gltf",
+    "glb",
+    "asset-pipeline",
+    "game-engine",
+    "3d-model",
+    "atmos"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -17,12 +24,18 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts"
   },
-  "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
   "dependencies": {
-    "@certe/atmos-core": "^0.1.0",
-    "@certe/atmos-math": "^0.1.0",
-    "@certe/atmos-renderer": "^0.1.0",
-    "@certe/atmos-animation": "^0.1.0"
+    "@certe/atmos-core": "^0.2.0",
+    "@certe/atmos-math": "^0.2.0",
+    "@certe/atmos-renderer": "^0.2.0",
+    "@certe/atmos-animation": "^0.2.0"
   },
   "scripts": {
     "test": "vitest run"

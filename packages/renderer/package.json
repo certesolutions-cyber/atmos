@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-renderer",
   "description": "WebGPU PBR renderer for the Atmos Engine — lights, shadows, skinning, post-processing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -9,7 +9,15 @@
   },
   "homepage": "https://github.com/certesolutions-cyber/atmos",
   "license": "GPL-3.0-or-later",
-  "keywords": ["webgpu", "renderer", "pbr", "game-engine", "shadows", "bloom", "atmos"],
+  "keywords": [
+    "webgpu",
+    "renderer",
+    "pbr",
+    "game-engine",
+    "shadows",
+    "bloom",
+    "atmos"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -17,10 +25,16 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts"
   },
-  "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
   "dependencies": {
-    "@certe/atmos-core": "^0.1.0",
-    "@certe/atmos-math": "^0.1.0"
+    "@certe/atmos-core": "^0.2.0",
+    "@certe/atmos-math": "^0.2.0"
   },
   "scripts": {
     "test": "vitest run"

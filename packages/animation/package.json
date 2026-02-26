@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-animation",
   "description": "Skeletal animation system for the Atmos Engine — keyframes, blending, cross-fade",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -9,7 +9,14 @@
   },
   "homepage": "https://github.com/certesolutions-cyber/atmos",
   "license": "GPL-3.0-or-later",
-  "keywords": ["animation", "skeletal", "game-engine", "keyframe", "skinning", "atmos"],
+  "keywords": [
+    "animation",
+    "skeletal",
+    "game-engine",
+    "keyframe",
+    "skinning",
+    "atmos"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -17,10 +24,16 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts"
   },
-  "files": ["dist", "!dist/__tests__", "package.json", "README.md", "LICENCE"],
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
   "dependencies": {
-    "@certe/atmos-core": "^0.1.0",
-    "@certe/atmos-math": "^0.1.0"
+    "@certe/atmos-core": "^0.2.0",
+    "@certe/atmos-math": "^0.2.0"
   },
   "scripts": {
     "test": "vitest run"
