@@ -78,8 +78,9 @@ if (!fs.existsSync(path.join(root, 'tsconfig.json'))) {
   console.log('tsconfig.json already exists, skipping');
 }
 
-// 5. Install dev dependencies
+// 5. Install dependencies
 console.log('\nInstalling dependencies...');
+execSync('npm install @certe/atmos-physics', { stdio: 'inherit', cwd: root });
 execSync('npm install -D vite @vitejs/plugin-react typescript', { stdio: 'inherit', cwd: root });
 
 // 6. Add scripts to package.json if missing
