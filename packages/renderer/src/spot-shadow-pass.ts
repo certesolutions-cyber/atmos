@@ -122,7 +122,7 @@ export class SpotShadowPass {
     Mat4.lookAt(this._view, lightPos, this._target, this._up);
     Mat4.multiply(this._vp, this._proj, this._view);
 
-    this._device.queue.writeBuffer(this._lightVPBuffer, 0, this._vp as Float32Array);
+    this._device.queue.writeBuffer(this._lightVPBuffer, 0, this._vp as GPUAllowSharedBufferSource);
 
     // Collect casters within range
     const lx = lightPos[0]!, ly = lightPos[1]!, lz = lightPos[2]!;

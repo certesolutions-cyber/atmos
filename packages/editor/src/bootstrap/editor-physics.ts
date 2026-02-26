@@ -30,7 +30,7 @@ interface InitContext {
 // Well-known collider shapes for built-in primitives
 const PRIMITIVE_SHAPES: Record<string, ColliderShape> = {
   cube: { type: 'box', halfExtents: { x: 0.5, y: 0.5, z: 0.5 } },
-  plane: { type: 'box', halfExtents: { x: 10, y: 0.01, z: 10 } },
+  plane: { type: 'box', halfExtents: { x: 10, y: 0.01, z: 10 }, center: { x: 0, y: -0.01, z: 0 } },
   sphere: { type: 'sphere', radius: 0.5 },
   cylinder: { type: 'cylinder', halfHeight: 0.5, radius: 0.5 },
 };
@@ -410,6 +410,15 @@ export async function createEditorPhysics() {
           qw = (r10 - r01) / s; qx = (r02 + r20) / s; qy = (r12 + r21) / s; qz = 0.25 * s;
         }
         const rot = { x: qx, y: qy, z: qz, w: qw };
+
+        // Apply center offset (e.g. plane collider shifted so top = visual surface)
+        if (shape.type === 'box' && shape.center) {
+          const c = shape.center;
+          // Rotate center offset into world space using extracted rotation columns
+          pos.x += r00 * (c.x * sx) + r01 * (c.y * sy) + r02 * (c.z * sz);
+          pos.y += r10 * (c.x * sx) + r11 * (c.y * sy) + r12 * (c.z * sz);
+          pos.z += r20 * (c.x * sx) + r21 * (c.y * sy) + r22 * (c.z * sz);
+        }
 
         // Read scaled dimensions from live Rapier collider
         const entry: (typeof results)[0] = {

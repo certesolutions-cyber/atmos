@@ -15,7 +15,7 @@ export interface UnlitPipelineOptions {
 
 export function createUnlitPipeline(
   device: GPUDevice,
-  format: GPUTextureFormat,
+  _format: GPUTextureFormat,
   opts?: UnlitPipelineOptions,
 ): UnlitPipelineResources {
   const depthWrite = opts?.depthWrite ?? false;

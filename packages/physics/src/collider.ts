@@ -7,7 +7,7 @@ import { findAncestorComponent } from './physics-hierarchy.js';
 import { computeColliderOffset } from './collider-offset.js';
 
 export type ColliderShape =
-  | { type: 'box'; halfExtents: { x: number; y: number; z: number } }
+  | { type: 'box'; halfExtents: { x: number; y: number; z: number }; center?: { x: number; y: number; z: number } }
   | { type: 'sphere'; radius: number }
   | { type: 'capsule'; halfHeight: number; radius: number }
   | { type: 'cylinder'; halfHeight: number; radius: number }
@@ -120,6 +120,8 @@ export class Collider extends Component {
       const scale = this.gameObject.transform.scale;
       if (scale[0] !== 1 || scale[1] !== 1 || scale[2] !== 1) {
         this.applyScale(scale[0]!, scale[1]!, scale[2]!);
+      } else {
+        this._applyCenterOffset();
       }
     }
 
@@ -182,6 +184,20 @@ export class Collider extends Component {
         );
         break;
     }
+    this._applyCenterOffset(sx, sy, sz);
+  }
+
+  /** Apply shape center offset (scaled), e.g. for plane collider where top face = visual surface. */
+  private _applyCenterOffset(sx = 1, sy = 1, sz = 1): void {
+    if (!this.collider || !this._baseShape || this._baseShape.type !== 'box') return;
+    const c = this._baseShape.center;
+    if (!c) return;
+    // Only apply for self-colliders (not child colliders, which use hierarchy offset)
+    if (this._bodyGo && this._bodyGo !== this.gameObject) return;
+    _offsetVec.x = c.x * sx;
+    _offsetVec.y = c.y * sy;
+    _offsetVec.z = c.z * sz;
+    this.collider.setTranslationWrtParent(_offsetVec);
   }
 
   onDestroy(): void {

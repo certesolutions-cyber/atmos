@@ -1,8 +1,10 @@
 import type { Scene, PhysicsStepper } from '@atmos/core';
 import { Vec3 } from '@atmos/math';
+import type { Vec3Type } from '@atmos/math';
 import type { PhysicsWorld } from './physics-world.js';
 import { RigidBody } from './rigid-body.js';
 import { Collider } from './collider.js';
+import { invalidateColliderMap } from './physics-query.js';
 
 export class PhysicsSystem implements PhysicsStepper {
   private readonly _world: PhysicsWorld;
@@ -27,6 +29,8 @@ export class PhysicsSystem implements PhysicsStepper {
   }
 
   step(dt: number): void {
+    // Invalidate physics query collider map cache for this frame
+    invalidateColliderMap();
     // Pre-step: push transforms into Rapier + detect changes
     for (const obj of this._scene.getAllObjects()) {
       const rb = obj.getComponent(RigidBody);
@@ -42,7 +46,7 @@ export class PhysicsSystem implements PhysicsStepper {
           if (col) {
             col.applyScale(scale[0]!, scale[1]!, scale[2]!);
           }
-          Vec3.set(prev as Vec3.Vec3Type, scale[0]!, scale[1]!, scale[2]!);
+          Vec3.set(prev as Vec3Type, scale[0]!, scale[1]!, scale[2]!);
         }
 
         // --- Position / rotation sync ---
@@ -69,7 +73,7 @@ export class PhysicsSystem implements PhysicsStepper {
             rb.teleportToTransform();
           } else if (prev[0] !== pos[0] || prev[1] !== pos[1] || prev[2] !== pos[2]) {
             rb.teleportToTransform();
-            Vec3.set(prev as Vec3.Vec3Type, pos[0]!, pos[1]!, pos[2]!);
+            Vec3.set(prev as Vec3Type, pos[0]!, pos[1]!, pos[2]!);
           }
         }
       }

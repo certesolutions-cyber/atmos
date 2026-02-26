@@ -125,6 +125,43 @@ describe('Input', () => {
     expect(input2.mousePosition.y).toBe(200);
   });
 
+  // --- mouseDelta ---
+
+  it('mouseDelta accumulates movementX/Y between frames', () => {
+    target.fire('mousemove', { movementX: 5, movementY: -3, buttons: 0 });
+    target.fire('mousemove', { movementX: 2, movementY: 4, buttons: 0 });
+    expect(input.mouseDelta.x).toBe(7);
+    expect(input.mouseDelta.y).toBe(1);
+  });
+
+  it('mouseDelta resets on endFrame', () => {
+    target.fire('mousemove', { movementX: 10, movementY: 20, buttons: 0 });
+    input.endFrame();
+    expect(input.mouseDelta.x).toBe(0);
+    expect(input.mouseDelta.y).toBe(0);
+  });
+
+  // --- getMouseButton ---
+
+  it('getMouseButton returns true while button is held', () => {
+    target.fire('mousedown', { buttons: 1 }); // left
+    expect(input.getMouseButton(0)).toBe(true);
+    expect(input.getMouseButton(2)).toBe(false);
+  });
+
+  it('getMouseButton returns false after button is released', () => {
+    target.fire('mousedown', { buttons: 1 });
+    target.fire('mouseup', { buttons: 0 });
+    expect(input.getMouseButton(0)).toBe(false);
+  });
+
+  it('getMouseButton tracks multiple buttons', () => {
+    target.fire('mousedown', { buttons: 5 }); // left + right (1 + 4)
+    expect(input.getMouseButton(0)).toBe(true);  // left
+    expect(input.getMouseButton(1)).toBe(false); // middle
+    expect(input.getMouseButton(2)).toBe(true);  // right
+  });
+
   // --- detach ---
 
   it('detach stops responding to events', () => {
@@ -147,5 +184,14 @@ describe('Input', () => {
     canvas.fire('mousemove', { clientX: 200, clientY: 300 });
     // Should not have updated
     expect(input2.mousePosition.x).toBe(40);
+  });
+
+  it('detach stops mouseDelta tracking', () => {
+    target.fire('mousemove', { movementX: 5, movementY: 3, buttons: 0 });
+    input.detach();
+    input.endFrame();
+    target.fire('mousemove', { movementX: 10, movementY: 10, buttons: 0 });
+    expect(input.mouseDelta.x).toBe(0);
+    expect(input.mouseDelta.y).toBe(0);
   });
 });

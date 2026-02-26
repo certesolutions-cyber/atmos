@@ -1,0 +1,23 @@
+{
+  "name": "@atmos/example-player-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@atmos/core": "*",
+    "@atmos/math": "*",
+    "@atmos/renderer": "*",
+    "@atmos/physics": "*",
+    "@atmos/editor": "*",
+    "@atmos/assets": "*",
+    "@atmos/animation": "*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}

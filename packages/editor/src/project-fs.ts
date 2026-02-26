@@ -38,7 +38,7 @@ export class ProjectFileSystem {
   /** Opens folder picker with mode:'readwrite'. Returns false if user cancels. */
   async open(): Promise<boolean> {
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const handle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
       this._root = handle;
       await persistHandle(handle);
       return true;
@@ -51,13 +51,13 @@ export class ProjectFileSystem {
   async tryRestore(): Promise<boolean> {
     const handle = await loadHandle();
     if (!handle) return false;
-    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    const perm = await (handle as any).queryPermission({ mode: 'readwrite' });
     if (perm === 'granted') {
       this._root = handle;
       return true;
     }
     try {
-      const result = await handle.requestPermission({ mode: 'readwrite' });
+      const result = await (handle as any).requestPermission({ mode: 'readwrite' });
       if (result === 'granted') {
         this._root = handle;
         return true;
@@ -205,7 +205,7 @@ export class ProjectFileSystem {
 
   private async _listRecursive(dir: FileSystemDirectoryHandle, prefix: string): Promise<string[]> {
     const results: string[] = [];
-    for await (const [name, handle] of dir.entries()) {
+    for await (const [name, handle] of (dir as any).entries()) {
       if (handle.kind === 'file') {
         results.push(prefix + name);
       } else {

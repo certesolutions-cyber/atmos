@@ -94,7 +94,7 @@ export class ObjectPicker {
   private _pickTriangles(
     obj: GameObject,
     vertices: Float32Array,
-    indices: Uint16Array,
+    indices: Uint16Array | Uint32Array,
     stride: number,
   ): number {
     // Transform ray to object's local space

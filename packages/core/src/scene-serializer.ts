@@ -3,6 +3,8 @@ import { GameObject } from './game-object.js';
 import { Transform } from './transform.js';
 import { getComponentDef, getAllRegisteredComponents } from './component-registry.js';
 import type { Component } from './component.js';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- match registry's ComponentConstructor
+type ComponentConstructor = abstract new (...args: any[]) => any;
 
 export interface ComponentData {
   type: string;
@@ -69,7 +71,7 @@ function toSerializableValue(value: unknown): unknown {
 
 export function serializeScene(scene: Scene): SceneData {
   const allComponents = getAllRegisteredComponents();
-  const ctorByName = new Map<string, typeof Component>();
+  const ctorByName = new Map<string, ComponentConstructor>();
   for (const [ctor, def] of allComponents) {
     ctorByName.set(def.name, ctor);
   }

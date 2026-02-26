@@ -77,7 +77,7 @@ export function createDummyShadowResources(
   // Set slot maps to sentinel (no shadow)
   const mapOffset32 = 768 / 4;
   for (let i = 0; i < 12; i++) u32[mapOffset32 + i] = SHADOW_SLOT_NONE;
-  device.queue.writeBuffer(uniformBuffer, 0, data);
+  device.queue.writeBuffer(uniformBuffer, 0, data as GPUAllowSharedBufferSource);
 
   const tex2D = device.createTexture({
     size: [1, 1],

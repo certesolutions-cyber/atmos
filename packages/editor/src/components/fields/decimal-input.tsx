@@ -25,7 +25,7 @@ function clamp(v: number, min?: number, max?: number): number {
 export function DecimalInput({
   value,
   onChange,
-  step = 0.1,
+  step: _step = 0.1,
   min,
   max,
   decimals = 4,

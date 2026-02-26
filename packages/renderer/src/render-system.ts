@@ -186,7 +186,7 @@ export class RenderSystem implements Renderer {
       color: this.fogColor,
     };
     writeSceneUniforms(this._sceneData, cameraEye, sceneLights, this._light, fog);
-    device.queue.writeBuffer(this._sceneBuffer, 0, this._sceneData);
+    device.queue.writeBuffer(this._sceneBuffer, 0, this._sceneData as GPUAllowSharedBufferSource);
 
     // Frustum culling + MeshRenderer uniform writes
     extractFrustumPlanes(this._frustumPlanes, vpMatrix);

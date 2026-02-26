@@ -64,6 +64,7 @@ export class TonemapPass {
   private readonly _bgl: GPUBindGroupLayout;
   private readonly _sampler: GPUSampler;
   private readonly _paramsBuffer: GPUBuffer;
+  private readonly _paramsData = new Float32Array(4);
 
   constructor(device: GPUDevice, outputFormat: GPUTextureFormat) {
     this._device = device;
@@ -108,11 +109,11 @@ export class TonemapPass {
     vignetteIntensity: number,
     vignetteRadius: number,
   ): void {
-    this._device.queue.writeBuffer(
-      this._paramsBuffer,
-      0,
-      new Float32Array([bloomIntensity, exposure, vignetteIntensity, vignetteRadius]),
-    );
+    this._paramsData[0] = bloomIntensity;
+    this._paramsData[1] = exposure;
+    this._paramsData[2] = vignetteIntensity;
+    this._paramsData[3] = vignetteRadius;
+    this._device.queue.writeBuffer(this._paramsBuffer, 0, this._paramsData as GPUAllowSharedBufferSource);
 
     const bg = this._device.createBindGroup({
       layout: this._bgl,

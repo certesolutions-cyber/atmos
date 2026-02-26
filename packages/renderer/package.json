@@ -1,13 +1,17 @@
 {
   "name": "@atmos/renderer",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "files": ["dist", "!dist/__tests__", "package.json", "README.md"],
   "dependencies": {
-    "@atmos/core": "*",
-    "@atmos/math": "*"
+    "@atmos/core": "^0.1.0",
+    "@atmos/math": "^0.1.0"
   },
   "scripts": {
     "test": "vitest run"

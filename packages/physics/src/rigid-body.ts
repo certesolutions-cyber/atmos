@@ -1,5 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Component } from '@atmos/core';
+import type { GameObject } from '@atmos/core';
 import type { PhysicsWorld } from './physics-world.js';
 
 export type RigidBodyType = 'dynamic' | 'fixed' | 'kinematic';
@@ -87,7 +88,7 @@ export class RigidBody extends Component {
     this.body = world.createRigidBody(desc);
 
     if (options.mass !== undefined && this.bodyType === 'dynamic') {
-      this.body.setAdditionalMass(options.mass);
+      this.body.setAdditionalMass(options.mass, true);
     }
   }
 
@@ -183,7 +184,7 @@ export class RigidBody extends Component {
   private _invalidateChildColliders(go: GameObject): void {
     for (const comp of go.getComponents()) {
       // Duck-type: any component with collider + attachedBody pointing to this RB
-      const c = comp as Record<string, unknown>;
+      const c = comp as unknown as Record<string, unknown>;
       if ('collider' in c && 'attachedBody' in c && c['attachedBody'] === this) {
         c['collider'] = null;
       }

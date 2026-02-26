@@ -103,7 +103,7 @@ export class DirectionalShadowPass {
     encoder: GPUCommandEncoder, scene: Scene, lightVP: Mat4Type,
     extraDraw?: (pass: GPURenderPassEncoder) => void,
   ): void {
-    this._device.queue.writeBuffer(this._lightVPBuffer, 0, lightVP as Float32Array);
+    this._device.queue.writeBuffer(this._lightVPBuffer, 0, lightVP as GPUAllowSharedBufferSource);
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [],

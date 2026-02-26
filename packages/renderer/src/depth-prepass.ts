@@ -92,7 +92,7 @@ export class DepthPrepass {
     extraDraw?: (pass: GPURenderPassEncoder) => void,
   ): void {
     this.resize(this._width, this._height);
-    this._device.queue.writeBuffer(this._vpBuffer, 0, cameraVP as Float32Array);
+    this._device.queue.writeBuffer(this._vpBuffer, 0, cameraVP as GPUAllowSharedBufferSource);
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [],

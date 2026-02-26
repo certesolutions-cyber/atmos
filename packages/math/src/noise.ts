@@ -99,7 +99,7 @@ const PERM = new Uint8Array(512);
     184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93,
     222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
   ];
-  for (let i = 0; i < 256; i++) PERM[i] = PERM[i + 256] = p[i];
+  for (let i = 0; i < 256; i++) PERM[i] = PERM[i + 256] = p[i]!;
 }
 
 /** Improved Perlin fade: 6t^5 - 15t^4 + 10t^3 */
@@ -110,7 +110,7 @@ function fade(t: number): number {
 /** Dot product with one of the 12 gradient vectors. */
 function grad3dot(hash: number, x: number, y: number, z: number): number {
   const idx = (hash % 12) * 3;
-  return GRAD3[idx] * x + GRAD3[idx + 1] * y + GRAD3[idx + 2] * z;
+  return GRAD3[idx]! * x + GRAD3[idx + 1]! * y + GRAD3[idx + 2]! * z;
 }
 
 /**
@@ -130,23 +130,23 @@ export function perlinNoise3D(x: number, y: number, z: number): number {
   const w = fade(zf);
 
   // Hash 8 corners
-  const A = PERM[X] + Y;
-  const AA = PERM[A] + Z;
-  const AB = PERM[A + 1] + Z;
-  const B = PERM[X + 1] + Y;
-  const BA = PERM[B] + Z;
-  const BB = PERM[B + 1] + Z;
+  const A = PERM[X]! + Y;
+  const AA = PERM[A]! + Z;
+  const AB = PERM[A + 1]! + Z;
+  const B = PERM[X + 1]! + Y;
+  const BA = PERM[B]! + Z;
+  const BB = PERM[B + 1]! + Z;
 
   // Gradient dots + trilinear interpolation
   return lerp(
     lerp(
-      lerp(grad3dot(PERM[AA], xf, yf, zf), grad3dot(PERM[BA], xf - 1, yf, zf), u),
-      lerp(grad3dot(PERM[AB], xf, yf - 1, zf), grad3dot(PERM[BB], xf - 1, yf - 1, zf), u),
+      lerp(grad3dot(PERM[AA]!, xf, yf, zf), grad3dot(PERM[BA]!, xf - 1, yf, zf), u),
+      lerp(grad3dot(PERM[AB]!, xf, yf - 1, zf), grad3dot(PERM[BB]!, xf - 1, yf - 1, zf), u),
       v,
     ),
     lerp(
-      lerp(grad3dot(PERM[AA + 1], xf, yf, zf - 1), grad3dot(PERM[BA + 1], xf - 1, yf, zf - 1), u),
-      lerp(grad3dot(PERM[AB + 1], xf, yf - 1, zf - 1), grad3dot(PERM[BB + 1], xf - 1, yf - 1, zf - 1), u),
+      lerp(grad3dot(PERM[AA + 1]!, xf, yf, zf - 1), grad3dot(PERM[BA + 1]!, xf - 1, yf, zf - 1), u),
+      lerp(grad3dot(PERM[AB + 1]!, xf, yf - 1, zf - 1), grad3dot(PERM[BB + 1]!, xf - 1, yf - 1, zf - 1), u),
       v,
     ),
     w,

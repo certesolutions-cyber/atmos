@@ -233,7 +233,7 @@ export class ShadowManager {
       });
       this._dirty = true;
     }
-    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformData);
+    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformData as GPUAllowSharedBufferSource);
   }
 
   private _writeSlotMap<T>(

@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/math" },
+    { "path": "packages/core" },
+    { "path": "packages/renderer" },
+    { "path": "packages/physics" },
+    { "path": "packages/animation" },
+    { "path": "packages/assets" },
+    { "path": "packages/terrain" },
+    { "path": "packages/editor" }
+  ]
+}

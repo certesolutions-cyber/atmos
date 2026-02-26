@@ -75,14 +75,21 @@ export function slerp(out: Quat, a: Quat, b: Quat, t: number): Quat {
     cosom = -cosom;
     bx = -bx; by = -by; bz = -bz; bw = -bw;
   }
+  // Clamp to [0, 1] to avoid NaN from floating-point overshoot in Math.acos
+  if (cosom > 1) cosom = 1;
 
   let scale0: number;
   let scale1: number;
   if (1.0 - cosom > 1e-6) {
     const omega = Math.acos(cosom);
     const sinom = Math.sin(omega);
-    scale0 = Math.sin((1.0 - t) * omega) / sinom;
-    scale1 = Math.sin(t * omega) / sinom;
+    if (sinom > 1e-6) {
+      scale0 = Math.sin((1.0 - t) * omega) / sinom;
+      scale1 = Math.sin(t * omega) / sinom;
+    } else {
+      scale0 = 1.0 - t;
+      scale1 = t;
+    }
   } else {
     scale0 = 1.0 - t;
     scale1 = t;

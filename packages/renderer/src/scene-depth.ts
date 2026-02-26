@@ -83,7 +83,7 @@ export class SceneDepthPass {
     skinnedRenderers: readonly SkinnedMeshRenderer[],
     terrainRenderers: readonly TerrainMeshRenderer[],
   ): void {
-    this._device.queue.writeBuffer(this._vpBuffer, 0, vpMatrix as Float32Array);
+    this._device.queue.writeBuffer(this._vpBuffer, 0, vpMatrix as GPUAllowSharedBufferSource);
 
     const pass = encoder.beginRenderPass({
       colorAttachments: [],

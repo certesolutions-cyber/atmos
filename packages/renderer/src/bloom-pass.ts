@@ -24,6 +24,8 @@ export class BloomPass {
   private readonly _upBGL: GPUBindGroupLayout;
   private readonly _paramsBuffer: GPUBuffer;
 
+  private readonly _paramsData = new Float32Array(4);
+
   private _mipTextures: GPUTexture[] = [];
   private _mipViews: GPUTextureView[] = [];
   private _width = 0;
@@ -123,11 +125,11 @@ export class BloomPass {
       const srcView = i === 0 ? hdrView : this._mipViews[i - 1]!;
       const isFirst = i === 0 ? 1.0 : 0.0;
 
-      this._device.queue.writeBuffer(
-        this._paramsBuffer,
-        0,
-        new Float32Array([this.threshold, isFirst, 0, 0]),
-      );
+      this._paramsData[0] = this.threshold;
+      this._paramsData[1] = isFirst;
+      this._paramsData[2] = 0;
+      this._paramsData[3] = 0;
+      this._device.queue.writeBuffer(this._paramsBuffer, 0, this._paramsData as GPUAllowSharedBufferSource);
 
       const bg = this._device.createBindGroup({
         layout: this._downBGL,
@@ -155,11 +157,11 @@ export class BloomPass {
     // --- Upsample chain (additive blend) ---
     for (let i = MIP_COUNT - 2; i >= 0; i--) {
       const srcView = this._mipViews[i + 1]!;
-      this._device.queue.writeBuffer(
-        this._paramsBuffer,
-        0,
-        new Float32Array([this.radius, 0, 0, 0]),
-      );
+      this._paramsData[0] = this.radius;
+      this._paramsData[1] = 0;
+      this._paramsData[2] = 0;
+      this._paramsData[3] = 0;
+      this._device.queue.writeBuffer(this._paramsBuffer, 0, this._paramsData as GPUAllowSharedBufferSource);
 
       const bg = this._device.createBindGroup({
         layout: this._upBGL,

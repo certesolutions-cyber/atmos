@@ -218,10 +218,10 @@ export class AnimationMixer extends Component {
         const dot = br[rOff]! * sk.restR[rOff]! + br[rOff + 1]! * sk.restR[rOff + 1]! +
                     br[rOff + 2]! * sk.restR[rOff + 2]! + br[rOff + 3]! * sk.restR[rOff + 3]!;
         const sign = dot < 0 ? -1 : 1;
-        br[rOff] += sk.restR[rOff]! * restW * sign;
-        br[rOff + 1] += sk.restR[rOff + 1]! * restW * sign;
-        br[rOff + 2] += sk.restR[rOff + 2]! * restW * sign;
-        br[rOff + 3] += sk.restR[rOff + 3]! * restW * sign;
+        br[rOff] = br[rOff]! + sk.restR[rOff]! * restW * sign;
+        br[rOff + 1] = br[rOff + 1]! + sk.restR[rOff + 1]! * restW * sign;
+        br[rOff + 2] = br[rOff + 2]! + sk.restR[rOff + 2]! * restW * sign;
+        br[rOff + 3] = br[rOff + 3]! + sk.restR[rOff + 3]! * restW * sign;
       }
       Quat.normalize(
         br.subarray(rOff, rOff + 4),
@@ -291,15 +291,15 @@ export class AnimationMixer extends Component {
           sampleTrack(_sampledT, track, layer.time);
           const off = ji * 3;
           // Delta from rest: bt starts at restT, add (sampled - rest) * weight
-          bt[off] += (_sampledT[0]! - sk.restT[off]!) * w;
-          bt[off + 1] += (_sampledT[1]! - sk.restT[off + 1]!) * w;
-          bt[off + 2] += (_sampledT[2]! - sk.restT[off + 2]!) * w;
+          bt[off] = bt[off]! + (_sampledT[0]! - sk.restT[off]!) * w;
+          bt[off + 1] = bt[off + 1]! + (_sampledT[1]! - sk.restT[off + 1]!) * w;
+          bt[off + 2] = bt[off + 2]! + (_sampledT[2]! - sk.restT[off + 2]!) * w;
           break;
         }
         case 'rotation': {
           sampleTrack(_sampledR, track, layer.time);
           const rOff = ji * 4;
-          this._accumWeightR![ji] += w;
+          this._accumWeightR![ji] = this._accumWeightR![ji]! + w;
           // Weighted quaternion accumulation (shortest path)
           _blendR[0] = br[rOff]!;
           _blendR[1] = br[rOff + 1]!;
@@ -308,19 +308,19 @@ export class AnimationMixer extends Component {
           const dot = _blendR[0]! * _sampledR[0]! + _blendR[1]! * _sampledR[1]! +
                       _blendR[2]! * _sampledR[2]! + _blendR[3]! * _sampledR[3]!;
           const sign = dot < 0 ? -1 : 1;
-          br[rOff] += _sampledR[0]! * w * sign;
-          br[rOff + 1] += _sampledR[1]! * w * sign;
-          br[rOff + 2] += _sampledR[2]! * w * sign;
-          br[rOff + 3] += _sampledR[3]! * w * sign;
+          br[rOff] = br[rOff]! + _sampledR[0]! * w * sign;
+          br[rOff + 1] = br[rOff + 1]! + _sampledR[1]! * w * sign;
+          br[rOff + 2] = br[rOff + 2]! + _sampledR[2]! * w * sign;
+          br[rOff + 3] = br[rOff + 3]! + _sampledR[3]! * w * sign;
           break;
         }
         case 'scale': {
           sampleTrack(_sampledS, track, layer.time);
           const sOff = ji * 3;
           // Delta from rest: bs starts at restS, add (sampled - rest) * weight
-          bs[sOff] += (_sampledS[0]! - sk.restS[sOff]!) * w;
-          bs[sOff + 1] += (_sampledS[1]! - sk.restS[sOff + 1]!) * w;
-          bs[sOff + 2] += (_sampledS[2]! - sk.restS[sOff + 2]!) * w;
+          bs[sOff] = bs[sOff]! + (_sampledS[0]! - sk.restS[sOff]!) * w;
+          bs[sOff + 1] = bs[sOff + 1]! + (_sampledS[1]! - sk.restS[sOff + 1]!) * w;
+          bs[sOff + 2] = bs[sOff + 2]! + (_sampledS[2]! - sk.restS[sOff + 2]!) * w;
           break;
         }
       }

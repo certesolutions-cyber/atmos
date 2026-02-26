@@ -135,7 +135,7 @@ export class SkinnedMeshRenderer extends Component {
    */
   writeBoneMatrices(boneMatrices: Float32Array): void {
     if (!this._device || !this.boneBuffer) return;
-    this._device.queue.writeBuffer(this.boneBuffer, 0, boneMatrices);
+    this._device.queue.writeBuffer(this.boneBuffer, 0, boneMatrices as GPUAllowSharedBufferSource);
   }
 
   writeUniforms(viewProjection: Mat4Type): void {
@@ -146,9 +146,9 @@ export class SkinnedMeshRenderer extends Component {
     Mat4.invert(this._invModel, model);
     Mat4.transpose(this._normalMat, this._invModel);
 
-    this._device.queue.writeBuffer(this.uniformBuffer, 0, this._mvp);
-    this._device.queue.writeBuffer(this.uniformBuffer, 64, model);
-    this._device.queue.writeBuffer(this.uniformBuffer, 128, this._normalMat);
+    this._device.queue.writeBuffer(this.uniformBuffer, 0, this._mvp as GPUAllowSharedBufferSource);
+    this._device.queue.writeBuffer(this.uniformBuffer, 64, model as GPUAllowSharedBufferSource);
+    this._device.queue.writeBuffer(this.uniformBuffer, 128, this._normalMat as GPUAllowSharedBufferSource);
 
     if (this.material && this.material.textureVersion !== this._lastTextureVersion) {
       this._lastTextureVersion = this.material.textureVersion;
@@ -157,7 +157,7 @@ export class SkinnedMeshRenderer extends Component {
 
     if (this.material?.dirty && this.material.uniformBuffer) {
       writeMaterialUniforms(this._matData, this.material);
-      this._device.queue.writeBuffer(this.material.uniformBuffer, 0, this._matData);
+      this._device.queue.writeBuffer(this.material.uniformBuffer, 0, this._matData as GPUAllowSharedBufferSource);
       this.material.dirty = false;
     }
   }

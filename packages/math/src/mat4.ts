@@ -213,19 +213,17 @@ export function lookAt(out: Mat4, eye: Vec3, center: Vec3, up: Vec3): Mat4 {
   let fY = centerY - eyeY;
   let fZ = centerZ - eyeZ;
   let len = Math.sqrt(fX * fX + fY * fY + fZ * fZ);
-  if (len > 0) {
-    len = 1 / len;
-    fX *= len; fY *= len; fZ *= len;
-  }
+  if (len < 1e-8) return identity(out);
+  len = 1 / len;
+  fX *= len; fY *= len; fZ *= len;
 
   let sX = fY * upZ - fZ * upY;
   let sY = fZ * upX - fX * upZ;
   let sZ = fX * upY - fY * upX;
   len = Math.sqrt(sX * sX + sY * sY + sZ * sZ);
-  if (len > 0) {
-    len = 1 / len;
-    sX *= len; sY *= len; sZ *= len;
-  }
+  if (len < 1e-8) return identity(out);
+  len = 1 / len;
+  sX *= len; sY *= len; sZ *= len;
 
   const uX = sY * fZ - sZ * fY;
   const uY = sZ * fX - sX * fZ;

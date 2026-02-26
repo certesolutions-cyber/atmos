@@ -19,7 +19,7 @@ export function getWhiteFallbackTexture(device: GPUDevice): GPUTextureHandle {
   });
   device.queue.writeTexture(
     { texture },
-    new Uint8Array([255, 255, 255, 255]),
+    new Uint8Array([255, 255, 255, 255]) as GPUAllowSharedBufferSource,
     { bytesPerRow: 4 },
     [1, 1],
   );
@@ -50,7 +50,7 @@ export function createTextureFromRGBA(
   });
   device.queue.writeTexture(
     { texture },
-    data,
+    data as GPUAllowSharedBufferSource,
     { bytesPerRow: width * 4 },
     [width, height],
   );
@@ -79,7 +79,7 @@ export function getFlatNormalFallback(device: GPUDevice): GPUTextureHandle {
   });
   device.queue.writeTexture(
     { texture },
-    new Uint8Array([127, 127, 255, 255]),
+    new Uint8Array([127, 127, 255, 255]) as GPUAllowSharedBufferSource,
     { bytesPerRow: 4 },
     [1, 1],
   );
@@ -103,7 +103,7 @@ export function getDefaultMetallicRoughnessFallback(device: GPUDevice): GPUTextu
   // G=255 (roughness=1.0), B=255 (metallic=1.0) – multiplied by uniform values
   device.queue.writeTexture(
     { texture },
-    new Uint8Array([255, 255, 255, 255]),
+    new Uint8Array([255, 255, 255, 255]) as GPUAllowSharedBufferSource,
     { bytesPerRow: 4 },
     [1, 1],
   );

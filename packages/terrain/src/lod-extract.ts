@@ -183,7 +183,7 @@ function edgeOriginLOD(
   const co0 = CORNER_OFFSETS[ec[0]]!;
   const co1 = CORNER_OFFSETS[ec[1]]!;
   const dir = edgeDirection(e);
-  const co = co0[dir] <= co1[dir] ? co0 : co1;
+  const co = co0[dir]! <= co1[dir]! ? co0 : co1;
   return [x + co[0], y + co[1], z + co[2]];
 }
 

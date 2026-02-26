@@ -157,7 +157,7 @@ export function EditorShell({
   const [, setTick] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   // Resizable panel sizes
@@ -194,13 +194,27 @@ export function EditorShell({
     return () => { style.remove(); };
   }, []);
 
-  // Move canvas into viewport slot on mount
+  // Move canvas into viewport slot on mount, and adopt #atmos-ui overlay
   useEffect(() => {
     if (viewportRef.current && canvas) {
       Object.assign(canvas.style, canvasStyle);
       canvas.style.visibility = 'visible';
       canvas.style.position = 'static';
       viewportRef.current.appendChild(canvas);
+
+      // Move user's #atmos-ui overlay into the viewport so it renders on top of the canvas
+      const uiOverlay = document.getElementById('atmos-ui');
+      if (uiOverlay) {
+        Object.assign(uiOverlay.style, {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+        });
+        viewportRef.current.appendChild(uiOverlay);
+      }
     }
   }, [canvas]);
 
@@ -227,6 +241,10 @@ export function EditorShell({
       }
       editorState.sceneName = name;
       await projectFs.writeFile(`scenes/${name}.scene.json`, json);
+      // Update defaultScene in project settings so builds use this scene
+      if (editorState.settingsManager) {
+        editorState.settingsManager.updateDefaultScene(name);
+      }
       showToast(`Saved ${name}.scene.json`);
     } else {
       const blob = new Blob([json], { type: 'application/json' });

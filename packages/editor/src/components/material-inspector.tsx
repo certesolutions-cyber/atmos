@@ -3,6 +3,7 @@ import type { ShaderType, MaterialAssetData } from '@atmos/renderer';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorState } from '../editor-state.js';
 import { DecimalInput } from './fields/decimal-input.js';
+import { rgbToHex, hexToRgb } from '../color-utils.js';
 
 interface MaterialInspectorProps {
   editorState: EditorState;
@@ -172,26 +173,14 @@ function AlbedoRow({ albedo, onSave }: {
   albedo: [number, number, number, number];
   onSave: (changes: Partial<MaterialAssetData>) => void;
 }) {
-  const toHex = (r: number, g: number, b: number): string => {
-    const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255);
-    return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`;
-  };
-
-  const fromHex = (hex: string): [number, number, number] => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return [r, g, b];
-  };
-
   return (
     <div style={rowStyle}>
       <span style={labelStyle}>Albedo</span>
       <input
         type="color"
-        value={toHex(albedo[0], albedo[1], albedo[2])}
+        value={rgbToHex(albedo[0], albedo[1], albedo[2])}
         onChange={(e) => {
-          const [r, g, b] = fromHex(e.target.value);
+          const [r, g, b] = hexToRgb(e.target.value);
           onSave({ albedo: [r, g, b, albedo[3]] });
         }}
         style={{ ...colorSwatchStyle, padding: 0, background: 'none' }}
@@ -266,25 +255,13 @@ function ColorRow({ label, color, onChange }: {
   color: [number, number, number];
   onChange: (c: [number, number, number]) => void;
 }) {
-  const toHex = (r: number, g: number, b: number): string => {
-    const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 255);
-    return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`;
-  };
-
-  const fromHex = (hex: string): [number, number, number] => {
-    const r = parseInt(hex.slice(1, 3), 16) / 255;
-    const g = parseInt(hex.slice(3, 5), 16) / 255;
-    const b = parseInt(hex.slice(5, 7), 16) / 255;
-    return [r, g, b];
-  };
-
   return (
     <div style={rowStyle}>
       <span style={labelStyle}>{label}</span>
       <input
         type="color"
-        value={toHex(color[0], color[1], color[2])}
-        onChange={(e) => onChange(fromHex(e.target.value))}
+        value={rgbToHex(color[0], color[1], color[2])}
+        onChange={(e) => onChange(hexToRgb(e.target.value))}
         style={{ ...colorSwatchStyle, padding: 0, background: 'none' }}
       />
       <span style={{ fontSize: '10px', color: '#888' }}>

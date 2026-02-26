@@ -15,7 +15,6 @@
 const MAX_DIR_SHADOW_SLOTS = 2;
 const MAX_POINT_SHADOW_SLOTS = 2;
 const MAX_SPOT_SHADOW_SLOTS = 4;
-const SHADOW_SENTINEL = 0xFFFFFFFF;
 
 /* ── helpers (code-gen) ─────────────────────────────────────────── */
 

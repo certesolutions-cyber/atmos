@@ -130,9 +130,9 @@ export class MeshRenderer extends Component {
     Mat4.transpose(this._normalMat, this._invModel);
 
     // Write all 3 matrices to buffer
-    this._device.queue.writeBuffer(this.uniformBuffer, 0, this._mvp);
-    this._device.queue.writeBuffer(this.uniformBuffer, 64, model);
-    this._device.queue.writeBuffer(this.uniformBuffer, 128, this._normalMat);
+    this._device.queue.writeBuffer(this.uniformBuffer, 0, this._mvp as GPUAllowSharedBufferSource);
+    this._device.queue.writeBuffer(this.uniformBuffer, 64, model as GPUAllowSharedBufferSource);
+    this._device.queue.writeBuffer(this.uniformBuffer, 128, this._normalMat as GPUAllowSharedBufferSource);
 
     // Rebuild bind group if material texture changed
     if (this.material && this.material.textureVersion !== this._lastTextureVersion) {
@@ -143,7 +143,7 @@ export class MeshRenderer extends Component {
     // Write material uniforms if dirty
     if (this.material?.dirty && this.material.uniformBuffer) {
       writeMaterialUniforms(this._matData, this.material);
-      this._device.queue.writeBuffer(this.material.uniformBuffer, 0, this._matData);
+      this._device.queue.writeBuffer(this.material.uniformBuffer, 0, this._matData as GPUAllowSharedBufferSource);
       this.material.dirty = false;
     }
   }

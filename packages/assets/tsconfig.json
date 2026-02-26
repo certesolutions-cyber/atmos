@@ -5,11 +5,24 @@
     "outDir": "dist",
     "composite": true
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../core" },
-    { "path": "../math" },
-    { "path": "../renderer" },
-    { "path": "../animation" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../math"
+    },
+    {
+      "path": "../renderer"
+    },
+    {
+      "path": "../animation"
+    }
+  ],
+  "exclude": [
+    "src/**/__tests__"
   ]
 }

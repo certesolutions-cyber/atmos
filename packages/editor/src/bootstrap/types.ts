@@ -1,5 +1,5 @@
 import type { Component, Engine, Scene, GameObject, DeserializeContext, PhysicsStepper } from '@atmos/core';
-import type { GPUContext, PipelineResources, Mesh, CameraSettings, RenderSystem } from '@atmos/renderer';
+import type { GPUContext, PipelineResources, Mesh, RenderSystem } from '@atmos/renderer';
 import type { EditorState } from '../editor-state.js';
 import type { GizmoState } from '../gizmo-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
@@ -100,7 +100,7 @@ export interface SceneSetupContext {
   scene: Scene;
   gpu: GPUContext;
   pipeline: PipelineResources;
-  meshes: Record<Exclude<PrimitiveType, 'camera'>, Mesh>;
+  meshes: Record<Exclude<PrimitiveType, 'camera' | 'directionalLight' | 'pointLight' | 'spotLight'>, Mesh>;
 }
 
 export interface EditorConfig {

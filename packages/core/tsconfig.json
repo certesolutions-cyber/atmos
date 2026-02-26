@@ -5,8 +5,15 @@
     "rootDir": "src",
     "composite": true
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../math" }
+    {
+      "path": "../math"
+    }
+  ],
+  "exclude": [
+    "src/**/__tests__"
   ]
 }

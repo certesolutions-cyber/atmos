@@ -21,7 +21,10 @@ export function computeColliderOffset(
   childGo: GameObject,
 ): ColliderOffset {
   // relative = inv(bodyWorld) * childWorld
-  Mat4.invert(_invParent, bodyGo.transform.worldMatrix);
+  if (!Mat4.invert(_invParent, bodyGo.transform.worldMatrix)) {
+    // Singular body world matrix (e.g. zero scale) — return identity offset
+    return { tx: 0, ty: 0, tz: 0, rx: 0, ry: 0, rz: 0, rw: 1, sx: 1, sy: 1, sz: 1 };
+  }
   Mat4.multiply(_relative, _invParent, childGo.transform.worldMatrix);
 
   // Translation from column 3

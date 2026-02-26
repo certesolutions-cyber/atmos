@@ -3,12 +3,30 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "composite": true
   },
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "references": [
-    { "path": "../math" },
-    { "path": "../core" },
-    { "path": "../renderer" }
+    {
+      "path": "../math"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../renderer"
+    },
+    {
+      "path": "../animation"
+    },
+    {
+      "path": "../assets"
+    }
+  ],
+  "exclude": [
+    "src/**/__tests__"
   ]
 }

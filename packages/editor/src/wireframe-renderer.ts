@@ -113,7 +113,7 @@ export class WireframeRenderer {
       size: lineIndices.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
     });
-    this._device.queue.writeBuffer(buffer, 0, lineIndices);
+    this._device.queue.writeBuffer(buffer, 0, lineIndices as GPUAllowSharedBufferSource);
 
     cached = { buffer, count: lineIndices.length };
     this._lineIndexCache.set(mesh, cached);

@@ -8,6 +8,7 @@ export interface PhysicsSettings {
 }
 
 export interface ProjectSettings {
+  defaultScene?: string;
   physics: PhysicsSettings;
 }
 
@@ -57,6 +58,11 @@ export class ProjectSettingsManager {
     await this._fs.writeFile(SETTINGS_PATH, json);
   }
 
+  async updateDefaultScene(name: string): Promise<void> {
+    this._settings.defaultScene = name;
+    await this.save();
+  }
+
   async updatePhysics(partial: Partial<PhysicsSettings>): Promise<void> {
     Object.assign(this._settings.physics, partial);
     this._notify();
@@ -79,6 +85,9 @@ function deepClone<T>(obj: T): T {
 
 function deepMerge(defaults: ProjectSettings, overrides: Partial<ProjectSettings>): ProjectSettings {
   const result = deepClone(defaults);
+  if (overrides.defaultScene !== undefined) {
+    result.defaultScene = overrides.defaultScene;
+  }
   if (overrides.physics) {
     Object.assign(result.physics, overrides.physics);
   }

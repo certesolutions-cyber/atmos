@@ -1,5 +1,3 @@
-import type { Component } from './component.js';
-
 export type PropertyType = 'number' | 'string' | 'boolean' | 'vec3' | 'quat' | 'color' | 'enum' | 'gameObjectRef' | 'materialAsset';
 
 export interface PropertyDefBase {

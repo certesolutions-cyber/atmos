@@ -139,9 +139,9 @@ export class OrbitCamera {
     const uy = Math.cos(this.elevation);
     const uz = -Math.sin(this.elevation) * Math.cos(this.azimuth);
 
-    this.target[0]! -= (rx * dx - ux * dy) * panScale;
-    this.target[1]! -= (-uy * dy) * panScale;
-    this.target[2]! -= (rz * dx - uz * dy) * panScale;
+    this.target[0] = this.target[0]! - (rx * dx - ux * dy) * panScale;
+    this.target[1] = this.target[1]! - (-uy * dy) * panScale;
+    this.target[2] = this.target[2]! - (rz * dx - uz * dy) * panScale;
   }
 
   /** Smoothly animate the orbit camera to look at the given world position. */
@@ -171,9 +171,9 @@ export class OrbitCamera {
 
     const t = 1 - Math.exp(-FOCUS_SPEED * dt);
 
-    this.target[0] += (this._focusTarget[0]! - this.target[0]!) * t;
-    this.target[1] += (this._focusTarget[1]! - this.target[1]!) * t;
-    this.target[2] += (this._focusTarget[2]! - this.target[2]!) * t;
+    this.target[0] = this.target[0]! + (this._focusTarget[0]! - this.target[0]!) * t;
+    this.target[1] = this.target[1]! + (this._focusTarget[1]! - this.target[1]!) * t;
+    this.target[2] = this.target[2]! + (this._focusTarget[2]! - this.target[2]!) * t;
     this.distance += (this._focusDistance - this.distance) * t;
 
     this._updateCamera();

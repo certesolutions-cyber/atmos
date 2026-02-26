@@ -34,7 +34,10 @@ export { MaterialManager } from './material-manager.js';
 export { ProjectSettingsManager } from './project-settings.js';
 export type { PhysicsSettings, ProjectSettings } from './project-settings.js';
 export { startEditor } from './bootstrap/start-editor.js';
+export { startPlayer } from './bootstrap/start-player.js';
+export type { PlayerConfig, PlayerApp } from './bootstrap/start-player.js';
 export { createEditorPhysics } from './bootstrap/editor-physics.js';
+export { SimpleMaterialLoader } from './simple-material-loader.js';
 export type {
   EditorConfig,
   EditorApp,

@@ -111,7 +111,7 @@ export class CameraFrustumRenderer {
 
     // MVP = VP × cameraWorldMatrix (vertices are in camera-local space)
     Mat4.multiply(this._mvp, vp, camera.gameObject.transform.worldMatrix);
-    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._mvp);
+    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._mvp as GPUAllowSharedBufferSource);
 
     pass.setPipeline(this._pipeline.pipeline);
     pass.setBindGroup(0, this._bindGroup);

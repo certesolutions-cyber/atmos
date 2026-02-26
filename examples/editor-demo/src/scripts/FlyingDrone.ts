@@ -1,4 +1,4 @@
-import { Component } from "@atmos/core";
+import { Component, Input } from "@atmos/core";
 import type { PropertyDef } from "@atmos/core";
 import { Vec3, Quat } from "@atmos/math";
 import type { Vec3Type, QuatType } from "@atmos/math";
@@ -26,7 +26,6 @@ export class FlyingDrone extends Component {
 
   private _yaw = 0;
   private _time = 0;
-  private _keys = new Set<string>();
   private _startY = 0;
 
   // Pre-allocated temp buffers
@@ -36,36 +35,23 @@ export class FlyingDrone extends Component {
   private readonly _tmpQuat: QuatType = Quat.create();
   private readonly _yAxis: Vec3Type = Vec3.fromValues(0, 1, 0);
 
-  // Bound handlers for cleanup
-  private _onKeyDown = (e: KeyboardEvent) => {
-    this._keys.add(e.code);
-  };
-  private _onKeyUp = (e: KeyboardEvent) => {
-    this._keys.delete(e.code);
-  };
-  private _onMouseMove = (e: MouseEvent) => {
-    if (e.buttons & 1) {
-      this._yaw -= e.movementX * this.turnSpeed;
-    }
-  };
-
   onAwake(): void {
-    // Reset runtime state
     this._yaw = 0;
     this._time = 0;
-    this._keys.clear();
 
     const pos = this.gameObject.transform.position;
     this._startY = pos[1] ?? this.hoverHeight;
     if (this._startY === 0) this._startY = this.hoverHeight;
-
-    window.addEventListener("keydown", this._onKeyDown);
-    window.addEventListener("keyup", this._onKeyUp);
-    window.addEventListener("mousemove", this._onMouseMove);
   }
 
   onUpdate(dt: number): void {
+    if (!Input.current) return;
     this._time += dt;
+
+    // Yaw from mouse drag (left button)
+    if (Input.current.getMouseButton(0)) {
+      this._yaw -= Input.current.mouseDelta.x * this.turnSpeed;
+    }
     const t = this.gameObject.transform;
 
     // Yaw rotation (Y-axis only)
@@ -80,19 +66,17 @@ export class FlyingDrone extends Component {
 
     // Accumulate movement from arrow keys
     Vec3.set(this._move, 0, 0, 0);
-    if (this._keys.has("ArrowUp")) {
+    if (Input.current.getKey("ArrowUp")) {
       Vec3.add(this._move, this._move, this._forward);
     }
-    if (this._keys.has("ArrowDown")) {
-      Vec3.scale(this._forward, this._forward, -1);
-      Vec3.add(this._move, this._move, this._forward);
+    if (Input.current.getKey("ArrowDown")) {
+      Vec3.sub(this._move, this._move, this._forward);
     }
-    if (this._keys.has("ArrowRight")) {
+    if (Input.current.getKey("ArrowRight")) {
       Vec3.add(this._move, this._move, this._right);
     }
-    if (this._keys.has("ArrowLeft")) {
-      Vec3.scale(this._right, this._right, -1);
-      Vec3.add(this._move, this._move, this._right);
+    if (Input.current.getKey("ArrowLeft")) {
+      Vec3.sub(this._move, this._move, this._right);
     }
 
     // Normalize if moving diagonally
@@ -111,11 +95,5 @@ export class FlyingDrone extends Component {
       this._startY +
       Math.sin(this._time * this.bobFrequency) * this.bobAmplitude;
     t.setPosition(t.position[0]!, bobY, t.position[2]!);
-  }
-
-  onDestroy(): void {
-    window.removeEventListener("keydown", this._onKeyDown);
-    window.removeEventListener("keyup", this._onKeyUp);
-    window.removeEventListener("mousemove", this._onMouseMove);
   }
 }

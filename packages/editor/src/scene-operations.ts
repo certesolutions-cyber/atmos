@@ -91,8 +91,8 @@ function cloneObjectShallow(source: GameObject): GameObject {
       }
     }
     // Copy shared GPU resource references (not registered but needed for rendering)
-    const src = comp as Record<string, unknown>;
-    const dst = newComp as Record<string, unknown>;
+    const src = comp as unknown as Record<string, unknown>;
+    const dst = newComp as unknown as Record<string, unknown>;
     if (src['mesh'] !== undefined) dst['mesh'] = src['mesh'];
     if (src['material'] !== undefined) dst['material'] = src['material'];
   }
@@ -190,7 +190,6 @@ export function reparentGameObject(
   const savedWorld = new Float32Array(child.transform.worldMatrix);
 
   // Remove from scene roots if currently a root
-  const wasRoot = !child.parent;
   child.setParent(newParent);
 
   // Compute new local transform that preserves the world transform

@@ -1,4 +1,4 @@
-import { Component } from '@atmos/core';
+import { Component, Input } from '@atmos/core';
 import type { PropertyDef } from '@atmos/core';
 import { Vec3, Quat } from '@atmos/math';
 import type { Vec3Type, QuatType } from '@atmos/math';
@@ -36,7 +36,6 @@ export class FPSWalker extends Component {
   private _pitch = 0;
   private _velY = 0;
   private _grounded = false;
-  private _keys = new Set<string>();
 
   // Scratch
   private readonly _forward: Vec3Type = Vec3.create();
@@ -47,16 +46,7 @@ export class FPSWalker extends Component {
   private readonly _yAxis: Vec3Type = Vec3.fromValues(0, 1, 0);
   private readonly _xAxis: Vec3Type = Vec3.fromValues(1, 0, 0);
 
-  // --- Input handlers ---
-  private _onKeyDown = (e: KeyboardEvent) => { this._keys.add(e.code); };
-  private _onKeyUp = (e: KeyboardEvent) => { this._keys.delete(e.code); };
-  private _onMouseMove = (e: MouseEvent) => {
-    if (document.pointerLockElement) {
-      this._yaw -= e.movementX * this.lookSpeed;
-      this._pitch -= e.movementY * this.lookSpeed;
-      this._pitch = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.49, this._pitch));
-    }
-  };
+  // Pointer lock request (click to lock)
   private _onClick = () => {
     const canvas = document.querySelector('canvas');
     if (canvas && !document.pointerLockElement) {
@@ -69,16 +59,20 @@ export class FPSWalker extends Component {
     this._pitch = 0;
     this._velY = 0;
     this._grounded = false;
-    this._keys.clear();
 
-    window.addEventListener('keydown', this._onKeyDown);
-    window.addEventListener('keyup', this._onKeyUp);
-    window.addEventListener('mousemove', this._onMouseMove);
     window.addEventListener('click', this._onClick);
   }
 
   onUpdate(dt: number): void {
+    if (!Input.current) return;
     const t = this.gameObject.transform;
+
+    // Mouse look (only when pointer is locked)
+    if (document.pointerLockElement) {
+      this._yaw -= Input.current.mouseDelta.x * this.lookSpeed;
+      this._pitch -= Input.current.mouseDelta.y * this.lookSpeed;
+      this._pitch = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.49, this._pitch));
+    }
     const pos = t.position;
     let px = pos[0]!;
     let py = pos[1]!;
@@ -89,10 +83,10 @@ export class FPSWalker extends Component {
     Vec3.set(this._right, Math.cos(this._yaw), 0, -Math.sin(this._yaw));
 
     Vec3.set(this._move, 0, 0, 0);
-    if (this._keys.has('KeyW')) Vec3.add(this._move, this._move, this._forward);
-    if (this._keys.has('KeyS')) Vec3.sub(this._move, this._move, this._forward);
-    if (this._keys.has('KeyD')) Vec3.add(this._move, this._move, this._right);
-    if (this._keys.has('KeyA')) Vec3.sub(this._move, this._move, this._right);
+    if (Input.current.getKey('KeyW')) Vec3.add(this._move, this._move, this._forward);
+    if (Input.current.getKey('KeyS')) Vec3.sub(this._move, this._move, this._forward);
+    if (Input.current.getKey('KeyD')) Vec3.add(this._move, this._move, this._right);
+    if (Input.current.getKey('KeyA')) Vec3.sub(this._move, this._move, this._right);
 
     const hLen = Math.hypot(this._move[0]!, this._move[2]!);
     if (hLen > 0.001) {
@@ -102,7 +96,7 @@ export class FPSWalker extends Component {
     }
 
     // --- Jump ---
-    if (this._keys.has('Space') && this._grounded) {
+    if (Input.current.getKey('Space') && this._grounded) {
       this._velY = this.jumpSpeed;
       this._grounded = false;
     }
@@ -166,9 +160,6 @@ export class FPSWalker extends Component {
   }
 
   onDestroy(): void {
-    window.removeEventListener('keydown', this._onKeyDown);
-    window.removeEventListener('keyup', this._onKeyUp);
-    window.removeEventListener('mousemove', this._onMouseMove);
     window.removeEventListener('click', this._onClick);
   }
 }

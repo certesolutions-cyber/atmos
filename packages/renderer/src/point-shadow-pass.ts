@@ -194,7 +194,7 @@ export class PointShadowPass {
       f32[17] = ly;
       f32[18] = lz;
       f32[19] = range;
-      this._device.queue.writeBuffer(this._faceBuffers[face]!, 0, this._uniformData);
+      this._device.queue.writeBuffer(this._faceBuffers[face]!, 0, this._uniformData as GPUAllowSharedBufferSource);
 
       const pass = encoder.beginRenderPass({
         colorAttachments: [],

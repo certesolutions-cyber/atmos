@@ -29,6 +29,7 @@ export class SSAOPass {
   private readonly _noiseTexture: GPUTextureHandle;
   private readonly _linearSampler: GPUSampler;
   private readonly _kernel: Float32Array;
+  private readonly _paramsData: Float32Array;
 
   private _aoTexture: GPUTexture | null = null;
   private _aoView: GPUTextureView | null = null;
@@ -76,7 +77,7 @@ export class SSAOPass {
       format: 'rgba8unorm',
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
-    device.queue.writeTexture({ texture: noiseTex }, noiseData, { bytesPerRow: 16 }, [4, 4]);
+    device.queue.writeTexture({ texture: noiseTex }, noiseData as GPUAllowSharedBufferSource, { bytesPerRow: 16 }, [4, 4]);
     const noiseSampler = device.createSampler({
       magFilter: 'nearest',
       minFilter: 'nearest',
@@ -86,6 +87,8 @@ export class SSAOPass {
     this._noiseTexture = { texture: noiseTex, view: noiseTex.createView(), sampler: noiseSampler };
 
     this._linearSampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+
+    this._paramsData = new Float32Array(PARAMS_SIZE / 4);
 
     this._paramsBuffer = device.createBuffer({
       size: PARAMS_SIZE,
@@ -131,7 +134,7 @@ export class SSAOPass {
       size: [1, 1], format: AO_FORMAT,
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
-    device.queue.writeTexture({ texture: this._whiteTexture }, new Uint8Array([255]), { bytesPerRow: 1 }, [1, 1]);
+    device.queue.writeTexture({ texture: this._whiteTexture }, new Uint8Array([255]) as GPUAllowSharedBufferSource, { bytesPerRow: 1 }, [1, 1]);
     this._whiteView = this._whiteTexture.createView();
   }
 
@@ -171,8 +174,8 @@ export class SSAOPass {
 
     this._ensureTextures(screenW, screenH);
 
-    // Write params
-    const data = new Float32Array(PARAMS_SIZE / 4);
+    // Write params (reuse cached array to avoid per-frame allocation)
+    const data = this._paramsData;
     data.set(invProjMatrix as Float32Array, 0);   // offset 0: invProj
     data.set(projMatrix as Float32Array, 16);      // offset 16: proj
     data[32] = this.radius;
@@ -180,7 +183,7 @@ export class SSAOPass {
     data[34] = this.intensity;
     data[35] = 0;
     data.set(this._kernel, 36);                    // offset 36: kernel[16]
-    this._device.queue.writeBuffer(this._paramsBuffer, 0, data);
+    this._device.queue.writeBuffer(this._paramsBuffer, 0, data as GPUAllowSharedBufferSource);
 
     // SSAO pass
     const ssaoBG = this._device.createBindGroup({
@@ -234,6 +237,7 @@ export class SSAOPass {
     this._blurTexture?.destroy();
     this._paramsBuffer.destroy();
     this._whiteTexture.destroy();
+    this._noiseTexture.texture.destroy();
   }
 }
 

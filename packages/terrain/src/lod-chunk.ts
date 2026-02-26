@@ -145,7 +145,6 @@ export function buildLODMesh(
     const originY = (chunk.cy * s - ext) * voxelSize;
     const originZ = (chunk.cz * s - ext) * voxelSize;
     // Only sample at positions extractSurfaceLOD actually reads (step intervals)
-    const stepVoxel = step * voxelSize;
     for (let z = 0; z <= gridSize; z += step) {
       for (let y = 0; y <= gridSize; y += step) {
         for (let x = 0; x <= gridSize; x += step) {
@@ -184,9 +183,9 @@ export function buildLODMesh(
     const offset = ext * voxelSize;
     for (let vi = 0; vi < meshData.vertexCount; vi++) {
       const o = vi * VERTEX_STRIDE_FLOATS;
-      scratchVerts[o] -= offset;
-      scratchVerts[o + 1] -= offset;
-      scratchVerts[o + 2] -= offset;
+      scratchVerts[o] = scratchVerts[o]! - offset;
+      scratchVerts[o + 1] = scratchVerts[o + 1]! - offset;
+      scratchVerts[o + 2] = scratchVerts[o + 2]! - offset;
     }
   }
 
@@ -292,9 +291,9 @@ export function buildLODSplatMesh(
     const offset = ext * voxelSize;
     for (let vi = 0; vi < meshData.vertexCount; vi++) {
       const o = vi * VERTEX_STRIDE_FLOATS;
-      scratchVerts[o] -= offset;
-      scratchVerts[o + 1] -= offset;
-      scratchVerts[o + 2] -= offset;
+      scratchVerts[o] = scratchVerts[o]! - offset;
+      scratchVerts[o + 1] = scratchVerts[o + 1]! - offset;
+      scratchVerts[o + 2] = scratchVerts[o + 2]! - offset;
     }
   }
 

@@ -17,7 +17,7 @@ import type { EditorPhysicsPlugin } from './types.js';
 import type { Mesh } from '@atmos/renderer';
 import type { MeshRecord } from './geometry-cache.js';
 
-const DEFAULT_MAT = { albedo: [0.7, 0.7, 0.7, 1] as const, metallic: 0.0, roughness: 0.5 };
+const DEFAULT_MAT = { albedo: [0.7, 0.7, 0.7, 1] as [number, number, number, number], metallic: 0.0, roughness: 0.5 };
 const DEFAULT_MAT_PATH = 'materials/default.mat.json';
 
 export interface FactoryDeps {

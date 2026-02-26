@@ -79,7 +79,7 @@ export class GridRenderer {
     this._uniformData[17] = cameraPos[1]!;
     this._uniformData[18] = cameraPos[2]!;
     this._uniformData[19] = 0; // padding
-    device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformData);
+    device.queue.writeBuffer(this._uniformBuffer, 0, this._uniformData as GPUAllowSharedBufferSource);
 
     pass.setPipeline(this._pipeline);
     pass.setBindGroup(0, this._bindGroup);

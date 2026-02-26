@@ -150,14 +150,16 @@ function attachMesh(go: GameObject, mi: number, node: ModelNode, ctx: BuildConte
   const modelMesh = ctx.asset.meshes[mi];
   const matIdx = ctx.meshMatIndices[mi] ?? 0;
 
-  if (modelMesh?.skinned && node.skinIndex !== undefined) {
-    const skin = ctx.asset.skins[node.skinIndex];
-    const jointCount = skin ? skin.jointNodeIndices.length : 0;
+  const material = matIdx < ctx.materials.length ? ctx.materials[matIdx] : ctx.materials[0];
+
+  if (modelMesh?.skinned && node.skinIndex !== undefined && node.skinIndex < ctx.asset.skins.length) {
+    const skin = ctx.asset.skins[node.skinIndex]!;
+    const jointCount = skin.jointNodeIndices.length;
     const smr = go.addComponent(SkinnedMeshRenderer);
-    smr.init(ctx.renderSystem, mesh, jointCount, ctx.materials[matIdx]);
+    smr.init(ctx.renderSystem, mesh, jointCount, material);
   } else {
     const mr = go.addComponent(MeshRenderer);
-    mr.init(ctx.renderSystem, mesh, ctx.materials[matIdx]);
+    mr.init(ctx.renderSystem, mesh, material);
   }
 }
 
@@ -165,7 +167,7 @@ function attachMesh(go: GameObject, mi: number, node: ModelNode, ctx: BuildConte
  * After the full node tree is built, set up AnimationMixer on nodes that have skins.
  * This must be done after building the tree so we can resolve joint node references.
  */
-function setupSkinning(root: GameObject, asset: ModelAsset, ctx: BuildContext): void {
+function setupSkinning(root: GameObject, asset: ModelAsset, _ctx: BuildContext): void {
   if (asset.skins.length === 0) return;
 
   const allObjects = collectAllObjects(root);

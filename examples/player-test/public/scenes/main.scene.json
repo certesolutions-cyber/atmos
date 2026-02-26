@@ -1,0 +1,134 @@
+{
+  "gameObjects": [
+    {
+      "name": "Ground",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:plane",
+            "materialSource": "materials/default.mat.json",
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 1, 0],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "Rotator",
+          "data": {
+            "speed": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere",
+      "id": 3,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [3, 1, 0],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/default.mat.json",
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sun",
+      "id": 4,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 5, 0],
+            "rotation": [-0.3535534, -0.1464466, 0.0560661, 0.9228756],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "intensity": 1.2,
+            "castShadows": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 5,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 3, 8],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "isMainCamera": true,
+            "fov": 60,
+            "near": 0.1,
+            "far": 1000
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "exposure": 1,
+    "bloomIntensity": 0.3,
+    "bloomThreshold": 1,
+    "ssaoEnabled": true
+  }
+}

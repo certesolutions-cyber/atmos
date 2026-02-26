@@ -59,6 +59,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   if (!container.parentElement) document.body.appendChild(container);
   canvas.width = 800;
   canvas.height = 600;
+  canvas.tabIndex = -1; // Focusable by click/script but not Tab key
   const gpu = await initWebGPU(canvas);
   const pipeline = createRenderPipeline(gpu.device, gpu.format);
 
@@ -450,6 +451,8 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       // Awake + start all components
       editorState.scene.awakeAll();
       editorState.scene.startAll();
+      // Focus canvas so keyboard events work even if UI elements had focus
+      canvas.focus();
     }
   }));
 

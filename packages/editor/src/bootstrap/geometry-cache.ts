@@ -9,7 +9,7 @@ import {
 import type { Mesh } from '@atmos/renderer';
 import type { PrimitiveType } from '../editor-mount.js';
 
-export type MeshRecord = Record<Exclude<PrimitiveType, 'camera'>, Mesh>;
+export type MeshRecord = Record<Exclude<PrimitiveType, 'camera' | 'directionalLight' | 'pointLight' | 'spotLight'>, Mesh>;
 
 export function createGeometryCache(device: GPUDevice): MeshRecord {
   const S = VERTEX_STRIDE_FLOATS;

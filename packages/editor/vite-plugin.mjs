@@ -55,6 +55,48 @@ function generateEditorHtml(entry) {
 </html>`;
 }
 
+function generatePlayerHtml(entry) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atmos Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #atmos-container { position: relative; width: 100%; height: 100%; }
+    #atmos-canvas { width: 100%; height: 100%; display: block; }
+    #atmos-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    #atmos-ui * { pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <div id="atmos-container">
+    <canvas id="atmos-canvas"></canvas>
+    <div id="atmos-ui"></div>
+  </div>
+  <script type="module" src="/${entry}"></script>
+</body>
+</html>`;
+}
+
+const VIRTUAL_BUILD_ENTRY = 'virtual:atmos-build-entry';
+const RESOLVED_BUILD_ENTRY = '\0virtual:atmos-build-entry';
+
+function copyDirSync(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const item of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, item.name);
+    const destPath = path.join(dest, item.name);
+    if (item.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
 /** Collect body data from an IncomingMessage. */
 function collectBody(req) {
   return new Promise((resolve, reject) => {
@@ -71,9 +113,119 @@ export function atmosPlugin(options) {
   const exclude = new Set([...DEFAULT_EXCLUDE, ...(options?.exclude ?? [])]);
   const entry = options?.entry ?? 'src/main.ts';
   let root = '';
+  let generatedIndex = '';
+  let isBuild = false;
 
   return {
     name: 'atmos-editor',
+
+    config(cfg, { command }) {
+      root = cfg.root || process.cwd();
+      isBuild = command === 'build';
+
+      if (isBuild) {
+        // In build mode, generate player HTML (not editor)
+        const indexPath = path.resolve(root, 'index.html');
+        const userHasIndex = fs.existsSync(indexPath);
+        if (!userHasIndex) {
+          fs.writeFileSync(indexPath, generatePlayerHtml(VIRTUAL_BUILD_ENTRY));
+          generatedIndex = indexPath;
+        }
+        return {
+          build: {
+            target: cfg.build?.target ?? 'esnext',
+            rollupOptions: {
+              ...cfg.build?.rollupOptions,
+            },
+          },
+        };
+      }
+
+      // Dev mode — generate editor HTML if no index.html exists
+      const indexPath = path.resolve(root, 'index.html');
+      if (!fs.existsSync(indexPath)) {
+        fs.writeFileSync(indexPath, generateEditorHtml(entry));
+        generatedIndex = indexPath;
+      }
+      return {
+        build: {
+          target: cfg.build?.target ?? 'esnext',
+        },
+      };
+    },
+
+    resolveId(id) {
+      if (id === VIRTUAL_BUILD_ENTRY || id === '/' + VIRTUAL_BUILD_ENTRY) {
+        return RESOLVED_BUILD_ENTRY;
+      }
+    },
+
+    load(id) {
+      if (id !== RESOLVED_BUILD_ENTRY) return;
+      let sceneName = 'main';
+      try {
+        const settingsPath = path.join(root, 'project-settings.json');
+        if (fs.existsSync(settingsPath)) {
+          const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+          if (settings.defaultScene) sceneName = settings.defaultScene;
+        }
+      } catch { /* use default */ }
+      return `
+import { startPlayer, createEditorPhysics } from '@atmos/editor/player';
+const scriptModules = import.meta.glob('/src/scripts/*.ts', { eager: true });
+try {
+  const physics = await createEditorPhysics();
+  const app = await startPlayer({
+    scene: 'scenes/${sceneName}.scene.json',
+    physics,
+    scriptModules,
+  });
+} catch (err) {
+  document.body.style.background = '#111';
+  document.body.style.color = '#f88';
+  document.body.style.padding = '2em';
+  document.body.style.fontFamily = 'monospace';
+  document.body.textContent = 'Atmos: ' + (err instanceof Error ? err.message : String(err));
+}
+`;
+    },
+
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html) {
+        if (!isBuild) return html;
+        // Replace any existing script src with the virtual build entry
+        const hasScript = /<script\s+type="module"\s+src="[^"]*"[^>]*><\/script>/.test(html);
+        if (hasScript) {
+          return html.replace(
+            /<script\s+type="module"\s+src="[^"]*"([^>]*)><\/script>/,
+            `<script type="module" src="/${VIRTUAL_BUILD_ENTRY}"$1></script>`,
+          );
+        }
+        // No script tag — inject one before </body>
+        return html.replace('</body>', `  <script type="module" src="/${VIRTUAL_BUILD_ENTRY}"></script>\n</body>`);
+      },
+    },
+
+    closeBundle() {
+      if (generatedIndex) {
+        try { fs.unlinkSync(generatedIndex); } catch { /* ignore */ }
+        generatedIndex = '';
+      }
+    },
+
+    writeBundle(options) {
+      if (!isBuild) return;
+      const outDir = options.dir || path.resolve(root, 'dist');
+      const assetDirs = ['scenes', 'materials', 'textures', 'models'];
+      for (const dir of assetDirs) {
+        const src = path.resolve(root, dir);
+        if (fs.existsSync(src)) {
+          copyDirSync(src, path.join(outDir, dir));
+        }
+      }
+    },
+
     configureServer(server) {
       root = server.config.root;
 

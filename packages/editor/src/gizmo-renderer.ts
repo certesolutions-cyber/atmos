@@ -58,13 +58,13 @@ export class GizmoRenderer {
       size: geo.vertices.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-    this._device.queue.writeBuffer(vertexBuffer, 0, geo.vertices);
+    this._device.queue.writeBuffer(vertexBuffer, 0, geo.vertices as GPUAllowSharedBufferSource);
 
     const indexBuffer = this._device.createBuffer({
       size: geo.indices.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
     });
-    this._device.queue.writeBuffer(indexBuffer, 0, geo.indices);
+    this._device.queue.writeBuffer(indexBuffer, 0, geo.indices as GPUAllowSharedBufferSource);
 
     return { vertexBuffer, indexBuffer, indexCount: geo.indices.length };
   }
@@ -92,7 +92,7 @@ export class GizmoRenderer {
 
     // MVP = VP * model
     Mat4.multiply(this._mvp, vp, this._model);
-    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._mvp);
+    this._device.queue.writeBuffer(this._uniformBuffer, 0, this._mvp as GPUAllowSharedBufferSource);
 
     const mesh = this._meshes[mode];
     pass.setPipeline(this._pipelineRes.pipeline);

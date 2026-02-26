@@ -85,8 +85,11 @@ export function mountEditor(
 
     // Canvas click -> pick object
     const onMouseDown = (e: MouseEvent) => {
-      // Disable picking/gizmos in play mode
-      if (!editorState.paused) return;
+      // In play mode: just ensure canvas has focus so keyboard events work
+      if (!editorState.paused) {
+        canvas.focus();
+        return;
+      }
       // Only LMB without modifiers (alt = orbit)
       if (e.button !== 0 || e.altKey) return;
 
@@ -188,7 +191,7 @@ export function mountEditor(
   root.render(
     React.createElement(EditorShell, {
       editorState,
-      projectFs: options?.projectFs,
+      projectFs: options?.projectFs!,
       onOpenProject: options?.onOpenProject ?? (async () => {}),
       deserializeContext: options?.deserializeContext,
       componentFactory: options?.componentFactory,
