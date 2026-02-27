@@ -212,6 +212,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
       if (cam) renderSystem.activeCamera = cam;
       newScene.awakeAll();
       newScene.startAll();
+      newScene.playStartAll();
     } catch (err) {
       console.error(`[Player] Failed to load scene "${name}":`, err);
     }
