@@ -12,24 +12,16 @@ import { initRapier, PhysicsWorld, PhysicsSystem,
 
 await initRapier();
 const world = new PhysicsWorld({ gravity: { x: 0, y: -9.81, z: 0 } });
-
-// Dynamic cube
-const cube = new GameObject('Cube');
-const rb = cube.addComponent(RigidBody);
-rb.init(world, { type: 'dynamic', mass: 1 });
-const col = cube.addComponent(Collider);
-col.init(world, { shape: { type: 'box', halfExtents: { x: 0.5, y: 0.5, z: 0.5 } } });
-
-// Static floor
-const floor = new GameObject('Floor');
-const floorRb = floor.addComponent(RigidBody);
-floorRb.init(world, { type: 'fixed' });
-const floorCol = floor.addComponent(Collider);
-floorCol.init(world, { shape: { type: 'box', halfExtents: { x: 50, y: 0.5, z: 50 } } });
-
-// Wire into engine
-const physicsSystem = new PhysicsSystem(world, scene);
+const physicsSystem = new PhysicsSystem(world, scene); // sets Physics.current
 engine.setPhysics(physicsSystem);
+
+// Dynamic cube — auto-initializes on next physics step
+const cube = new GameObject('Cube');
+scene.add(cube);
+const rb = cube.addComponent(RigidBody);
+rb.bodyType = 'dynamic';
+const col = cube.addComponent(Collider);
+col.shape = { type: 'box', halfExtents: { x: 0.5, y: 0.5, z: 0.5 } };
 ```
 
 ---
@@ -70,12 +62,12 @@ Supported shapes:
 | `convexHull` | `vertices: Float32Array` |
 
 ```ts
-col.init(world, {
-  shape: { type: 'sphere', radius: 1.0 },
-  friction: 0.5,
-  restitution: 0.3,
-  isSensor: false,  // true = trigger volume
-});
+const col = obj.addComponent(Collider);
+col.shape = { type: 'sphere', radius: 1.0 };
+col.friction = 0.5;
+col.restitution = 0.3;
+col.isSensor = false;  // true = trigger volume
+// Auto-initializes on next physics step
 ```
 
 Colliders auto-attach to the nearest ancestor `RigidBody` and compute offsets for child GameObjects.
@@ -101,27 +93,29 @@ hinge.init(world, {
 
 ### Physics Queries
 
-Stateless raycasting and shape-casting via the `Physics` class:
+Raycasting and shape-casting via the `Physics` class. Uses `Physics.current` automatically (set by `PhysicsSystem`):
 
 ```ts
 import { Physics } from '@certe/atmos-physics';
 
-const hit = Physics.raycast(world, origin, direction, 100);
+const hit = Physics.raycast(origin, direction, 100);
 if (hit) {
   console.log(hit.gameObject.name, hit.point, hit.normal, hit.distance);
 }
 
-const hits = Physics.sphereCastAll(world, center, radius);
-const boxHit = Physics.boxCast(world, center, halfExtents);
+const hits = Physics.sphereCastAll(center, radius);
+const boxHit = Physics.boxCast(center, halfExtents);
 ```
 
 ### PhysicsSystem
 
 Runs each frame via the engine. Handles:
 
+- **Auto-init**: Uninitialised RigidBody/Collider components are initialised automatically (deferred init)
 - **Pre-step**: Detects external transform changes → teleports dynamic bodies; syncs kinematic bodies
 - **Step**: Fixed-timestep accumulator (`world.step(dt)`)
 - **Post-step**: Copies Rapier transforms back to engine Transforms
+- Sets `Physics.current` on construction
 
 ---
 

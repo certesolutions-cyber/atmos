@@ -31,6 +31,7 @@ export class Collider extends Component {
 
   /** Unscaled base shape dimensions, stored at init time */
   private _baseShape: ColliderShape | null = null;
+  private _pendingShape: ColliderShape = { type: 'box', halfExtents: { x: 0.5, y: 0.5, z: 0.5 } };
   private _options: ColliderOptions | null = null;
   private _world: PhysicsWorld | null = null;
   /** The RigidBody this collider is attached to (may be on an ancestor) */
@@ -72,7 +73,15 @@ export class Collider extends Component {
   }
 
   get shape(): ColliderShape | null {
-    return this._baseShape;
+    return this._baseShape ?? this._pendingShape;
+  }
+
+  set shape(s: ColliderShape) {
+    this._pendingShape = s;
+    if (this._baseShape && this._world && this._options) {
+      this._options = { ...this._options, shape: s };
+      this.reattach(this._world);
+    }
   }
 
   get isChildCollider(): boolean {
@@ -140,6 +149,20 @@ export class Collider extends Component {
     _offsetRot.z = offset.rz; _offsetRot.w = offset.rw;
     this.collider.setRotationWrtParent(_offsetRot);
     this.applyScale(offset.sx, offset.sy, offset.sz);
+  }
+
+  /** Auto-initialize if not already initialized (called by PhysicsSystem). */
+  autoInit(world: PhysicsWorld): void {
+    if (this.collider) return;
+    const rb = findAncestorComponent(this.gameObject, RigidBody);
+    if (!rb || !rb.body) return; // ancestor RB not ready yet — skip silently
+    this.init(world, {
+      shape: this._pendingShape,
+      friction: this._friction,
+      restitution: this._restitution,
+      density: this._density,
+      isSensor: this._isSensor,
+    });
   }
 
   /** Destroy and re-create the collider (e.g. after reparenting). */

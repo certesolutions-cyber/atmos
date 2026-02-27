@@ -36,11 +36,13 @@ describe('Physics queries', () => {
     world = new PhysicsWorld({ gravity: { x: 0, y: 0, z: 0 } });
     scene = new Scene();
     Scene.current = scene;
+    Physics.current = world;
   });
 
   afterEach(() => {
     world.destroy();
     Scene.current = null;
+    Physics.current = null;
   });
 
   // --- raycast ---
@@ -52,7 +54,7 @@ describe('Physics queries', () => {
 
     const origin = Vec3.fromValues(0, 0, 0);
     const dir = Vec3.fromValues(0, 0, -1);
-    const hit = Physics.raycast(world, origin, dir, 100);
+    const hit = Physics.raycast(origin, dir, 100);
 
     expect(hit).not.toBeNull();
     expect(hit!.gameObject.name).toBe('box');
@@ -66,7 +68,7 @@ describe('Physics queries', () => {
 
     const origin = Vec3.fromValues(0, 0, 0);
     const dir = Vec3.fromValues(0, 1, 0); // shoot up, box is forward
-    const hit = Physics.raycast(world, origin, dir, 100);
+    const hit = Physics.raycast(origin, dir, 100);
 
     expect(hit).toBeNull();
   });
@@ -77,7 +79,7 @@ describe('Physics queries', () => {
 
     const origin = Vec3.fromValues(0, 0, 0);
     const dir = Vec3.fromValues(0, 0, -1);
-    const hit = Physics.raycast(world, origin, dir, 5); // box face at z=-9.5, too far
+    const hit = Physics.raycast(origin, dir, 5); // box face at z=-9.5, too far
 
     expect(hit).toBeNull();
   });
@@ -91,7 +93,7 @@ describe('Physics queries', () => {
 
     const origin = Vec3.fromValues(0, 0, 0);
     const dir = Vec3.fromValues(0, 0, -1);
-    const hits = Physics.raycastAll(world, origin, dir, 100);
+    const hits = Physics.raycastAll(origin, dir, 100);
 
     expect(hits.length).toBe(2);
   });
@@ -103,7 +105,7 @@ describe('Physics queries', () => {
     world.step(1 / 60);
 
     const center = Vec3.fromValues(0, 0, 0);
-    const hit = Physics.sphereCast(world, center, 1.0);
+    const hit = Physics.sphereCast(center, 1.0);
 
     expect(hit).not.toBeNull();
     expect(hit!.gameObject.name).toBe('box');
@@ -114,7 +116,7 @@ describe('Physics queries', () => {
     world.step(1 / 60);
 
     const center = Vec3.fromValues(0, 0, 0);
-    const hit = Physics.sphereCast(world, center, 0.5);
+    const hit = Physics.sphereCast(center, 0.5);
 
     expect(hit).toBeNull();
   });
@@ -127,7 +129,7 @@ describe('Physics queries', () => {
     world.step(1 / 60);
 
     const center = Vec3.fromValues(0, 0, 0);
-    const hits = Physics.sphereCastAll(world, center, 2.0);
+    const hits = Physics.sphereCastAll(center, 2.0);
 
     expect(hits.length).toBe(2);
   });
@@ -140,7 +142,7 @@ describe('Physics queries', () => {
 
     const center = Vec3.fromValues(0, 0, 0);
     const half = Vec3.fromValues(1, 1, 1);
-    const hit = Physics.boxCast(world, center, half);
+    const hit = Physics.boxCast(center, half);
 
     expect(hit).not.toBeNull();
   });
@@ -151,7 +153,7 @@ describe('Physics queries', () => {
 
     const center = Vec3.fromValues(0, 0, 0);
     const half = Vec3.fromValues(0.5, 0.5, 0.5);
-    const hit = Physics.boxCast(world, center, half);
+    const hit = Physics.boxCast(center, half);
 
     expect(hit).toBeNull();
   });
@@ -165,7 +167,7 @@ describe('Physics queries', () => {
 
     const center = Vec3.fromValues(0, 0, 0);
     const half = Vec3.fromValues(2, 2, 2);
-    const hits = Physics.boxCastAll(world, center, half);
+    const hits = Physics.boxCastAll(center, half);
 
     expect(hits.length).toBe(2);
   });

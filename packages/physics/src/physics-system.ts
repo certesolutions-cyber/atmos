@@ -4,7 +4,7 @@ import type { Vec3Type } from '@certe/atmos-math';
 import type { PhysicsWorld } from './physics-world.js';
 import { RigidBody } from './rigid-body.js';
 import { Collider } from './collider.js';
-import { invalidateColliderMap } from './physics-query.js';
+import { invalidateColliderMap, Physics } from './physics-query.js';
 
 export class PhysicsSystem implements PhysicsStepper {
   private readonly _world: PhysicsWorld;
@@ -19,6 +19,7 @@ export class PhysicsSystem implements PhysicsStepper {
   constructor(world: PhysicsWorld, scene: Scene) {
     this._world = world;
     this._scene = scene;
+    Physics.current = world;
   }
 
   set scene(s: Scene) {
@@ -31,6 +32,18 @@ export class PhysicsSystem implements PhysicsStepper {
   step(dt: number): void {
     // Invalidate physics query collider map cache for this frame
     invalidateColliderMap();
+
+    // Auto-init pass 1: RigidBodies (must come first — Colliders depend on them)
+    for (const obj of this._scene.getAllObjects()) {
+      const rb = obj.getComponent(RigidBody);
+      if (rb && rb.enabled && !rb.body) rb.autoInit(this._world);
+    }
+    // Auto-init pass 2: Colliders (ancestor RB now guaranteed initialized)
+    for (const obj of this._scene.getAllObjects()) {
+      const col = obj.getComponent(Collider);
+      if (col && col.enabled && !col.collider) col.autoInit(this._world);
+    }
+
     // Pre-step: push transforms into Rapier + detect changes
     for (const obj of this._scene.getAllObjects()) {
       const rb = obj.getComponent(RigidBody);

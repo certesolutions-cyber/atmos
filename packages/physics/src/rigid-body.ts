@@ -92,6 +92,17 @@ export class RigidBody extends Component {
     }
   }
 
+  /** Auto-initialize if not already initialized (called by PhysicsSystem). */
+  autoInit(world: PhysicsWorld): void {
+    if (this.body) return;
+    this.init(world, {
+      type: this.bodyType,
+      linearDamping: this._linearDamping,
+      angularDamping: this._angularDamping,
+      gravityScale: this._gravityScale,
+    });
+  }
+
   /** Copy Rapier body transform → engine Transform (for dynamic bodies) */
   syncToTransform(): void {
     if (!this.body) return;

@@ -114,19 +114,30 @@ function overlapQuery(
 }
 
 /**
- * Stateless physics query utilities.
- * All methods require a PhysicsWorld and use Scene.current to resolve collider ownership.
+ * Physics query utilities.
+ * Set Physics.current in your bootstrap (done automatically by PhysicsSystem).
+ * Methods work with the current world, or accept an explicit world override.
  */
 export class Physics {
+  /** The active PhysicsWorld, set automatically by PhysicsSystem. */
+  static current: PhysicsWorld | null = null;
+
+  private static _getWorld(world?: PhysicsWorld): PhysicsWorld {
+    const w = world ?? Physics.current;
+    if (!w) throw new Error('No PhysicsWorld available. Is PhysicsSystem created?');
+    return w;
+  }
+
   /** Cast a ray and return the first hit, or null. */
   static raycast(
-    world: PhysicsWorld,
     origin: Float32Array,
     dir: Float32Array,
     maxDist: number,
+    world?: PhysicsWorld,
   ): HitResult | null {
+    const w = Physics._getWorld(world);
     const ray = getScratchRay(origin[0]!, origin[1]!, origin[2]!, dir[0]!, dir[1]!, dir[2]!);
-    const hit = world.world.castRayAndGetNormal(ray, maxDist, true);
+    const hit = w.world.castRayAndGetNormal(ray, maxDist, true);
     if (!hit) return null;
     const map = buildColliderMap();
     return hitFromRapier(hit.collider, hit.timeOfImpact, hit.normal, origin, dir, map);
@@ -134,15 +145,16 @@ export class Physics {
 
   /** Cast a ray and return all hits. */
   static raycastAll(
-    world: PhysicsWorld,
     origin: Float32Array,
     dir: Float32Array,
     maxDist: number,
+    world?: PhysicsWorld,
   ): HitResult[] {
+    const w = Physics._getWorld(world);
     const ray = getScratchRay(origin[0]!, origin[1]!, origin[2]!, dir[0]!, dir[1]!, dir[2]!);
     const map = buildColliderMap();
     const results: HitResult[] = [];
-    world.world.intersectionsWithRay(ray, maxDist, true, (intersection) => {
+    w.world.intersectionsWithRay(ray, maxDist, true, (intersection) => {
       const result = hitFromRapier(intersection.collider, intersection.timeOfImpact, intersection.normal, origin, dir, map);
       if (result) results.push(result);
       return true;
@@ -152,40 +164,44 @@ export class Physics {
 
   /** Find the first collider overlapping a sphere at the given center and radius. */
   static sphereCast(
-    world: PhysicsWorld,
     center: Float32Array,
     radius: number,
+    world?: PhysicsWorld,
   ): HitResult | null {
-    const results = overlapQuery(world, center, new RAPIER.Ball(radius), true);
+    const w = Physics._getWorld(world);
+    const results = overlapQuery(w, center, new RAPIER.Ball(radius), true);
     return results[0] ?? null;
   }
 
   /** Find all colliders overlapping a sphere. */
   static sphereCastAll(
-    world: PhysicsWorld,
     center: Float32Array,
     radius: number,
+    world?: PhysicsWorld,
   ): HitResult[] {
-    return overlapQuery(world, center, new RAPIER.Ball(radius), false);
+    const w = Physics._getWorld(world);
+    return overlapQuery(w, center, new RAPIER.Ball(radius), false);
   }
 
   /** Find the first collider overlapping a box at the given center with half-extents. */
   static boxCast(
-    world: PhysicsWorld,
     center: Float32Array,
     halfExtents: Float32Array,
+    world?: PhysicsWorld,
   ): HitResult | null {
+    const w = Physics._getWorld(world);
     const shape = new RAPIER.Cuboid(halfExtents[0]!, halfExtents[1]!, halfExtents[2]!);
-    const results = overlapQuery(world, center, shape, true);
+    const results = overlapQuery(w, center, shape, true);
     return results[0] ?? null;
   }
 
   /** Find all colliders overlapping a box. */
   static boxCastAll(
-    world: PhysicsWorld,
     center: Float32Array,
     halfExtents: Float32Array,
+    world?: PhysicsWorld,
   ): HitResult[] {
-    return overlapQuery(world, center, new RAPIER.Cuboid(halfExtents[0]!, halfExtents[1]!, halfExtents[2]!), false);
+    const w = Physics._getWorld(world);
+    return overlapQuery(w, center, new RAPIER.Cuboid(halfExtents[0]!, halfExtents[1]!, halfExtents[2]!), false);
   }
 }

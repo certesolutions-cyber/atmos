@@ -330,16 +330,59 @@ Set \`emissive\` + \`emissiveIntensity\` > 0 for glowing objects (works with blo
 
 \`\`\`typescript
 import { RigidBody, Collider, Physics } from '@certe/atmos-physics';
+import { Vec3 } from '@certe/atmos-math';
 
-// Apply force
+// Apply force / impulse (wrapper methods, safe even if body isn't ready yet)
 const rb = this.getComponent(RigidBody);
-rb.body?.applyImpulse({ x: 0, y: 10, z: 0 }, true);
+rb.addImpulse(0, 10, 0);
+rb.addForce(0, 50, 0);
 
-// Raycast
-const hit = Physics.raycast(physicsWorld, origin, direction, 100);
+// Raycast (Physics.current is set automatically)
+const origin = Vec3.fromValues(0, 1, 0);
+const dir = Vec3.fromValues(0, 0, -1);
+const hit = Physics.raycast(origin, dir, 100);
 if (hit) {
   console.log(hit.gameObject.name, hit.point, hit.distance);
 }
+
+// Overlap queries
+const center = Vec3.fromValues(0, 0, 0);
+const sphereHit = Physics.sphereCast(center, 2.0);
+const boxHits = Physics.boxCastAll(center, Vec3.fromValues(1, 1, 1));
+\`\`\`
+
+### Creating Physics Objects at Runtime
+
+Physics components auto-initialize on the next physics step. Just add
+components and set properties — no manual \`init()\` needed:
+
+\`\`\`typescript
+import { Component, GameObject, Scene, Input } from '@certe/atmos-core';
+import { RigidBody, Collider } from '@certe/atmos-physics';
+
+export class BallSpawner extends Component {
+  onUpdate(dt: number) {
+    if (!Input.current!.getKeyDown('Space')) return;
+
+    const ball = new GameObject('Ball');
+    Scene.current!.add(ball);
+    ball.transform.setPosition(0, 5, 0);
+
+    const rb = ball.addComponent(RigidBody);
+    rb.bodyType = 'dynamic';
+
+    const col = ball.addComponent(Collider);
+    col.shape = { type: 'sphere', radius: 0.5 };
+    col.restitution = 0.8;
+    // Physics auto-activates on the next frame
+
+    // To apply impulse, wait until body is ready (next frame):
+    // rb.addImpulse(0, 10, 0);
+  }
+}
+
+// Cleanup — removing from scene auto-removes Rapier resources:
+// Scene.current!.remove(ball);
 \`\`\`
 
 ## Editor Properties
