@@ -12,6 +12,25 @@ The project is designed for:
 
 ---
 
+# Quick Start
+
+Create a new game project with the editor:
+
+```bash
+mkdir my-game && cd my-game
+npm install @certe/atmos-editor
+npx atmos-init
+npm run dev
+```
+
+This opens the editor at `localhost:5173`. Build a standalone game (no editor) with:
+
+```bash
+npm run build
+```
+
+---
+
 # 🎯 Vision
 
 Atmos aims to become:
