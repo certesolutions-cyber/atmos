@@ -38,7 +38,22 @@ export function takeSnapshot(scene: Scene): SceneSnapshot {
  * Objects not found in the scene are skipped. Marks transforms dirty.
  */
 export function restoreSnapshot(scene: Scene, snapshot: SceneSnapshot): void {
-  // Build id→GameObject lookup
+  // Build set of snapshotted ids
+  const snapshotIds = new Set<number>();
+  for (const entry of snapshot) {
+    snapshotIds.add(entry.id);
+  }
+
+  // Remove objects that were added at runtime (not in snapshot)
+  const toRemove: GameObject[] = [];
+  for (const go of scene.getAllObjects()) {
+    if (!snapshotIds.has(go.id)) toRemove.push(go);
+  }
+  for (const go of toRemove) {
+    scene.remove(go);
+  }
+
+  // Build id→GameObject lookup (after removals)
   const byId = new Map<number, GameObject>();
   for (const go of scene.getAllObjects()) {
     byId.set(go.id, go);

@@ -76,7 +76,6 @@ export class Engine {
   tick(timestamp: number): void {
     if (!this._scene) return;
     this.time.update(timestamp);
-    this.input.endFrame();
     if (!this._paused) {
       this._physics?.step(this.time.deltaTime);
       this._scene.updateAll(this.time.deltaTime);
@@ -84,6 +83,7 @@ export class Engine {
     this._renderer?.beginFrame();
     this._scene.renderAll();
     this._renderer?.endFrame();
+    this.input.endFrame();
   }
 
   private _loop(timestamp: number): void {
