@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Publish all @certe/atmos-* packages to npm in dependency order.
 # Usage:
-#   ./scripts/publish.sh          # bump minor, publish for real
-#   ./scripts/publish.sh --dry-run # bump minor, preview only
+#   ./scripts/publish.sh          # bump patch, publish for real
+#   ./scripts/publish.sh --dry-run # bump patch, preview only
 
 DRY_RUN=""
 if [[ "${1:-}" == "--dry-run" ]]; then
@@ -15,9 +15,9 @@ fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PACKAGES=(math core renderer physics animation assets terrain editor)
 
-# Bump minor version across all packages
+# Bump patch version across all packages
 CURRENT=$(node -e "console.log(require('./packages/math/package.json').version)")
-NEW=$(node -e "const [ma,mi,pa]='$CURRENT'.split('.').map(Number); console.log(ma+'.'+(mi+1)+'.0')")
+NEW=$(node -e "const [ma,mi,pa]='$CURRENT'.split('.').map(Number); console.log(ma+'.'+mi+'.'+(pa+1))")
 echo "Version bump: $CURRENT → $NEW"
 
 for pkg in "${PACKAGES[@]}"; do

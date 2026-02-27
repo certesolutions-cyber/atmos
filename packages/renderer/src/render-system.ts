@@ -24,6 +24,11 @@ import { TonemapPass } from './tonemap-pass.js';
 import { DepthPrepass } from './depth-prepass.js';
 import { SSAOPass } from './ssao-pass.js';
 import { SceneDepthPass } from './scene-depth.js';
+import { createCubeGeometry, createPlaneGeometry, createSphereGeometry, createCylinderGeometry, VERTEX_STRIDE_FLOATS } from './geometry.js';
+import { createMesh } from './mesh.js';
+import { createMaterial } from './material.js';
+import type { Material } from './material.js';
+import type { Mesh } from './mesh.js';
 
 export interface CameraSettings {
   eye: Float32Array;
@@ -51,7 +56,13 @@ export type OverlayCallback = (
   eye: Float32Array,
 ) => void;
 
+/** Pluggable material loader — returns a GPU-ready Material for a given asset path. */
+export type MaterialLoader = (path: string) => Promise<Material>;
+
 export class RenderSystem implements Renderer {
+  /** The active RenderSystem, set automatically on construction. */
+  static current: RenderSystem | null = null;
+
   private readonly _gpu: GPUContext;
   private readonly _pipelineResources: PipelineResources;
   private _scene: Scene;
@@ -94,6 +105,13 @@ export class RenderSystem implements Renderer {
   private _terrainRenderers: TerrainMeshRenderer[] = [];
   private _terrainShadowPipeline: GPURenderPipeline | null = null;
 
+  // Primitive mesh cache (lazy-created on first meshSource resolve)
+  private _primitiveMeshes: Map<string, Mesh> | null = null;
+  // Material loader callback (set by editor or player)
+  private _materialLoader: MaterialLoader | null = null;
+  // Pending material loads (dedup)
+  private readonly _pendingMaterials = new Map<string, Promise<Material>>();
+
   bloomIntensity = 0.5;
   bloomThreshold = 1.0;
   bloomRadius = 0.5;
@@ -128,6 +146,7 @@ export class RenderSystem implements Renderer {
       size: SCENE_UNIFORM_SIZE,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
+    RenderSystem.current = this;
   }
 
   get device(): GPUDevice { return this._gpu.device; }
@@ -140,6 +159,71 @@ export class RenderSystem implements Renderer {
   set activeCamera(cam: Camera | null) { this._activeCamera = cam; }
   set scene(s: Scene) { this._scene = s; }
   get meshRenderers(): readonly MeshRenderer[] { return this._meshRenderers; }
+
+  /** Set the material loader used to auto-resolve materialSource strings. */
+  setMaterialLoader(loader: MaterialLoader): void {
+    this._materialLoader = loader;
+  }
+
+  /** Resolve a `primitive:*` meshSource to a cached GPU Mesh. */
+  private _resolvePrimitiveMesh(source: string): Mesh | null {
+    if (!source.startsWith('primitive:')) return null;
+    const name = source.slice(10);
+    if (!this._primitiveMeshes) {
+      this._primitiveMeshes = new Map();
+    }
+    let mesh = this._primitiveMeshes.get(name);
+    if (mesh) return mesh;
+
+    const S = VERTEX_STRIDE_FLOATS;
+    const device = this._gpu.device;
+    switch (name) {
+      case 'cube': { const g = createCubeGeometry(); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
+      case 'sphere': { const g = createSphereGeometry(0.5, 24, 16); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
+      case 'plane': { const g = createPlaneGeometry(20, 20); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
+      case 'cylinder': { const g = createCylinderGeometry(0.5, 0.5, 1, 16); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
+      default: return null;
+    }
+    this._primitiveMeshes.set(name, mesh);
+    return mesh;
+  }
+
+  /** Auto-resolve meshSource and materialSource on a MeshRenderer. */
+  private _autoResolveMeshRenderer(mr: MeshRenderer): void {
+    // Resolve mesh from meshSource
+    if (!mr.mesh && mr.meshSource) {
+      const mesh = this._resolvePrimitiveMesh(mr.meshSource);
+      if (mesh) {
+        mr.mesh = mesh;
+        mr.ensureGPU(this);
+      }
+    }
+    // Resolve material from materialSource
+    if (!mr.material && mr.materialSource && this._materialLoader) {
+      const path = mr.materialSource;
+      if (!this._pendingMaterials.has(path)) {
+        const promise = this._materialLoader(path).then((mat) => {
+          this._pendingMaterials.delete(path);
+          return mat;
+        });
+        this._pendingMaterials.set(path, promise);
+      }
+      this._pendingMaterials.get(path)!.then((mat) => {
+        if (!mr.material) {
+          mr.material = mat;
+          mr.materialBindGroup = null; // force rebuild
+        }
+      });
+      // Give a temporary default material so it renders this frame
+      if (!mr.material) {
+        mr.material = createMaterial({ albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 });
+      }
+    }
+    // Fallback: no materialSource but no material either — use default
+    if (!mr.material && mr.mesh) {
+      mr.material = createMaterial({ albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 });
+    }
+  }
 
   /** Lazily create the skinned PBR pipeline resources. */
   get skinnedPipelineResources(): SkinnedPipelineResources {
@@ -199,6 +283,7 @@ export class RenderSystem implements Renderer {
     for (const obj of this._scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
       if (mr && mr.enabled) {
+        if (!mr.mesh && mr.meshSource) this._autoResolveMeshRenderer(mr);
         mr.ensureGPU(this);
         const bs = mr.worldBoundingSphere;
         if (!bs || isSphereInFrustum(this._frustumPlanes, bs)) {

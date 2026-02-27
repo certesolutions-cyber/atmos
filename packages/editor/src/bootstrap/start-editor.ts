@@ -268,6 +268,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     await seedProject(projectFs);
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
+    renderSystem.setMaterialLoader((path) => mm.getMaterial(path));
     const sm = new ProjectSettingsManager(projectFs);
     await sm.load();
     lazySM.current = sm;
@@ -288,6 +289,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     await seedProject(projectFs);
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
+    renderSystem.setMaterialLoader((path) => mm.getMaterial(path));
     const sm = new ProjectSettingsManager(projectFs);
     await sm.load();
     lazySM.current = sm;

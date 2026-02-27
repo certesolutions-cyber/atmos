@@ -351,13 +351,15 @@ const sphereHit = Physics.sphereCast(center, 2.0);
 const boxHits = Physics.boxCastAll(center, Vec3.fromValues(1, 1, 1));
 \`\`\`
 
-### Creating Physics Objects at Runtime
+### Creating GameObjects at Runtime
 
-Physics components auto-initialize on the next physics step. Just add
-components and set properties — no manual \`init()\` needed:
+MeshRenderer auto-resolves \`meshSource\` and \`materialSource\` strings.
+Physics components auto-initialize on the next physics step.
+No manual \`init()\` calls needed:
 
 \`\`\`typescript
 import { Component, GameObject, Scene, Input } from '@certe/atmos-core';
+import { MeshRenderer } from '@certe/atmos-renderer';
 import { RigidBody, Collider } from '@certe/atmos-physics';
 
 export class BallSpawner extends Component {
@@ -368,20 +370,23 @@ export class BallSpawner extends Component {
     Scene.current!.add(ball);
     ball.transform.setPosition(0, 5, 0);
 
+    // Mesh (auto-resolved by RenderSystem)
+    const mr = ball.addComponent(MeshRenderer);
+    mr.meshSource = 'primitive:sphere';
+    mr.materialSource = 'materials/ball.mat.json';  // loads .mat.json file
+    // Or set material directly: mr.material = createMaterial({ albedo: [1, 0, 0, 1] });
+
+    // Physics (auto-initialized next frame)
     const rb = ball.addComponent(RigidBody);
     rb.bodyType = 'dynamic';
 
     const col = ball.addComponent(Collider);
     col.shape = { type: 'sphere', radius: 0.5 };
     col.restitution = 0.8;
-    // Physics auto-activates on the next frame
-
-    // To apply impulse, wait until body is ready (next frame):
-    // rb.addImpulse(0, 10, 0);
   }
 }
 
-// Cleanup — removing from scene auto-removes Rapier resources:
+// Cleanup — removing from scene auto-cleans GPU + Rapier resources:
 // Scene.current!.remove(ball);
 \`\`\`
 

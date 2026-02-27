@@ -1,13 +1,6 @@
 import { Component, GameObject, Scene } from '@certe/atmos-core';
+import { MeshRenderer, createMaterial } from '@certe/atmos-renderer';
 import { RigidBody, Collider } from '@certe/atmos-physics';
-import {
-  MeshRenderer,
-  RenderSystem,
-  createMesh,
-  createMaterial,
-  createSphereGeometry,
-} from '@certe/atmos-renderer';
-import type { Mesh, Material } from '@certe/atmos-renderer';
 
 const COLORS: [number, number, number, number][] = [
   [1.0, 0.2, 0.2, 1],
@@ -22,11 +15,9 @@ const MAX_BALLS = 50;
 
 /**
  * Drops a ball on each click using runtime addComponent + auto-init.
- * No manual rb.init() / col.init() — PhysicsSystem picks them up next step.
+ * No manual init() calls — RenderSystem and PhysicsSystem resolve everything.
  */
 export class BallDropper extends Component {
-  renderSystem!: RenderSystem;
-  sphereMesh!: Mesh;
   private _balls: GameObject[] = [];
   private _colorIndex = 0;
   private _onClick = () => this._dropBall();
@@ -54,12 +45,12 @@ export class BallDropper extends Component {
     const z = (Math.random() - 0.5) * 6;
     ball.transform.setPosition(x, 8 + Math.random() * 4, z);
 
-    // Mesh
+    // Mesh — meshSource auto-resolved, material set directly with color
     const mr = ball.addComponent(MeshRenderer);
-    const mat = createMaterial({ albedo: color, metallic: 0.3, roughness: 0.4 });
-    mr.init(this.renderSystem, this.sphereMesh, mat);
+    mr.meshSource = 'primitive:sphere';
+    mr.material = createMaterial({ albedo: color, metallic: 0.3, roughness: 0.4 });
 
-    // Physics via auto-init — just set properties, no manual init() needed
+    // Physics — auto-initialized by PhysicsSystem
     const rb = ball.addComponent(RigidBody);
     rb.bodyType = 'dynamic';
 

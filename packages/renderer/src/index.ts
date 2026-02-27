@@ -27,7 +27,7 @@ export { Camera } from './camera.js';
 export type { ScreenToWorldProvider } from './camera.js';
 export { SceneDepthPass } from './scene-depth.js';
 export { RenderSystem, createDefaultCamera } from './render-system.js';
-export type { CameraSettings, OverlayCallback } from './render-system.js';
+export type { CameraSettings, OverlayCallback, MaterialLoader } from './render-system.js';
 export { registerRendererBuiltins } from './register-builtins.js';
 export {
   createDefaultMaterialAsset,

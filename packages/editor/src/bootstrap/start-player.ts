@@ -99,6 +99,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
 
   // 8. Material loader
   const materialLoader = new SimpleMaterialLoader(gpu.device, assetBase);
+  renderSystem.setMaterialLoader((path) => materialLoader.getMaterial(path));
 
   // 9. Model loading helpers
   const modelCache = new Map<string, ModelAsset>();
