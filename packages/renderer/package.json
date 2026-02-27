@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-renderer",
   "description": "WebGPU PBR renderer for the Atmos Engine — lights, shadows, skinning, post-processing",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -33,8 +33,8 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.8.4",
-    "@certe/atmos-math": "^0.8.4"
+    "@certe/atmos-core": "^0.8.5",
+    "@certe/atmos-math": "^0.8.5"
   },
   "scripts": {
     "test": "vitest run"
