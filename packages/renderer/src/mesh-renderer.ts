@@ -3,6 +3,7 @@ import { Mat4 } from '@certe/atmos-math';
 import type { Mat4Type } from '@certe/atmos-math';
 import type { Mesh } from './mesh.js';
 import type { PipelineResources } from './pipeline.js';
+import type { CustomPipelineResources } from './custom-pipeline.js';
 import type { Material } from './material.js';
 import { writeMaterialUniforms, MATERIAL_UNIFORM_SIZE } from './material.js';
 import type { BoundingSphere } from './bounds.js';
@@ -27,6 +28,11 @@ export class MeshRenderer extends Component {
   uniformBuffer: GPUBuffer | null = null;
   bindGroup: GPUBindGroup | null = null;
   materialBindGroup: GPUBindGroup | null = null;
+
+  /** Custom pipeline resources (set by RenderSystem when shaderType === 'custom'). */
+  customPipelineResources: CustomPipelineResources | null = null;
+  /** Custom material bind group (group 1 for custom pipeline). */
+  customMaterialBindGroup: GPUBindGroup | null = null;
 
   private _device: GPUDevice | null = null;
   private _pipelineResources: PipelineResources | null = null;
@@ -117,6 +123,41 @@ export class MeshRenderer extends Component {
     });
   }
 
+  /** Create custom material bind group lazily for custom shader pipeline. */
+  initCustomMaterialBindGroup(sceneBuffer: GPUBuffer): void {
+    if (!this._device || !this.customPipelineResources || !this.material) return;
+    if (this.customMaterialBindGroup) return;
+
+    const desc = this.customPipelineResources.descriptor;
+
+    // Create custom uniform buffer if needed
+    if (!this.material.customUniformBuffer) {
+      this.material.customUniformBuffer = this._device.createBuffer({
+        size: desc.uniformBufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      this.material.customDirty = true;
+    }
+
+    // Build bind group entries
+    const entries: GPUBindGroupEntry[] = [
+      { binding: 0, resource: { buffer: this.material.customUniformBuffer } },
+      { binding: 1, resource: { buffer: sceneBuffer } },
+    ];
+
+    const whiteTex = getWhiteFallbackTexture(this._device);
+    for (const tex of desc.textures) {
+      const handle = this.material.customTextures.get(tex.name) ?? whiteTex;
+      entries.push({ binding: tex.bindingIndex, resource: handle.view });
+      entries.push({ binding: tex.samplerBindingIndex, resource: handle.sampler });
+    }
+
+    this.customMaterialBindGroup = this._device.createBindGroup({
+      layout: this.customPipelineResources.materialBindGroupLayout,
+      entries,
+    });
+  }
+
   writeUniforms(viewProjection: Mat4Type): void {
     if (!this._device || !this.uniformBuffer) return;
 
@@ -146,10 +187,33 @@ export class MeshRenderer extends Component {
       this._device.queue.writeBuffer(this.material.uniformBuffer, 0, this._matData as GPUAllowSharedBufferSource);
       this.material.dirty = false;
     }
+
+    // Write custom uniform data if dirty
+    if (this.material?.customDirty && this.material.customUniformBuffer && this.material.customUniformData) {
+      this._device.queue.writeBuffer(
+        this.material.customUniformBuffer, 0,
+        this.material.customUniformData as GPUAllowSharedBufferSource,
+      );
+      this.material.customDirty = false;
+    }
   }
 
   draw(pass: GPURenderPassEncoder): void {
-    if (!this.mesh || !this.bindGroup || !this._pipelineResources || !this.materialBindGroup) return;
+    if (!this.mesh || !this.bindGroup) return;
+
+    // Custom pipeline path
+    if (this.customPipelineResources && this.customMaterialBindGroup) {
+      pass.setPipeline(this.customPipelineResources.pipeline);
+      pass.setBindGroup(0, this.bindGroup);
+      pass.setBindGroup(1, this.customMaterialBindGroup);
+      pass.setVertexBuffer(0, this.mesh.vertexBuffer);
+      pass.setIndexBuffer(this.mesh.indexBuffer, this.mesh.indexFormat);
+      pass.drawIndexed(this.mesh.indexCount);
+      return;
+    }
+
+    // Standard PBR/unlit path
+    if (!this._pipelineResources || !this.materialBindGroup) return;
     pass.setPipeline(this._pipelineResources.pipeline);
     pass.setBindGroup(0, this.bindGroup);
     pass.setBindGroup(1, this.materialBindGroup);
@@ -185,6 +249,12 @@ export class MeshRenderer extends Component {
     this.uniformBuffer = null;
     this.bindGroup = null;
     this.materialBindGroup = null;
+    this.customMaterialBindGroup = null;
+    this.customPipelineResources = null;
+    if (this.material?.customUniformBuffer) {
+      this.material.customUniformBuffer.destroy();
+      this.material.customUniformBuffer = null;
+    }
   }
 
   /** Destroy owned GPU mesh buffers (vertex + index). */

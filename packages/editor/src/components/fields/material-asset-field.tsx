@@ -170,6 +170,7 @@ export function MaterialAssetField({ label, value, materialManager, onChange }: 
             >
               <option value="pbr">PBR (Physically Based)</option>
               <option value="unlit">Unlit (Flat Color)</option>
+              <option value="custom">Custom (WGSL)</option>
             </select>
             <div style={dialogBtnRow}>
               <button style={newBtnStyle} onClick={() => setShowCreate(false)}>Cancel</button>

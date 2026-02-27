@@ -1,4 +1,5 @@
 import type { GPUTextureHandle } from './texture.js';
+import type { ShaderType } from './material-asset.js';
 
 export interface MaterialParams {
   albedo?: [number, number, number, number];
@@ -35,6 +36,18 @@ export interface Material {
   normalTexture: GPUTextureHandle | null;
   metallicRoughnessTexture: GPUTextureHandle | null;
   textureVersion: number;
+  /** Shader type for this material. Default 'pbr'. */
+  shaderType: ShaderType;
+  /** Path to custom .wgsl fragment shader (when shaderType === 'custom'). */
+  customShaderPath: string | null;
+  /** GPU buffer for custom shader uniforms. */
+  customUniformBuffer: GPUBuffer | null;
+  /** CPU-side data for custom shader uniforms. */
+  customUniformData: Float32Array | null;
+  /** Texture handles keyed by @texture name. */
+  customTextures: Map<string, GPUTextureHandle>;
+  /** Whether custom uniform data needs upload. */
+  customDirty: boolean;
 }
 
 /**
@@ -62,6 +75,12 @@ export function createMaterial(params?: MaterialParams): Material {
     normalTexture: params?.normalTexture ?? null,
     metallicRoughnessTexture: params?.metallicRoughnessTexture ?? null,
     textureVersion: 0,
+    shaderType: 'pbr',
+    customShaderPath: null,
+    customUniformBuffer: null,
+    customUniformData: null,
+    customTextures: new Map(),
+    customDirty: false,
   };
 }
 

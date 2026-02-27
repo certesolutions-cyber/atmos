@@ -1,7 +1,46 @@
 /**
  * Shared PBR WGSL functions and light loop code.
- * Concatenated into both shader.ts (standard PBR) and terrain-shader.ts (splat PBR).
+ * Concatenated into both shader.ts (standard PBR), terrain-shader.ts (splat PBR),
+ * and custom shader codegen.
  */
+
+/** Scene struct definitions shared by PBR, terrain, and custom shaders. */
+export const SCENE_STRUCTS_WGSL = /* wgsl */`
+struct DirLight {
+  direction: vec4<f32>,
+  color: vec4<f32>,
+};
+
+struct PointLight {
+  position: vec4<f32>,  // xyz=position, w=range
+  color: vec4<f32>,     // rgb=color, w=intensity
+};
+
+struct SpotLight {
+  position: vec4<f32>,   // xyz=position, w=range
+  direction: vec4<f32>,  // xyz=direction, w=outerCos
+  color: vec4<f32>,      // rgb=color, w=intensity
+  extra: vec4<f32>,      // x=innerCos
+};
+
+struct SceneUniforms {
+  cameraPos: vec4<f32>,
+  numDirLights: u32,
+  numPointLights: u32,
+  numSpotLights: u32,
+  _pad1: u32,
+  dirLights: array<DirLight, 4>,
+  pointLights: array<PointLight, 4>,
+  spotLights: array<SpotLight, 4>,
+  fogEnabled: u32,
+  fogMode: u32,
+  fogDensity: f32,
+  fogStart: f32,
+  fogEnd: f32,
+  _fogPad: f32,
+  fogColor: vec4<f32>,
+};
+`;
 
 /** PBR helper functions: GGX distribution, geometry, Fresnel, computePBR, computeTBN */
 export const PBR_FUNCTIONS_WGSL = /* wgsl */`

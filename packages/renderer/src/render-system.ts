@@ -29,6 +29,9 @@ import { createMesh } from './mesh.js';
 import { createMaterial } from './material.js';
 import type { Material } from './material.js';
 import type { Mesh } from './mesh.js';
+import { parseCustomShader } from './custom-shader-parser.js';
+import type { CustomPipelineResources } from './custom-pipeline.js';
+import { createCustomPipeline } from './custom-pipeline.js';
 
 export interface CameraSettings {
   eye: Float32Array;
@@ -58,6 +61,9 @@ export type OverlayCallback = (
 
 /** Pluggable material loader — returns a GPU-ready Material for a given asset path. */
 export type MaterialLoader = (path: string) => Promise<Material>;
+
+/** Pluggable shader source loader — reads .wgsl text from a project path. */
+export type ShaderLoader = (path: string) => Promise<string>;
 
 export class RenderSystem implements Renderer {
   /** The active RenderSystem, set automatically on construction. */
@@ -111,6 +117,12 @@ export class RenderSystem implements Renderer {
   private _materialLoader: MaterialLoader | null = null;
   // Pending material loads (dedup)
   private readonly _pendingMaterials = new Map<string, Promise<Material>>();
+  // Custom shader pipeline cache (shader path → pipeline resources)
+  private readonly _customPipelines = new Map<string, CustomPipelineResources>();
+  // Custom shader source loader (set by editor)
+  private _shaderLoader: ShaderLoader | null = null;
+  // Pending custom shader pipeline builds (dedup)
+  private readonly _pendingShaders = new Map<string, Promise<CustomPipelineResources | null>>();
 
   bloomIntensity = 0.5;
   bloomThreshold = 1.0;
@@ -163,6 +175,25 @@ export class RenderSystem implements Renderer {
   /** Set the material loader used to auto-resolve materialSource strings. */
   setMaterialLoader(loader: MaterialLoader): void {
     this._materialLoader = loader;
+  }
+
+  /** Set the shader loader used to load custom .wgsl sources from the project. */
+  setShaderLoader(loader: ShaderLoader): void {
+    this._shaderLoader = loader;
+  }
+
+  /** Invalidate a cached custom pipeline (called on .wgsl hot-reload). */
+  invalidateCustomPipeline(shaderPath: string): void {
+    this._customPipelines.delete(shaderPath);
+    this._pendingShaders.delete(shaderPath);
+    // Force rebuild on any MeshRenderers using this shader
+    for (const obj of this._scene.getAllObjects()) {
+      const mr = obj.getComponent(MeshRenderer);
+      if (mr && mr.material?.customShaderPath === shaderPath) {
+        mr.customPipelineResources = null;
+        mr.customMaterialBindGroup = null;
+      }
+    }
   }
 
   /** Resolve a `primitive:*` meshSource to a cached GPU Mesh. */
@@ -229,6 +260,48 @@ export class RenderSystem implements Renderer {
     if (!mr.material && mr.mesh) {
       mr.material = createMaterial({ albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 });
     }
+    // Resolve custom shader pipeline
+    if (mr.material?.shaderType === 'custom' && mr.material.customShaderPath && !mr.customPipelineResources) {
+      this._resolveCustomPipeline(mr);
+    }
+  }
+
+  /** Asynchronously resolve and cache a custom pipeline for a MeshRenderer. */
+  private _resolveCustomPipeline(mr: MeshRenderer): void {
+    const shaderPath = mr.material!.customShaderPath!;
+    const cached = this._customPipelines.get(shaderPath);
+    if (cached) {
+      mr.customPipelineResources = cached;
+      mr.customMaterialBindGroup = null; // force rebuild with new layout
+      return;
+    }
+    if (!this._shaderLoader) return;
+    if (!this._pendingShaders.has(shaderPath)) {
+      const promise = this._shaderLoader(shaderPath).then(async (source) => {
+        const descriptor = parseCustomShader(source);
+        const resources = await createCustomPipeline(
+          this._gpu.device, descriptor,
+          this._pipelineResources.objectBindGroupLayout,
+          this._pipelineResources.shadowBindGroupLayout,
+        );
+        if (resources) {
+          this._customPipelines.set(shaderPath, resources);
+        }
+        this._pendingShaders.delete(shaderPath);
+        return resources;
+      }).catch((err) => {
+        console.error(`[RenderSystem] Failed to load custom shader: ${shaderPath}`, err);
+        this._pendingShaders.delete(shaderPath);
+        return null;
+      });
+      this._pendingShaders.set(shaderPath, promise);
+    }
+    this._pendingShaders.get(shaderPath)!.then((res) => {
+      if (res && mr.material?.customShaderPath === shaderPath) {
+        mr.customPipelineResources = res;
+        mr.customMaterialBindGroup = null;
+      }
+    });
   }
 
   /** Lazily create the skinned PBR pipeline resources. */
@@ -295,7 +368,11 @@ export class RenderSystem implements Renderer {
         mr.ensureGPU(this);
         const bs = mr.worldBoundingSphere;
         if (!bs || isSphereInFrustum(this._frustumPlanes, bs)) {
-          mr.initMaterialBindGroup(this._sceneBuffer);
+          if (mr.customPipelineResources) {
+            mr.initCustomMaterialBindGroup(this._sceneBuffer);
+          } else {
+            mr.initMaterialBindGroup(this._sceneBuffer);
+          }
           mr.writeUniforms(vpMatrix);
           meshRenderers.push(mr);
         }
@@ -414,6 +491,10 @@ export class RenderSystem implements Renderer {
 
     // Draw all MeshRenderers
     for (const mr of meshRenderers) {
+      // Custom pipeline switches invalidate the shadow bind group
+      if (mr.customPipelineResources) {
+        this._pass.setBindGroup(2, shadowBindGroup);
+      }
       mr.draw(this._pass);
     }
 

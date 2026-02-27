@@ -2,7 +2,8 @@ import type { Material } from '@certe/atmos-renderer';
 import { createMaterial, decodeImageToRGBA, createTextureFromRGBA } from '@certe/atmos-renderer';
 import type { MaterialAssetData, ShaderType } from '@certe/atmos-renderer';
 import type { GPUTextureHandle } from '@certe/atmos-renderer';
-import { deserializeMaterialAsset, serializeMaterialAsset, createDefaultMaterialAsset } from '@certe/atmos-renderer';
+import type { CustomShaderDescriptor } from '@certe/atmos-renderer';
+import { deserializeMaterialAsset, serializeMaterialAsset, createDefaultMaterialAsset, parseCustomShader } from '@certe/atmos-renderer';
 import type { ProjectFileSystem } from './project-fs.js';
 
 interface CacheEntry {
@@ -13,6 +14,8 @@ interface CacheEntry {
 export class MaterialManager {
   private _cache = new Map<string, CacheEntry>();
   private _textureCache = new Map<string, GPUTextureHandle>();
+  private _shaderSourceCache = new Map<string, string>();
+  private _shaderDescriptorCache = new Map<string, CustomShaderDescriptor>();
 
   constructor(
     private _projectFs: ProjectFileSystem,
@@ -60,6 +63,10 @@ export class MaterialManager {
       && changes.normalTexture !== entry.data.normalTexture;
     const mrChanged = 'metallicRoughnessTexture' in changes
       && changes.metallicRoughnessTexture !== entry.data.metallicRoughnessTexture;
+    const customShaderChanged = 'customShaderPath' in changes
+      && changes.customShaderPath !== entry.data.customShaderPath;
+    const customUniformsChanged = 'customUniforms' in changes;
+    const customTexturesChanged = 'customTextures' in changes;
 
     // Merge changes into cached data
     Object.assign(entry.data, changes);
@@ -71,6 +78,17 @@ export class MaterialManager {
     if (albedoChanged) await this._syncTexture(entry.material, 'albedoTexture', entry.data.albedoTexture);
     if (normalChanged) await this._syncTexture(entry.material, 'normalTexture', entry.data.normalTexture);
     if (mrChanged) await this._syncTexture(entry.material, 'metallicRoughnessTexture', entry.data.metallicRoughnessTexture);
+
+    // Handle custom shader changes
+    if (customShaderChanged) {
+      await this._setupCustomShader(entry.material, entry.data);
+    }
+    if (customUniformsChanged || customShaderChanged) {
+      await this._syncCustomUniforms(entry.material, entry.data);
+    }
+    if (customTexturesChanged || customShaderChanged) {
+      await this._syncCustomTextures(entry.material, entry.data);
+    }
 
     // Write to disk
     const json = serializeMaterialAsset(entry.data);
@@ -93,6 +111,41 @@ export class MaterialManager {
     } catch {
       return [];
     }
+  }
+
+  /** List .wgsl shader files in the shaders/ directory. */
+  async listShaders(): Promise<string[]> {
+    try {
+      const files = await this._projectFs.listFiles('shaders');
+      return files.filter((f) => f.endsWith('.wgsl'));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Load and cache shader source text. */
+  async loadShaderSource(path: string): Promise<string> {
+    const cached = this._shaderSourceCache.get(path);
+    if (cached) return cached;
+    const source = await this._projectFs.readTextFile(path);
+    this._shaderSourceCache.set(path, source);
+    return source;
+  }
+
+  /** Parse and cache a custom shader descriptor. */
+  async parseShader(path: string): Promise<CustomShaderDescriptor> {
+    const cached = this._shaderDescriptorCache.get(path);
+    if (cached) return cached;
+    const source = await this.loadShaderSource(path);
+    const descriptor = parseCustomShader(source);
+    this._shaderDescriptorCache.set(path, descriptor);
+    return descriptor;
+  }
+
+  /** Invalidate shader caches (on hot reload). */
+  invalidateShader(path: string): void {
+    this._shaderSourceCache.delete(path);
+    this._shaderDescriptorCache.delete(path);
   }
 
   invalidate(path: string): void {
@@ -120,7 +173,104 @@ export class MaterialManager {
       await this._syncTexture(material, 'metallicRoughnessTexture', data.metallicRoughnessTexture);
     }
 
+    // Set up custom shader if applicable
+    if (data.shader === 'custom') {
+      material.shaderType = 'custom';
+      await this._setupCustomShader(material, data);
+      await this._syncCustomUniforms(material, data);
+      await this._syncCustomTextures(material, data);
+    }
+
     return material;
+  }
+
+  /** Configure material for a custom shader. */
+  private async _setupCustomShader(mat: Material, data: MaterialAssetData): Promise<void> {
+    mat.shaderType = data.shader;
+    mat.customShaderPath = data.customShaderPath ?? null;
+    // Reset custom bind group state when shader changes
+    mat.customUniformBuffer = null;
+    mat.customUniformData = null;
+    mat.customTextures.clear();
+    mat.textureVersion++;
+  }
+
+  /** Sync custom uniform data from asset data defaults + overrides. */
+  private async _syncCustomUniforms(mat: Material, data: MaterialAssetData): Promise<void> {
+    if (!data.customShaderPath) return;
+
+    try {
+      const descriptor = await this.parseShader(data.customShaderPath);
+      const floatCount = descriptor.uniformBufferSize / 4;
+      const uniformData = new Float32Array(floatCount);
+
+      // Write default values from shader descriptor
+      for (const prop of descriptor.properties) {
+        const offset = prop.byteOffset / 4;
+        for (let i = 0; i < prop.floatCount; i++) {
+          uniformData[offset + i] = prop.default[i] ?? 0;
+        }
+      }
+
+      // Apply overrides from material asset
+      if (data.customUniforms) {
+        for (const prop of descriptor.properties) {
+          const override = data.customUniforms[prop.name];
+          if (override !== undefined) {
+            const offset = prop.byteOffset / 4;
+            if (typeof override === 'number') {
+              uniformData[offset] = override;
+            } else if (Array.isArray(override)) {
+              for (let i = 0; i < Math.min(override.length, prop.floatCount); i++) {
+                uniformData[offset + i] = override[i]!;
+              }
+            }
+          }
+        }
+      }
+
+      mat.customUniformData = uniformData;
+      mat.customDirty = true;
+    } catch (err) {
+      console.warn('[MaterialManager] Failed to sync custom uniforms:', err);
+    }
+  }
+
+  /** Sync custom texture handles from asset data. */
+  private async _syncCustomTextures(mat: Material, data: MaterialAssetData): Promise<void> {
+    mat.customTextures.clear();
+    if (!data.customTextures || !data.customShaderPath) return;
+
+    for (const [name, texPath] of Object.entries(data.customTextures)) {
+      if (!texPath) continue;
+      try {
+        const handle = await this._loadTexture(texPath);
+        if (handle) mat.customTextures.set(name, handle);
+      } catch (err) {
+        console.warn(`[MaterialManager] Failed to load custom texture "${name}": ${texPath}`, err);
+      }
+    }
+    mat.textureVersion++;
+  }
+
+  /** Load a texture handle (with caching). */
+  private async _loadTexture(texturePath: string): Promise<GPUTextureHandle | null> {
+    const cached = this._textureCache.get(texturePath);
+    if (cached) return cached;
+
+    try {
+      const buffer = await this._projectFs.readFile(texturePath);
+      const ext = texturePath.split('.').pop()?.toLowerCase() ?? 'png';
+      const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
+      const blob = new Blob([buffer], { type: mimeMap[ext] ?? 'image/png' });
+      const decoded = await decodeImageToRGBA(blob);
+      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height);
+      this._textureCache.set(texturePath, handle);
+      return handle;
+    } catch (err) {
+      console.warn(`[MaterialManager] Failed to load texture: ${texturePath}`, err);
+      return null;
+    }
   }
 
   private async _syncTexture(
@@ -133,28 +283,9 @@ export class MaterialManager {
       return;
     }
 
-    const cached = this._textureCache.get(texturePath);
-    if (cached) {
-      mat[prop] = cached;
-      mat.textureVersion++;
-      return;
-    }
-
-    try {
-      const buffer = await this._projectFs.readFile(texturePath);
-      const ext = texturePath.split('.').pop()?.toLowerCase() ?? 'png';
-      const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
-      const blob = new Blob([buffer], { type: mimeMap[ext] ?? 'image/png' });
-      const decoded = await decodeImageToRGBA(blob);
-      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height);
-      this._textureCache.set(texturePath, handle);
-      mat[prop] = handle;
-      mat.textureVersion++;
-    } catch (err) {
-      console.warn(`[MaterialManager] Failed to load texture: ${texturePath}`, err);
-      mat[prop] = null;
-      mat.textureVersion++;
-    }
+    const handle = await this._loadTexture(texturePath);
+    mat[prop] = handle;
+    mat.textureVersion++;
   }
 
   private _syncGPUMaterial(mat: Material, data: MaterialAssetData): void {
@@ -172,6 +303,8 @@ export class MaterialManager {
     if (data.emissiveIntensity !== undefined) mat.emissiveIntensity = data.emissiveIntensity;
     if (data.texTilingX !== undefined) mat.texTilingX = data.texTilingX;
     if (data.texTilingY !== undefined) mat.texTilingY = data.texTilingY;
+    mat.shaderType = data.shader;
+    mat.customShaderPath = data.customShaderPath ?? null;
     mat.dirty = true;
   }
 }

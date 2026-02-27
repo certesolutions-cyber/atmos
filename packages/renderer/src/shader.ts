@@ -1,5 +1,5 @@
 import { SHADOW_FRAGMENT_WGSL } from './shadow-fragment-wgsl.js';
-import { PBR_FUNCTIONS_WGSL, LIGHT_LOOP_WGSL, FOG_WGSL } from './pbr-wgsl.js';
+import { PBR_FUNCTIONS_WGSL, LIGHT_LOOP_WGSL, FOG_WGSL, SCENE_STRUCTS_WGSL } from './pbr-wgsl.js';
 
 export const VERTEX_SHADER = /* wgsl */`
 struct ObjectUniforms {
@@ -52,40 +52,7 @@ struct MaterialUniforms {
   _pad1: vec2<f32>,
 };
 
-struct DirLight {
-  direction: vec4<f32>,
-  color: vec4<f32>,
-};
-
-struct PointLight {
-  position: vec4<f32>,  // xyz=position, w=range
-  color: vec4<f32>,     // rgb=color, w=intensity
-};
-
-struct SpotLight {
-  position: vec4<f32>,   // xyz=position, w=range
-  direction: vec4<f32>,  // xyz=direction, w=outerCos
-  color: vec4<f32>,      // rgb=color, w=intensity
-  extra: vec4<f32>,      // x=innerCos
-};
-
-struct SceneUniforms {
-  cameraPos: vec4<f32>,
-  numDirLights: u32,
-  numPointLights: u32,
-  numSpotLights: u32,
-  _pad1: u32,
-  dirLights: array<DirLight, 4>,
-  pointLights: array<PointLight, 4>,
-  spotLights: array<SpotLight, 4>,
-  fogEnabled: u32,
-  fogMode: u32,
-  fogDensity: f32,
-  fogStart: f32,
-  fogEnd: f32,
-  _fogPad: f32,
-  fogColor: vec4<f32>,
-};
+` + SCENE_STRUCTS_WGSL + /* wgsl */`
 
 @group(1) @binding(0) var<uniform> material: MaterialUniforms;
 @group(1) @binding(1) var<uniform> scene: SceneUniforms;

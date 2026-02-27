@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { ShaderType, MaterialAssetData } from '@certe/atmos-renderer';
+import type { CustomShaderDescriptor } from '@certe/atmos-renderer';
 import type { MaterialManager } from '../material-manager.js';
 import type { EditorState } from '../editor-state.js';
 import { DecimalInput } from './fields/decimal-input.js';
@@ -95,6 +96,7 @@ export function MaterialInspector({ editorState, materialManager, path }: Materi
   }
 
   const isPbr = data.shader === 'pbr';
+  const isCustom = data.shader === 'custom';
 
   return (
     <>
@@ -125,44 +127,178 @@ export function MaterialInspector({ editorState, materialManager, path }: Materi
           >
             <option value="pbr">PBR</option>
             <option value="unlit">Unlit</option>
+            <option value="custom">Custom</option>
           </select>
         </div>
       </div>
 
+      {isCustom && (
+        <CustomShaderSection data={data} materialManager={materialManager} onSave={save} />
+      )}
+
+      {!isCustom && (
+        <>
+          <div style={sectionStyle}>
+            <div style={titleStyle}>Properties</div>
+            <AlbedoRow albedo={data.albedo} onSave={save} />
+            <TextureSelectRow label="Albedo Tex" assetKey="albedoTexture"
+              texturePath={data.albedoTexture} materialManager={materialManager} onSave={save} />
+            {isPbr && (
+              <>
+                <SliderRow label="Metallic" value={data.metallic} min={0} max={1} step={0.01}
+                  onChange={(v) => save({ metallic: v })} />
+                <SliderRow label="Roughness" value={data.roughness} min={0} max={1} step={0.01}
+                  onChange={(v) => save({ roughness: v })} />
+                <TextureSelectRow label="Normal Map" assetKey="normalTexture"
+                  texturePath={data.normalTexture} materialManager={materialManager} onSave={save} />
+                <TextureSelectRow label="Met/Rough" assetKey="metallicRoughnessTexture"
+                  texturePath={data.metallicRoughnessTexture} materialManager={materialManager} onSave={save} />
+              </>
+            )}
+          </div>
+
+          <div style={sectionStyle}>
+            <div style={titleStyle}>Emissive</div>
+            <ColorRow label="Color" color={data.emissive ?? [0, 0, 0]}
+              onChange={(c) => save({ emissive: c })} />
+            <SliderRow label="Intensity" value={data.emissiveIntensity ?? 0} min={0} max={20} step={0.1}
+              onChange={(v) => save({ emissiveIntensity: v })} />
+          </div>
+
+          <div style={sectionStyle}>
+            <div style={titleStyle}>Tiling</div>
+            <NumberInputRow label="Tile X" value={data.texTilingX ?? 1} step={0.1}
+              onChange={(v) => save({ texTilingX: v })} />
+            <NumberInputRow label="Tile Y" value={data.texTilingY ?? 1} step={0.1}
+              onChange={(v) => save({ texTilingY: v })} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+/* ── Custom shader section ── */
+
+function CustomShaderSection({ data, materialManager, onSave }: {
+  data: MaterialAssetData;
+  materialManager: MaterialManager;
+  onSave: (changes: Partial<MaterialAssetData>) => void;
+}) {
+  const [shaders, setShaders] = useState<string[]>([]);
+  const [descriptor, setDescriptor] = useState<CustomShaderDescriptor | null>(null);
+  const [textures, setTextures] = useState<string[]>([]);
+
+  useEffect(() => {
+    materialManager.listShaders().then(setShaders).catch(() => {});
+    materialManager.listTextures().then(setTextures).catch(() => {});
+  }, [materialManager]);
+
+  useEffect(() => {
+    if (data.customShaderPath) {
+      materialManager.parseShader(data.customShaderPath).then(setDescriptor).catch(() => setDescriptor(null));
+    } else {
+      setDescriptor(null);
+    }
+  }, [materialManager, data.customShaderPath]);
+
+  const uniforms = data.customUniforms ?? {};
+  const customTextures = data.customTextures ?? {};
+
+  const setUniform = (name: string, value: number | number[]) => {
+    onSave({ customUniforms: { ...uniforms, [name]: value } });
+  };
+
+  const setCustomTexture = (name: string, texPath: string) => {
+    onSave({ customTextures: { ...customTextures, [name]: texPath || undefined as unknown as string } });
+  };
+
+  return (
+    <>
       <div style={sectionStyle}>
-        <div style={titleStyle}>Properties</div>
-        <AlbedoRow albedo={data.albedo} onSave={save} />
-        <TextureSelectRow label="Albedo Tex" assetKey="albedoTexture"
-          texturePath={data.albedoTexture} materialManager={materialManager} onSave={save} />
-        {isPbr && (
-          <>
-            <SliderRow label="Metallic" value={data.metallic} min={0} max={1} step={0.01}
-              onChange={(v) => save({ metallic: v })} />
-            <SliderRow label="Roughness" value={data.roughness} min={0} max={1} step={0.01}
-              onChange={(v) => save({ roughness: v })} />
-            <TextureSelectRow label="Normal Map" assetKey="normalTexture"
-              texturePath={data.normalTexture} materialManager={materialManager} onSave={save} />
-            <TextureSelectRow label="Met/Rough" assetKey="metallicRoughnessTexture"
-              texturePath={data.metallicRoughnessTexture} materialManager={materialManager} onSave={save} />
-          </>
-        )}
+        <div style={titleStyle}>Custom Shader</div>
+        <div style={rowStyle}>
+          <span style={labelStyle}>File</span>
+          <select
+            style={selectStyle}
+            value={data.customShaderPath ?? ''}
+            onChange={(e) => onSave({ customShaderPath: e.target.value || undefined })}
+          >
+            <option value="">None</option>
+            {shaders.map((s) => (
+              <option key={s} value={s}>{s.split('/').pop()}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div style={sectionStyle}>
-        <div style={titleStyle}>Emissive</div>
-        <ColorRow label="Color" color={data.emissive ?? [0, 0, 0]}
-          onChange={(c) => save({ emissive: c })} />
-        <SliderRow label="Intensity" value={data.emissiveIntensity ?? 0} min={0} max={20} step={0.1}
-          onChange={(v) => save({ emissiveIntensity: v })} />
-      </div>
+      {descriptor && descriptor.properties.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Properties</div>
+          {descriptor.properties.map((prop) => {
+            const current = uniforms[prop.name];
+            if (prop.type === 'float') {
+              const val = typeof current === 'number' ? current : prop.default[0]!;
+              return (
+                <NumberInputRow key={prop.name} label={prop.name} value={val} step={0.01}
+                  onChange={(v) => setUniform(prop.name, v)} />
+              );
+            }
+            if (prop.type === 'vec4') {
+              const arr = Array.isArray(current) ? current : prop.default;
+              return (
+                <ColorRow key={prop.name} label={prop.name}
+                  color={[arr[0] ?? 0, arr[1] ?? 0, arr[2] ?? 0]}
+                  onChange={(c) => setUniform(prop.name, [c[0], c[1], c[2], arr[3] ?? 1])} />
+              );
+            }
+            // vec2 and vec3
+            const arr = Array.isArray(current) ? current : prop.default;
+            return (
+              <div key={prop.name}>
+                <div style={{ ...rowStyle, paddingBottom: 0 }}>
+                  <span style={labelStyle}>{prop.name}</span>
+                </div>
+                {Array.from({ length: prop.floatCount }, (_, i) => (
+                  <NumberInputRow
+                    key={`${prop.name}_${i}`}
+                    label={['x', 'y', 'z', 'w'][i]!}
+                    value={arr[i] ?? 0}
+                    step={0.01}
+                    onChange={(v) => {
+                      const next = [...arr];
+                      while (next.length < prop.floatCount) next.push(0);
+                      next[i] = v;
+                      setUniform(prop.name, next);
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      <div style={sectionStyle}>
-        <div style={titleStyle}>Tiling</div>
-        <NumberInputRow label="Tile X" value={data.texTilingX ?? 1} step={0.1}
-          onChange={(v) => save({ texTilingX: v })} />
-        <NumberInputRow label="Tile Y" value={data.texTilingY ?? 1} step={0.1}
-          onChange={(v) => save({ texTilingY: v })} />
-      </div>
+      {descriptor && descriptor.textures.length > 0 && (
+        <div style={sectionStyle}>
+          <div style={titleStyle}>Textures</div>
+          {descriptor.textures.map((tex) => (
+            <div key={tex.name} style={rowStyle}>
+              <span style={labelStyle}>{tex.name}</span>
+              <select
+                style={selectStyle}
+                value={customTextures[tex.name] ?? ''}
+                onChange={(e) => setCustomTexture(tex.name, e.target.value)}
+              >
+                <option value="">None</option>
+                {textures.map((t) => (
+                  <option key={t} value={t}>{t.split('/').pop()}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

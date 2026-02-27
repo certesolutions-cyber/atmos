@@ -269,6 +269,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
     renderSystem.setMaterialLoader((path) => mm.getMaterial(path));
+    renderSystem.setShaderLoader((path) => projectFs.readTextFile(path));
     const sm = new ProjectSettingsManager(projectFs);
     await sm.load();
     lazySM.current = sm;
@@ -290,6 +291,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     const mm = new MaterialManager(projectFs, gpu.device);
     lazyMM.current = mm;
     renderSystem.setMaterialLoader((path) => mm.getMaterial(path));
+    renderSystem.setShaderLoader((path) => projectFs.readTextFile(path));
     const sm = new ProjectSettingsManager(projectFs);
     await sm.load();
     lazySM.current = sm;
@@ -400,8 +402,33 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     hot?: { on(event: string, cb: (data: unknown) => void): void };
   };
   if (hmrMeta.hot) {
-    hmrMeta.hot.on('atmos:project-change', () => {
+    hmrMeta.hot.on('atmos:project-change', (data: unknown) => {
       loadProjectTree();
+      // Hot-reload custom shaders when .wgsl files change
+      const evt = data as { kind?: string; path?: string } | undefined;
+      if (evt?.path?.startsWith('shaders/') && evt.path.endsWith('.wgsl')) {
+        const mm = lazyMM.current;
+        if (mm) {
+          mm.invalidateShader(evt.path);
+          // Re-parse and invalidate pipeline for all materials using this shader
+          renderSystem.invalidateCustomPipeline(evt.path);
+          // Invalidate materials that reference this shader so they rebuild
+          mm.listMaterials().then((materials) => {
+            for (const matPath of materials) {
+              const matData = mm.getAssetData(matPath);
+              if (matData?.customShaderPath === evt.path) {
+                const mat = mm.getCachedMaterial(matPath);
+                if (mat) {
+                  mat.customUniformBuffer = null;
+                  mat.customDirty = true;
+                  mat.textureVersion++;
+                }
+                mm.invalidate(matPath);
+              }
+            }
+          }).catch(() => {});
+        }
+      }
     });
   }
 

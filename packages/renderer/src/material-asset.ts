@@ -1,4 +1,4 @@
-export type ShaderType = 'pbr' | 'unlit';
+export type ShaderType = 'pbr' | 'unlit' | 'custom';
 
 export interface MaterialAssetData {
   name: string;
@@ -13,6 +13,12 @@ export interface MaterialAssetData {
   metallicRoughnessTexture?: string;
   texTilingX?: number;
   texTilingY?: number;
+  /** Path to custom .wgsl fragment shader (e.g. "shaders/my_shader.wgsl") */
+  customShaderPath?: string;
+  /** Override values for custom shader @property declarations */
+  customUniforms?: Record<string, number | number[]>;
+  /** Texture assignments for custom shader @texture declarations */
+  customTextures?: Record<string, string>;
 }
 
 export function createDefaultMaterialAsset(name: string): MaterialAssetData {
@@ -44,5 +50,8 @@ export function deserializeMaterialAsset(json: string): MaterialAssetData {
     metallicRoughnessTexture: (raw['metallicRoughnessTexture'] as string) ?? undefined,
     texTilingX: (raw['texTilingX'] as number) ?? undefined,
     texTilingY: (raw['texTilingY'] as number) ?? undefined,
+    customShaderPath: (raw['customShaderPath'] as string) ?? undefined,
+    customUniforms: (raw['customUniforms'] as Record<string, number | number[]>) ?? undefined,
+    customTextures: (raw['customTextures'] as Record<string, string>) ?? undefined,
   };
 }

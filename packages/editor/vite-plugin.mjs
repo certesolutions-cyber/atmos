@@ -223,7 +223,7 @@ try {
     writeBundle(options) {
       if (!isBuild) return;
       const outDir = options.dir || path.resolve(root, 'dist');
-      const assetDirs = ['scenes', 'materials', 'textures', 'models'];
+      const assetDirs = ['scenes', 'materials', 'textures', 'models', 'shaders'];
       for (const dir of assetDirs) {
         const src = path.resolve(root, dir);
         if (fs.existsSync(src)) {
@@ -315,8 +315,8 @@ try {
         if (inScope) {
           server.hot.send('atmos:asset-change', { kind: event, path: relPath });
         }
-        // Also notify for project files (materials, scenes, etc.)
-        if (relPath.startsWith('materials/') || relPath.startsWith('scenes/') || relPath.startsWith('textures/')) {
+        // Also notify for project files (materials, scenes, shaders, etc.)
+        if (relPath.startsWith('materials/') || relPath.startsWith('scenes/') || relPath.startsWith('textures/') || relPath.startsWith('shaders/')) {
           server.hot.send('atmos:project-change', { kind: event, path: relPath });
         }
       });
