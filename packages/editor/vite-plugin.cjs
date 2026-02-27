@@ -132,6 +132,9 @@ function atmosPlugin(options) {
           generatedIndex = indexPath;
         }
         return {
+          // Default to relative paths so the build works in any subdirectory
+          // (e.g. GitHub Pages under /repo-name/). User can override with base in vite.config.
+          base: cfg.base ?? './',
           build: {
             target: cfg.build?.target ?? 'esnext',
             rollupOptions: {

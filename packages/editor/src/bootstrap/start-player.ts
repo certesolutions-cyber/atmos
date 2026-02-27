@@ -46,7 +46,7 @@ export interface PlayerApp {
 
 export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   const cleanups: Array<() => void> = [];
-  const assetBase = config.assetBase ?? '/';
+  const assetBase = config.assetBase ?? './';
 
   // 1. Register builtins
   registerCoreBuiltins();
