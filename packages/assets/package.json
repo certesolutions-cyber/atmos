@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-assets",
   "description": "glTF 2.0 / GLB asset pipeline for the Atmos Engine",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -32,10 +32,10 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.8.6",
-    "@certe/atmos-math": "^0.8.6",
-    "@certe/atmos-renderer": "^0.8.6",
-    "@certe/atmos-animation": "^0.8.6"
+    "@certe/atmos-core": "^0.8.7",
+    "@certe/atmos-math": "^0.8.7",
+    "@certe/atmos-renderer": "^0.8.7",
+    "@certe/atmos-animation": "^0.8.7"
   },
   "scripts": {
     "test": "vitest run"
