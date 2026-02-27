@@ -75,6 +75,25 @@ export class Scene {
     this._started = false;
   }
 
+  /** Call onPlayStart on all components. Used when entering play mode. */
+  playStartAll(): void {
+    for (const obj of this._allObjects) {
+      for (const comp of obj.getComponents()) {
+        if (comp.enabled && comp.onPlayStart) comp.onPlayStart();
+      }
+    }
+  }
+
+  /** Call onPlayStop on all components. Used when leaving play mode. */
+  playStopAll(): void {
+    for (const obj of this._allObjects) {
+      for (const comp of obj.getComponents()) {
+        if (comp.enabled && comp.onPlayStop) comp.onPlayStop();
+      }
+    }
+    this._started = false;
+  }
+
   awakeAll(): void {
     for (const obj of this._allObjects) {
       for (const comp of obj.getComponents()) {

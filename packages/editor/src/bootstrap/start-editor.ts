@@ -450,11 +450,15 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       // Entering play mode — teleport bodies + sync joints before first step
       config.physics?.onSceneRestored(editorState.scene);
       config.physics?.syncAllJoints?.(editorState.scene);
-      // Awake + start all components
+      // Awake + start + playStart all components
       editorState.scene.awakeAll();
       editorState.scene.startAll();
+      editorState.scene.playStartAll();
       // Focus canvas so keyboard events work even if UI elements had focus
       canvas.focus();
+    } else {
+      // Leaving play mode — playStop all components (cleanup listeners etc.)
+      editorState.scene.playStopAll();
     }
   }));
 

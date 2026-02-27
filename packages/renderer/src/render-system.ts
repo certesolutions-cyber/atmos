@@ -188,6 +188,9 @@ export class RenderSystem implements Renderer {
     return mesh;
   }
 
+  // MeshRenderers awaiting async material load (temp material applied)
+  private readonly _awaitingMaterial = new Set<MeshRenderer>();
+
   /** Auto-resolve meshSource and materialSource on a MeshRenderer. */
   private _autoResolveMeshRenderer(mr: MeshRenderer): void {
     // Resolve mesh from meshSource
@@ -199,7 +202,8 @@ export class RenderSystem implements Renderer {
       }
     }
     // Resolve material from materialSource
-    if (!mr.material && mr.materialSource && this._materialLoader) {
+    const needsMaterial = (!mr.material || this._awaitingMaterial.has(mr)) && mr.materialSource;
+    if (needsMaterial && this._materialLoader) {
       const path = mr.materialSource;
       if (!this._pendingMaterials.has(path)) {
         const promise = this._materialLoader(path).then((mat) => {
@@ -209,14 +213,16 @@ export class RenderSystem implements Renderer {
         this._pendingMaterials.set(path, promise);
       }
       this._pendingMaterials.get(path)!.then((mat) => {
-        if (!mr.material) {
+        if (this._awaitingMaterial.has(mr)) {
           mr.material = mat;
           mr.materialBindGroup = null; // force rebuild
+          this._awaitingMaterial.delete(mr);
         }
       });
-      // Give a temporary default material so it renders this frame
+      // Give a temporary default material so it renders while loading
       if (!mr.material) {
         mr.material = createMaterial({ albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 });
+        this._awaitingMaterial.add(mr);
       }
     }
     // Fallback: no materialSource but no material either — use default
@@ -283,7 +289,9 @@ export class RenderSystem implements Renderer {
     for (const obj of this._scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
       if (mr && mr.enabled) {
-        if (!mr.mesh && mr.meshSource) this._autoResolveMeshRenderer(mr);
+        if ((!mr.mesh && mr.meshSource) || (!mr.material && mr.materialSource)) {
+          this._autoResolveMeshRenderer(mr);
+        }
         mr.ensureGPU(this);
         const bs = mr.worldBoundingSphere;
         if (!bs || isSphereInFrustum(this._frustumPlanes, bs)) {

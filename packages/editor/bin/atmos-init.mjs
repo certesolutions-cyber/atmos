@@ -173,11 +173,31 @@ export class Rotator extends Component {
 ### Component Lifecycle
 
 \`\`\`
-onAwake()           — Called once when scene starts
+onAwake()           — Called once when play mode starts
 onStart()           — Called once after all awake calls
+onPlayStart()       — Called when entering play mode (add listeners here)
+onPlayStop()        — Called when leaving play mode (remove listeners here)
 onUpdate(dt)        — Called every frame (dt = seconds since last frame)
 onRender()          — Called after update, before GPU rendering
 onDestroy()         — Called when component or game object is removed
+\`\`\`
+
+Use \`onPlayStart()\` / \`onPlayStop()\` for event listeners that should only
+be active during play mode:
+
+\`\`\`typescript
+export class FPSController extends Component {
+  private _onPointerLock = () => { this.locked = document.pointerLockElement !== null; };
+
+  onPlayStart() {
+    document.addEventListener('pointerlockchange', this._onPointerLock);
+  }
+
+  onPlayStop() {
+    document.removeEventListener('pointerlockchange', this._onPointerLock);
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
+}
 \`\`\`
 
 ### Accessing Other Components

@@ -11,6 +11,8 @@ export abstract class Component {
 
   onAwake?(): void;
   onStart?(): void;
+  onPlayStart?(): void;
+  onPlayStop?(): void;
   onUpdate?(dt: number): void;
   onRender?(): void;
   onDestroy?(): void;
