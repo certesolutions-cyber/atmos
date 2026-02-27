@@ -316,12 +316,14 @@ try {
 async function handleFsAction(action, absPath, filePath, root, exclude, req, res, server) {
   switch (action) {
     case '/read': {
+      if (!fs.existsSync(absPath)) { res.statusCode = 404; res.end('Not found'); break; }
       const data = fs.readFileSync(absPath);
       res.setHeader('Content-Type', 'application/octet-stream');
       res.end(data);
       break;
     }
     case '/read-text': {
+      if (!fs.existsSync(absPath)) { res.statusCode = 404; res.end('Not found'); break; }
       const text = fs.readFileSync(absPath, 'utf-8');
       res.setHeader('Content-Type', 'text/plain; charset=utf-8');
       res.end(text);

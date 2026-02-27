@@ -31,8 +31,10 @@ export async function seedProject(projectFs: ProjectFileSystem): Promise<void> {
     writes.push(projectFs.writeFile(`materials/${key}.mat.json`, json));
   }
 
-  // Empty scene
-  writes.push(projectFs.writeFile('scenes/main.scene.json', '{}'));
+  // Empty scene (only if none exists)
+  if (!(await projectFs.exists('scenes/main.scene.json'))) {
+    writes.push(projectFs.writeFile('scenes/main.scene.json', JSON.stringify({ gameObjects: [] }, null, 2)));
+  }
 
   // Default project settings
   if (!(await projectFs.exists('project-settings.json'))) {

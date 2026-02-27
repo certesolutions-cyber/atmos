@@ -133,6 +133,10 @@ function setPropertyPath(obj: unknown, path: string, value: unknown): void {
     // Re-assign to trigger setter (e.g. HingeJoint.axis recreates joint)
     (current as Record<string, unknown>)[lastKey] = existing;
   } else {
+    // Skip getter-only properties
+    const desc = Object.getOwnPropertyDescriptor(current, lastKey)
+      ?? Object.getOwnPropertyDescriptor(Object.getPrototypeOf(current), lastKey);
+    if (desc && desc.get && !desc.set) return;
     (current as Record<string, unknown>)[lastKey] = value;
   }
 }
@@ -155,6 +159,9 @@ export function deserializeScene(data: SceneData, context?: DeserializeContext):
   }
 
   // Pass 1: create all game objects + apply transforms
+  if (!data.gameObjects || !Array.isArray(data.gameObjects)) {
+    return scene;
+  }
   for (const objData of data.gameObjects) {
     const go = new GameObject(objData.name);
     if (objData.id !== undefined) objectsById.set(objData.id, go);
