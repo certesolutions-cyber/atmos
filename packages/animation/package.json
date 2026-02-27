@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-animation",
   "description": "Skeletal animation system for the Atmos Engine — keyframes, blending, cross-fade",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -32,8 +32,8 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.6.0",
-    "@certe/atmos-math": "^0.6.0"
+    "@certe/atmos-core": "^0.7.0",
+    "@certe/atmos-math": "^0.7.0"
   },
   "scripts": {
     "test": "vitest run"
