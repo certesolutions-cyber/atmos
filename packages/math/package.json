@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-math",
   "description": "Lightweight Float32Array math library for the Atmos Engine — Vec3, Mat4, Quat, Ray",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
