@@ -2,7 +2,7 @@
  * Shadow mapping shared constants and bind group layout factories.
  *
  * Group 2 layout (main pass) — 12 bindings, 10 sampled textures:
- *   binding 0:     uniform buffer (816 bytes)
+ *   binding 0:     uniform buffer (848 bytes)
  *   binding 1:     comparison sampler
  *   binding 2–3:   dir cascade 0 depth maps (slots 0–1)
  *   binding 4–5:   dir cascade 1 depth maps (slots 0–1)
@@ -12,16 +12,16 @@
  * Combined with group 1's 3 material textures = 13 per-stage sampled textures
  * (WebGPU maxSampledTexturesPerShaderStage limit is 16).
  *
- * Uniform layout (816 bytes):
- *   0–319     DirShadowSlot[2]   (160B each)
- *   320–383   PointShadowSlot[2] (32B each)
- *   384–767   SpotShadowSlot[4]  (96B each)
- *   768–783   dirLightToSlot     vec4<u32>
- *   784–799   pointLightToSlot   vec4<u32>
- *   800–815   spotLightToSlot    vec4<u32>
+ * Uniform layout (848 bytes):
+ *   0–351     DirShadowSlot[2]   (176B each)
+ *   352–415   PointShadowSlot[2] (32B each)
+ *   416–799   SpotShadowSlot[4]  (96B each)
+ *   800–815   dirLightToSlot     vec4<u32>
+ *   816–831   pointLightToSlot   vec4<u32>
+ *   832–847   spotLightToSlot    vec4<u32>
  */
 
-export const SHADOW_UNIFORM_SIZE = 816;
+export const SHADOW_UNIFORM_SIZE = 848;
 
 export const MAX_DIR_SHADOW_SLOTS = 2;
 export const MAX_POINT_SHADOW_SLOTS = 2;
@@ -75,7 +75,7 @@ export function createDummyShadowResources(
   const data = new ArrayBuffer(SHADOW_UNIFORM_SIZE);
   const u32 = new Uint32Array(data);
   // Set slot maps to sentinel (no shadow)
-  const mapOffset32 = 768 / 4;
+  const mapOffset32 = 800 / 4;
   for (let i = 0; i < 12; i++) u32[mapOffset32 + i] = SHADOW_SLOT_NONE;
   device.queue.writeBuffer(uniformBuffer, 0, data as GPUAllowSharedBufferSource);
 

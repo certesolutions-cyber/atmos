@@ -23,6 +23,14 @@ Atmos aims to become:
 
 ---
 
+# 🎮 Demos
+
+These small demos has been made with atmos-editor package.
+
+https://certesolutions-cyber.github.io/atmos-demos/
+
+---
+
 # 🏗 Architecture Overview
 
 Atmos is structured as a **monorepo with npm workspaces**.
@@ -58,8 +66,8 @@ Each package:
 
 # 📦 Packages
 
-| Package                                 | Description                                                         | README                                 |
-| --------------------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
+| Package                                       | Description                                                         | README                                 |
+| --------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------- |
 | [@certe/atmos-math](packages/math/)           | Vec3, Mat4, Quat, Ray, noise — Float32Array, zero-alloc             | [README](packages/math/README.md)      |
 | [@certe/atmos-core](packages/core/)           | Component lifecycle, GameObject, Scene, Engine, Input, Time         | [README](packages/core/README.md)      |
 | [@certe/atmos-renderer](packages/renderer/)   | WebGPU PBR, 3 light types, CSM shadows, HDR post-fx, GPU skinning   | [README](packages/renderer/README.md)  |

@@ -31,6 +31,8 @@ export interface PlayerConfig {
   canvas?: HTMLCanvasElement;
   /** Physics plugin (from createEditorPhysics()). */
   physics?: EditorPhysicsPlugin;
+  /** Physics settings baked at build time from project-settings.json. */
+  physicsSettings?: { gravity: [number, number, number]; fixedTimestep: number; solverIterations: number; substeps: number };
   /** User script modules from import.meta.glob('./scripts/*.ts', { eager: true }). */
   scriptModules?: Record<string, Record<string, unknown>>;
   /** Base URL prefix for asset fetches (default: '/'). */
@@ -184,7 +186,12 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
     applyPostProcess(renderSystem as unknown as Record<string, unknown>, sceneData.postProcess);
   }
 
-  // 14. Engine setup
+  // 14. Apply project physics settings (baked into build entry by vite plugin)
+  if (config.physics && config.physicsSettings) {
+    config.physics.applyPhysicsSettings?.(config.physicsSettings);
+  }
+
+  // 15. Engine setup
   if (physicsSystem) physicsSystem.scene = loadedScene;
   const engine = new Engine();
   engine.setRenderer(renderSystem);
@@ -192,7 +199,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   engine.input.attach(window);
   cleanups.push(() => engine.input.detach());
 
-  // 15. Scene loader for runtime scene switching
+  // 16. Scene loader for runtime scene switching
   Scene.setSceneLoader(async (name: string) => {
     const scenePath = `scenes/${name}.scene.json`;
     try {
@@ -219,7 +226,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   });
   cleanups.push(() => Scene.setSceneLoader(null));
 
-  // 16. Start engine
+  // 17. Start engine
   engine.start(loadedScene);
 
   return {

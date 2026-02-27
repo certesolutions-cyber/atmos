@@ -20,9 +20,9 @@
               1
             ],
             "scale": [
-              20,
-              20,
-              20
+              10,
+              10,
+              10
             ]
           }
         },
@@ -1678,31 +1678,6 @@
               0.20000000298023224,
               0.20000000298023224
             ]
-          }
-        },
-        {
-          "type": "MeshRenderer",
-          "data": {
-            "meshSource": "primitive:cube",
-            "materialSource": "materials/gold.mat.json",
-            "material.albedo": [
-              1,
-              0.7599999904632568,
-              0.3400000035762787,
-              1
-            ],
-            "material.metallic": 1,
-            "material.roughness": 0.35,
-            "material.emissive": [
-              0.9843137264251709,
-              1,
-              0
-            ],
-            "material.emissiveIntensity": 0.5,
-            "material.texTilingX": 1,
-            "material.texTilingY": 1,
-            "castShadow": true,
-            "receiveSSAO": true
           }
         },
         {

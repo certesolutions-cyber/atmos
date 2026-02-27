@@ -28,6 +28,16 @@ fn ACESFilmic(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
 }
 
+// Triangular-PDF dithering to break 8-bit color banding
+fn dither(uv: vec2<f32>) -> vec3<f32> {
+  let pixel = uv * vec2<f32>(textureDimensions(hdrTexture, 0));
+  // Hash-based noise: two independent uniform values
+  let n1 = fract(sin(dot(pixel, vec2(12.9898, 78.233))) * 43758.5453);
+  let n2 = fract(sin(dot(pixel, vec2(63.7264, 10.873))) * 28627.3196);
+  // Triangular distribution: uniform1 + uniform2 - 1.0 → range [-1, 1], peak at 0
+  return vec3((n1 + n2 - 1.0) / 255.0);
+}
+
 @fragment
 fn fs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
   let hdr = textureSample(hdrTexture, texSampler, uv).rgb;
@@ -53,6 +63,9 @@ fn fs(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
     let vignette = smoothstep(radius, radius - 0.35, dist);
     color = color * mix(1.0, vignette, vignetteIntensity);
   }
+
+  // Dither: break 8-bit banding on smooth gradients
+  color = color + dither(uv);
 
   return vec4(color, 1.0);
 }

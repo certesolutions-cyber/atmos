@@ -166,11 +166,13 @@ export function atmosPlugin(options) {
     load(id) {
       if (id !== RESOLVED_BUILD_ENTRY) return;
       let sceneName = 'main';
+      let physicsJson = 'undefined';
       try {
         const settingsPath = path.join(root, 'project-settings.json');
         if (fs.existsSync(settingsPath)) {
           const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
           if (settings.defaultScene) sceneName = settings.defaultScene;
+          if (settings.physics) physicsJson = JSON.stringify(settings.physics);
         }
       } catch { /* use default */ }
       return `
@@ -181,6 +183,7 @@ try {
   const app = await startPlayer({
     scene: 'scenes/${sceneName}.scene.json',
     physics,
+    physicsSettings: ${physicsJson},
     scriptModules,
   });
 } catch (err) {
@@ -226,6 +229,11 @@ try {
         if (fs.existsSync(src)) {
           copyDirSync(src, path.join(outDir, dir));
         }
+      }
+      // Copy project-settings.json (physics settings, default scene, etc.)
+      const settingsFile = path.resolve(root, 'project-settings.json');
+      if (fs.existsSync(settingsFile)) {
+        fs.copyFileSync(settingsFile, path.join(outDir, 'project-settings.json'));
       }
     },
 

@@ -23,6 +23,7 @@ export interface ShadowManagerResult { bindGroup: GPUBindGroup; }
 
 const _posScratch = new Float32Array(3);
 const _spotDirScratch = new Float32Array(3);
+const _dirLightDirScratch = new Float32Array(3);
 
 interface LightDist<T> { light: T; dist2: number; }
 const _pointCandidates: LightDist<PointLight>[] = [];
@@ -190,28 +191,34 @@ export class ShadowManager {
     const u32 = new Uint32Array(this._uniformData);
     f32.fill(0);
 
-    // DirShadowSlot[2]: offset 0, 160B each = 40 floats each
+    // DirShadowSlot[2]: offset 0, 176B each = 44 floats each
     for (let i = 0; i < MAX_DIR_SHADOW_SLOTS; i++) {
       const dl = dirSlots[i]; if (!dl) continue;
-      const b = i * 40;
+      const b = i * 44;
       f32.set(this._dirVP0[i]! as Float32Array, b);
       f32.set(this._dirVP1[i]! as Float32Array, b + 16);
       f32[b + 32] = 0.002; u32[b + 33] = 1; f32[b + 34] = dl.shadowIntensity;
       f32[b + 35] = dl.shadowSize * 0.9; f32[b + 36] = dl.shadowSize * 0.3;
+      f32[b + 37] = dl.shadowSize * 2.0;       // orthoSize0 (cascade 0 world width)
+      f32[b + 38] = dl.shadowFarSize * 2.0;    // orthoSize1 (cascade 1 world width)
+      dl.getWorldDirection(_dirLightDirScratch);
+      f32[b + 39] = _dirLightDirScratch[0]!;   // lightDirX
+      f32[b + 40] = _dirLightDirScratch[1]!;   // lightDirY
+      f32[b + 41] = _dirLightDirScratch[2]!;   // lightDirZ
     }
-    // PointShadowSlot[2]: offset 320B = 80 floats, 32B each = 8 floats each
+    // PointShadowSlot[2]: offset 352B = 88 floats, 32B each = 8 floats each
     for (let i = 0; i < MAX_POINT_SHADOW_SLOTS; i++) {
       const pl = pointSlots[i]; if (!pl) continue;
-      const b = 80 + i * 8;
+      const b = 88 + i * 8;
       pl.getWorldPosition(_posScratch);
       f32[b] = _posScratch[0]!; f32[b + 1] = _posScratch[1]!;
       f32[b + 2] = _posScratch[2]!; f32[b + 3] = pl.range;
       f32[b + 4] = 0.007; u32[b + 5] = 1; f32[b + 6] = pl.shadowIntensity;
     }
-    // SpotShadowSlot[4]: offset 384B = 96 floats, 96B each = 24 floats each
+    // SpotShadowSlot[4]: offset 416B = 104 floats, 96B each = 24 floats each
     for (let i = 0; i < MAX_SPOT_SHADOW_SLOTS; i++) {
       const sl = spotSlots[i]; if (!sl) continue;
-      const b = 96 + i * 24;
+      const b = 104 + i * 24;
       const pass = this._spotPasses[i];
       if (pass) f32.set(pass.getViewProjection() as Float32Array, b);
       sl.getWorldPosition(_posScratch);
@@ -220,8 +227,8 @@ export class ShadowManager {
       f32[b + 20] = 0.002; u32[b + 21] = 1; f32[b + 22] = sl.shadowIntensity;
     }
 
-    // Light-to-slot maps: offset 768B = float index 192
-    const m = 192;
+    // Light-to-slot maps: offset 800B = float index 200
+    const m = 200;
     for (let i = 0; i < 12; i++) u32[m + i] = SHADOW_SLOT_NONE;
     this._writeSlotMap(u32, m, dirSlots, sceneLights.dirComponents, sceneLights.dirCount, MAX_DIR_SHADOW_SLOTS);
     this._writeSlotMap(u32, m + 4, pointSlots, sceneLights.pointComponents, sceneLights.pointCount, MAX_POINT_SHADOW_SLOTS);

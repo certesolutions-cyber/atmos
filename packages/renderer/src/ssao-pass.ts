@@ -1,15 +1,15 @@
 /**
  * Screen-Space Ambient Occlusion pass.
- * 1. Compute noisy AO at half resolution from depth buffer
+ * 1. Compute noisy AO at full resolution from depth buffer
  * 2. Blur the result with a 4x4 box filter
- * Output: blurred AO texture view (r8unorm, half-res)
+ * Output: blurred AO texture view (r16float, full-res)
  */
 
 import { SSAO_SHADER, SSAO_BLUR_SHADER, SSAO_KERNEL_SIZE } from './ssao-shader.js';
 import { drawFullscreenTriangle } from './fullscreen-quad.js';
 import type { Mat4Type } from '@certe/atmos-math';
 
-const AO_FORMAT: GPUTextureFormat = 'r8unorm';
+const AO_FORMAT: GPUTextureFormat = 'r16float';
 
 /** SSAO uniform layout: invProj(64) + proj(64) + radius(4) + bias(4) + intensity(4) + pad(4) + kernel(256) = 400 */
 const PARAMS_SIZE = 400;
@@ -134,16 +134,17 @@ export class SSAOPass {
       size: [1, 1], format: AO_FORMAT,
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
-    device.queue.writeTexture({ texture: this._whiteTexture }, new Uint8Array([255]) as GPUAllowSharedBufferSource, { bytesPerRow: 1 }, [1, 1]);
+    // Float16 encoding of 1.0 = 0x3C00
+    device.queue.writeTexture({ texture: this._whiteTexture }, new Uint16Array([0x3C00]) as GPUAllowSharedBufferSource, { bytesPerRow: 2 }, [1, 1]);
     this._whiteView = this._whiteTexture.createView();
   }
 
   private _ensureTextures(w: number, h: number): void {
-    const hw = Math.max(1, Math.floor(w / 2));
-    const hh = Math.max(1, Math.floor(h / 2));
-    if (this._width === hw && this._height === hh) return;
-    this._width = hw;
-    this._height = hh;
+    if (this._width === w && this._height === h) return;
+    this._width = w;
+    this._height = h;
+    const hw = w;
+    const hh = h;
 
     this._aoTexture?.destroy();
     this._blurTexture?.destroy();

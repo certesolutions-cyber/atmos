@@ -21,13 +21,21 @@ const MAX_SPOT_SHADOW_SLOTS = 4;
 function genDirPcf(slot: number, cascade: 0 | 1): string {
   const tex = `dirCascade${cascade}_${slot}`;
   const vpField = cascade === 0 ? 'cascade0VP' : 'cascade1VP';
-  return `fn _pcfDir${cascade}S${slot}(worldPos: vec3<f32>) -> f32 {
+  const orthoField = cascade === 0 ? 'orthoSize0' : 'orthoSize1';
+  return `fn _pcfDir${cascade}S${slot}(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   let s = shadow.dirSlots[${slot}];
-  let clip = s.${vpField} * vec4(worldPos, 1.0);
+  // Normal offset: push sample point along surface normal to prevent acne
+  let res = f32(textureDimensions(${tex}, 0).x);
+  let texelWorld = s.${orthoField} / res;
+  let lightDir = normalize(vec3(s.lightDirX, s.lightDirY, s.lightDirZ));
+  let cosTheta = abs(dot(N, -lightDir));
+  let normalOffset = N * texelWorld * max(1.0 - cosTheta, 0.1);
+  let offsetPos = worldPos + normalOffset;
+  let clip = s.${vpField} * vec4(offsetPos, 1.0);
   let ndc = clip.xyz / clip.w;
   let uv = ndc.xy * vec2(0.5, -0.5) + 0.5;
   let depth = ndc.z - s.bias;
-  let texelSize = 1.0 / f32(textureDimensions(${tex}, 0).x);
+  let texelSize = 1.0 / res;
   var vis = 0.0;
   for (var y: i32 = -1; y <= 1; y++) { for (var x: i32 = -1; x <= 1; x++) {
     vis += textureSampleCompare(${tex}, shadowSampler, uv + vec2(f32(x), f32(y)) * texelSize, depth);
@@ -37,10 +45,10 @@ function genDirPcf(slot: number, cascade: 0 | 1): string {
 }
 
 function genDirSlot(slot: number): string {
-  return `fn _sampleDirSlot${slot}(worldPos: vec3<f32>) -> f32 {
+  return `fn _sampleDirSlot${slot}(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   let s = shadow.dirSlots[${slot}];
-  let vis0 = _pcfDir0S${slot}(worldPos);
-  let vis1 = _pcfDir1S${slot}(worldPos);
+  let vis0 = _pcfDir0S${slot}(worldPos, N);
+  let vis1 = _pcfDir1S${slot}(worldPos, N);
   let uv0 = _cascadeUV(worldPos, s.cascade0VP);
   let c0xy = _cascadeCoverageXY(uv0.xy, 0.05);
   let c0z = smoothstep(0.0, 0.02, uv0.z) * smoothstep(0.0, 0.02, 1.0 - uv0.z);
@@ -60,17 +68,24 @@ function genPointSlot(slot: number): string {
   const tex = `pointCubeMap${slot}`;
   return `fn _samplePointSlot${slot}(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   let s = shadow.pointSlots[${slot}];
-  let toFrag = worldPos - s.posAndFar.xyz;
-  let dist = length(toFrag);
+  let toFragRaw = worldPos - s.posAndFar.xyz;
+  let distRaw = length(toFragRaw);
   let far = s.posAndFar.w;
-  let lightDir = toFrag / max(dist, 0.0001);
+  let lightDir = toFragRaw / max(distRaw, 0.0001);
   let cosTheta = abs(dot(lightDir, N));
+  // Normal offset: push sample point along surface normal to prevent acne
+  let res = f32(textureDimensions(${tex}, 0).x);
+  let texelWorld = distRaw * 2.0 / res;
+  let normalOffset = N * texelWorld * max(1.0 - cosTheta, 0.1);
+  let offsetPos = worldPos + normalOffset;
+  let toFrag = offsetPos - s.posAndFar.xyz;
+  let dist = length(toFrag);
   let bias = s.bias * max(1.0, 2.0 / max(cosTheta, 0.05));
   let refDepth = dist / far - bias;
   let vis = textureSampleCompare(${tex}, shadowSampler, toFrag, refDepth);
   let adjusted = mix(1.0, vis, s.intensity);
   let enabled = s.enabled != 0u;
-  let inRange = dist < far;
+  let inRange = distRaw < far;
   return select(1.0, adjusted, enabled && inRange);
 }`;
 }
@@ -118,9 +133,13 @@ struct DirShadowSlot {
   intensity: f32,
   cascadeSplit: f32,
   blendWidth: f32,
+  orthoSize0: f32,
+  orthoSize1: f32,
+  lightDirX: f32,
+  lightDirY: f32,
+  lightDirZ: f32,
   _pad0: f32,
   _pad1: f32,
-  _pad2: f32,
 };
 
 struct PointShadowSlot {
@@ -200,10 +219,10 @@ for (let s = 0; s < MAX_SPOT_SHADOW_SLOTS; s++) {
 
 // Dispatch functions
 parts.push(`
-fn sampleDirShadow(slot: u32, worldPos: vec3<f32>) -> f32 {
+fn sampleDirShadow(slot: u32, worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   switch(slot) {
-    case 0u: { return _sampleDirSlot0(worldPos); }
-    case 1u: { return _sampleDirSlot1(worldPos); }
+    case 0u: { return _sampleDirSlot0(worldPos, N); }
+    case 1u: { return _sampleDirSlot1(worldPos, N); }
     default: { return 1.0; }
   }
 }
