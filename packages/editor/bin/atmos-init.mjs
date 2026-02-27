@@ -241,6 +241,8 @@ import { Vec3, Quat, Mat4 } from '@certe/atmos-math';
 // Vec3 — Float32Array[3]
 const v = Vec3.fromValues(1, 2, 3);
 const result = Vec3.create();
+Vec3.set(result, x, y, z);
+Vec3.copy(result, v);
 Vec3.add(result, a, b);
 Vec3.sub(result, a, b);
 Vec3.scale(result, v, 2.0);
@@ -250,13 +252,23 @@ Vec3.lerp(result, a, b, 0.5);
 Vec3.dot(a, b);              // returns number
 Vec3.length(v);              // returns number
 Vec3.distance(a, b);         // returns number
+Vec3.transformQuat(out, v, q);  // rotate vector by quaternion
 
 // Quat — Float32Array[4] as [x, y, z, w]
 const q = Quat.create();                          // identity
 Quat.fromAxisAngle(q, axis, radians);
 Quat.fromEuler(q, xRad, yRad, zRad);
+Quat.lookRotation(q, forwardDir);                 // orient -Z toward direction
+Quat.lookRotation(q, forwardDir, upHint);         // with custom up vector
 Quat.multiply(out, a, b);
-Quat.slerp(out, a, b, t);
+Quat.slerp(out, a, b, t);                         // spherical interpolation
+Quat.invert(out, q);
+Quat.normalize(out, q);
+Quat.rotateX(out, q, radians);                    // rotate around local axis
+Quat.rotateY(out, q, radians);
+Quat.rotateZ(out, q, radians);
+Quat.toEuler(vec3Out, q);                         // extract euler angles
+Quat.copy(out, q);
 Vec3.transformQuat(out, vec, quat);                // rotate vector by quaternion
 
 // Mat4 — Float32Array[16], column-major

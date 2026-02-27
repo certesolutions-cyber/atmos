@@ -264,6 +264,60 @@ describe('Quat', () => {
     expect(q[3]).toBeCloseTo(Math.cos(Math.PI / 4), 5);
   });
 
+  it('lookRotation forward -Z produces identity', () => {
+    const out = Quat.create();
+    const forward = Vec3.fromValues(0, 0, -1);
+    Quat.lookRotation(out, forward);
+    // -Z forward with Y up = identity rotation
+    expect(out[0]).toBeCloseTo(0, 4);
+    expect(out[1]).toBeCloseTo(0, 4);
+    expect(out[2]).toBeCloseTo(0, 4);
+    expect(out[3]).toBeCloseTo(1, 4);
+  });
+
+  it('lookRotation forward +X produces -90° Y rotation', () => {
+    const out = Quat.create();
+    const forward = Vec3.fromValues(1, 0, 0);
+    Quat.lookRotation(out, forward);
+    // Looking +X: rotate local -Z to world +X = -90° around Y
+    const expected = Quat.create();
+    Quat.fromAxisAngle(expected, Vec3.fromValues(0, 1, 0), -Math.PI / 2);
+    expect(out[0]).toBeCloseTo(expected[0]!, 4);
+    expect(out[1]).toBeCloseTo(expected[1]!, 4);
+    expect(out[2]).toBeCloseTo(expected[2]!, 4);
+    expect(out[3]).toBeCloseTo(expected[3]!, 4);
+  });
+
+  it('lookRotation produces unit quaternion for arbitrary direction', () => {
+    const out = Quat.create();
+    const forward = Vec3.fromValues(1, 2, -3);
+    Quat.lookRotation(out, forward);
+    const len = Math.sqrt(out[0]! ** 2 + out[1]! ** 2 + out[2]! ** 2 + out[3]! ** 2);
+    expect(len).toBeCloseTo(1, 4);
+  });
+
+  it('lookRotation with custom up vector', () => {
+    const out = Quat.create();
+    const forward = Vec3.fromValues(0, 0, -1);
+    const up = Vec3.fromValues(0, -1, 0); // flipped up
+    Quat.lookRotation(out, forward, up);
+    // Should produce 180° roll around Z
+    // Transform the resulting rotation back to check -Z is still forward
+    const m = Mat4.create();
+    Quat.toMat4(m, out);
+    // Z column of rotation matrix should be (0, 0, 1) = -forward
+    expect(m[8]).toBeCloseTo(0, 4);
+    expect(m[10]).toBeCloseTo(1, 4);
+  });
+
+  it('lookRotation handles forward ≈ up gracefully', () => {
+    const out = Quat.create();
+    const forward = Vec3.fromValues(0, 1, 0); // same as default up
+    Quat.lookRotation(out, forward);
+    const len = Math.sqrt(out[0]! ** 2 + out[1]! ** 2 + out[2]! ** 2 + out[3]! ** 2);
+    expect(len).toBeCloseTo(1, 4);
+  });
+
   it('rotateX/Y/Z work in-place (out === a)', () => {
     const q = Quat.create();
     Quat.fromEuler(q, 0.1, 0.2, 0.3);

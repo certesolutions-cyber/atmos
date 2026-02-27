@@ -245,6 +245,82 @@ export function rotateZ(out: Quat, a: Quat, rad: number): Quat {
   return out;
 }
 
+// Scratch arrays for lookRotation (module-level, zero heap allocs)
+const _lrRight = new Float32Array(3);
+const _lrUp = new Float32Array(3);
+const _lrFwd = new Float32Array(3);
+
+/**
+ * Build a quaternion that orients -Z toward `forward` with `up` as hint.
+ * Matches Unity's Quaternion.LookRotation convention.
+ */
+export function lookRotation(out: Quat, forward: Vec3, up?: Vec3): Quat {
+  // Normalize forward
+  let fx = forward[0]!, fy = forward[1]!, fz = forward[2]!;
+  let fLen = Math.sqrt(fx * fx + fy * fy + fz * fz);
+  if (fLen < 1e-8) return identity(out);
+  fLen = 1 / fLen;
+  fx *= fLen; fy *= fLen; fz *= fLen;
+  _lrFwd[0] = fx; _lrFwd[1] = fy; _lrFwd[2] = fz;
+
+  // Up hint (default Y-up)
+  const ux = up ? up[0]! : 0, uy = up ? up[1]! : 1, uz = up ? up[2]! : 0;
+
+  // right = cross(forward, up)
+  let rx = fy * uz - fz * uy;
+  let ry = fz * ux - fx * uz;
+  let rz = fx * uy - fy * ux;
+  let rLen = Math.sqrt(rx * rx + ry * ry + rz * rz);
+  if (rLen < 1e-6) {
+    // forward ≈ up, pick arbitrary perpendicular
+    rx = 1; ry = 0; rz = 0;
+    rLen = 1;
+  }
+  rLen = 1 / rLen;
+  rx *= rLen; ry *= rLen; rz *= rLen;
+  _lrRight[0] = rx; _lrRight[1] = ry; _lrRight[2] = rz;
+
+  // orthoUp = cross(right, forward)
+  const ox = ry * fz - rz * fy;
+  const oy = rz * fx - rx * fz;
+  const oz = rx * fy - ry * fx;
+  _lrUp[0] = ox; _lrUp[1] = oy; _lrUp[2] = oz;
+
+  // Rotation matrix columns: X=right, Y=orthoUp, Z=-forward
+  const m00 = rx, m01 = ox, m02 = -fx;
+  const m10 = ry, m11 = oy, m12 = -fy;
+  const m20 = rz, m21 = oz, m22 = -fz;
+
+  // Matrix to quaternion (Shepperd's method)
+  const trace = m00 + m11 + m22;
+  if (trace > 0) {
+    const s = 0.5 / Math.sqrt(trace + 1);
+    out[3] = 0.25 / s;
+    out[0] = (m21 - m12) * s;
+    out[1] = (m02 - m20) * s;
+    out[2] = (m10 - m01) * s;
+  } else if (m00 > m11 && m00 > m22) {
+    const s = 2 * Math.sqrt(1 + m00 - m11 - m22);
+    out[3] = (m21 - m12) / s;
+    out[0] = 0.25 * s;
+    out[1] = (m01 + m10) / s;
+    out[2] = (m02 + m20) / s;
+  } else if (m11 > m22) {
+    const s = 2 * Math.sqrt(1 + m11 - m00 - m22);
+    out[3] = (m02 - m20) / s;
+    out[0] = (m01 + m10) / s;
+    out[1] = 0.25 * s;
+    out[2] = (m12 + m21) / s;
+  } else {
+    const s = 2 * Math.sqrt(1 + m22 - m00 - m11);
+    out[3] = (m10 - m01) / s;
+    out[0] = (m02 + m20) / s;
+    out[1] = (m12 + m21) / s;
+    out[2] = 0.25 * s;
+  }
+  return out;
+}
+
 export function toMat4(out: Mat4, q: Quat): Mat4 {
   const x = q[0]!, y = q[1]!, z = q[2]!, w = q[3]!;
   const x2 = x + x, y2 = y + y, z2 = z + z;

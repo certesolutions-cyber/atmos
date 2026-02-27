@@ -136,7 +136,7 @@ export const LIGHT_LOOP_WGSL = /* wgsl */`
     var contribution = computePBR(N, V, L, albedo, metallic, roughness, F0, radiance);
     let spotSlot = shadow.spotLightToSlot[i];
     if (spotSlot != 0xFFFFFFFFu) {
-      contribution = contribution * sampleSpotShadow(spotSlot, worldPosition);
+      contribution = contribution * sampleSpotShadow(spotSlot, worldPosition, N);
     }
     Lo = Lo + contribution;
   }

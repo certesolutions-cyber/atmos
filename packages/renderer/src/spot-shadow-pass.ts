@@ -87,8 +87,8 @@ export class SpotShadowPass {
         depthWriteEnabled: true,
         depthCompare: 'less',
         format: 'depth32float',
-        depthBias: 2,
-        depthBiasSlopeScale: 2.0,
+        depthBias: 1,
+        depthBiasSlopeScale: 1.0,
       },
     });
   }
@@ -108,7 +108,7 @@ export class SpotShadowPass {
   ): void {
     // Perspective projection: FOV = outerAngle * 2, aspect 1:1
     const fov = outerAngle * 2;
-    Mat4.perspective(this._proj, fov, 1.0, 0.1, range);
+    Mat4.perspective(this._proj, fov, 1.0, 0.5, range);
 
     // View matrix: lookAt from lightPos toward lightPos + lightDir
     this._target[0] = lightPos[0]! + lightDir[0]!;

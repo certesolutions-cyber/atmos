@@ -77,12 +77,21 @@ function genPointSlot(slot: number): string {
 
 function genSpotSlot(slot: number): string {
   const tex = `spotDepthMap${slot}`;
-  return `fn _sampleSpotSlot${slot}(worldPos: vec3<f32>) -> f32 {
+  return `fn _sampleSpotSlot${slot}(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   let s = shadow.spotSlots[${slot}];
-  let clip = s.shadowVP * vec4(worldPos, 1.0);
+  let toFrag = worldPos - s.posAndFar.xyz;
+  let dist = length(toFrag);
+  let lightDir = toFrag / max(dist, 0.0001);
+  let cosTheta = abs(dot(lightDir, N));
+  // Normal offset in world space: scales with texel size at this distance
+  let res = f32(textureDimensions(${tex}, 0).x);
+  let texelWorld = dist * 2.0 / res;
+  let normalOffset = N * texelWorld * max(1.0 - cosTheta, 0.1);
+  let samplePos = worldPos + normalOffset;
+  let clip = s.shadowVP * vec4(samplePos, 1.0);
   let ndc = clip.xyz / clip.w;
   let uv = ndc.xy * vec2(0.5, -0.5) + 0.5;
-  let depth = ndc.z - s.bias;
+  let depth = ndc.z - 0.0005;
   let inBounds = uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0 && ndc.z >= 0.0 && ndc.z <= 1.0;
   let texelSize = 1.0 / f32(textureDimensions(${tex}, 0).x);
   var vis = 0.0;
@@ -207,12 +216,12 @@ fn samplePointShadow(slot: u32, worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   }
 }
 
-fn sampleSpotShadow(slot: u32, worldPos: vec3<f32>) -> f32 {
+fn sampleSpotShadow(slot: u32, worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
   switch(slot) {
-    case 0u: { return _sampleSpotSlot0(worldPos); }
-    case 1u: { return _sampleSpotSlot1(worldPos); }
-    case 2u: { return _sampleSpotSlot2(worldPos); }
-    case 3u: { return _sampleSpotSlot3(worldPos); }
+    case 0u: { return _sampleSpotSlot0(worldPos, N); }
+    case 1u: { return _sampleSpotSlot1(worldPos, N); }
+    case 2u: { return _sampleSpotSlot2(worldPos, N); }
+    case 3u: { return _sampleSpotSlot3(worldPos, N); }
     default: { return 1.0; }
   }
 }
