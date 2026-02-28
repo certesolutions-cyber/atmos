@@ -85,6 +85,8 @@ export class RenderSystem implements Renderer {
   private readonly _overlayCallbacks = new Set<OverlayCallback>();
   private _activeCamera: Camera | null = null;
   private readonly _eyeScratch = new Float32Array(3);
+  private _elapsedTime = 0;
+  private _lastFrameTime = 0;
 
   // Shadow manager (owns all shadow passes and bind groups)
   private _shadowManager: ShadowManager | null = null;
@@ -318,6 +320,11 @@ export class RenderSystem implements Renderer {
   }
 
   beginFrame(): void {
+    const now = performance.now() / 1000;
+    if (this._lastFrameTime === 0) this._lastFrameTime = now;
+    this._elapsedTime += now - this._lastFrameTime;
+    this._lastFrameTime = now;
+
     const { device, msaaTexture, hdrTexture, depthTexture } = this._gpu;
     const aspect = this._gpu.canvas.width / this._gpu.canvas.height;
 
@@ -348,7 +355,7 @@ export class RenderSystem implements Renderer {
       end: this.fogEnd,
       color: this.fogColor,
     };
-    writeSceneUniforms(this._sceneData, cameraEye, sceneLights, this._light, fog);
+    writeSceneUniforms(this._sceneData, cameraEye, sceneLights, this._light, fog, this._elapsedTime);
     device.queue.writeBuffer(this._sceneBuffer, 0, this._sceneData as GPUAllowSharedBufferSource);
 
     // Frustum culling + MeshRenderer uniform writes

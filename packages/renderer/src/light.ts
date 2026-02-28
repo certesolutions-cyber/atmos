@@ -171,15 +171,16 @@ export function writeSceneUniforms(
   sceneLights?: SceneLightData,
   fallback?: LightSettings,
   fog?: FogSettings,
+  time?: number,
 ): void {
   // Zero everything first
   out.fill(0);
 
-  // cameraPos (vec4, w=0)  — offset 0
+  // cameraPos (vec4, w=time)  — offset 0
   out[0] = cameraPos[0]!;
   out[1] = cameraPos[1]!;
   out[2] = cameraPos[2]!;
-  out[3] = 0;
+  out[3] = time ?? 0;
 
   if (sceneLights && (sceneLights.dirCount > 0 || sceneLights.pointCount > 0 || sceneLights.spotCount > 0)) {
     // Counts — offset 4 (as uint32 view): numDir, numPoint, numSpot

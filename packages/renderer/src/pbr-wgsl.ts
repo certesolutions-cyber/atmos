@@ -24,7 +24,7 @@ struct SpotLight {
 };
 
 struct SceneUniforms {
-  cameraPos: vec4<f32>,
+  cameraPos: vec4<f32>,  // xyz=position, w=time (seconds)
   numDirLights: u32,
   numPointLights: u32,
   numSpotLights: u32,

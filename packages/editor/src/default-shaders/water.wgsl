@@ -1,44 +1,4 @@
-import type { MaterialAssetData } from '@certe/atmos-renderer';
-import { serializeMaterialAsset } from '@certe/atmos-renderer';
-import type { ProjectFileSystem } from './project-fs.js';
-import { DEFAULT_PROJECT_SETTINGS } from './project-settings.js';
-
-const SEED_MATERIALS: Record<string, Omit<MaterialAssetData, 'name'>> = {
-  default: { shader: 'pbr', albedo: [0.7, 0.7, 0.7, 1], metallic: 0, roughness: 0.5 },
-  metal: { shader: 'pbr', albedo: [0.8, 0.8, 0.85, 1], metallic: 1, roughness: 0.3 },
-  gold: { shader: 'pbr', albedo: [1.0, 0.76, 0.34, 1], metallic: 1, roughness: 0.35 },
-  copper: { shader: 'pbr', albedo: [0.95, 0.64, 0.54, 1], metallic: 1, roughness: 0.4 },
-  plastic: { shader: 'pbr', albedo: [0.8, 0.2, 0.2, 1], metallic: 0, roughness: 0.4 },
-  rubber: { shader: 'pbr', albedo: [0.15, 0.15, 0.15, 1], metallic: 0, roughness: 0.95 },
-  wood: { shader: 'pbr', albedo: [0.55, 0.35, 0.18, 1], metallic: 0, roughness: 0.7 },
-  glass: { shader: 'pbr', albedo: [0.9, 0.95, 1.0, 1], metallic: 0, roughness: 0.1 },
-  water: { shader: 'custom', albedo: [0, 0.3, 0.5, 0.8], metallic: 0, roughness: 0.3, customShaderPath: 'shaders/water.wgsl' },
-};
-
-const EXAMPLE_SHADER = `/// @property baseColor: vec4 = (0.2, 0.6, 1.0, 1.0)
-/// @property speed: float = 2.0
-
-@fragment fn main(input: FragmentInput) -> @location(0) vec4<f32> {
-    let N = normalize(input.worldNormal);
-    let V = normalize(scene.cameraPos.xyz - input.worldPosition);
-
-    // Simple rim lighting effect
-    let rim = 1.0 - max(dot(N, V), 0.0);
-    let rimColor = custom.baseColor.rgb * pow(rim, custom.speed);
-
-    // Basic diffuse from scene lights
-    let albedo = custom.baseColor.rgb;
-    let F0 = vec3<f32>(0.04);
-    let Lo = computeLightLoop(N, V, albedo, 0.0, 0.5, F0, input.worldPosition);
-
-    let ambient = vec3<f32>(0.03) * albedo;
-    var color = ambient + Lo + rimColor;
-    color = applyFog(color, input.worldPosition);
-    return vec4<f32>(color, custom.baseColor.a);
-}
-`;
-
-const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
+/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
 /// @property deepColor: vec4 = (0.0, 0.12, 0.25, 0.95)
 /// @property waveSpeed: float = 1.0
 /// @property waveScale: float = 1.0
@@ -61,44 +21,55 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
     let V = normalize(scene.cameraPos.xyz - worldPos);
     let uv = worldPos.xz;
 
-    // Multi-octave procedural wave normals
+    // ── Multi-octave procedural wave normals ──
     let t = time * custom.waveSpeed;
     let scale = custom.waveScale;
+
+    // 4 wave layers at different scales, speeds, and directions
     let n1 = waveNormal(uv * scale * 0.5, t * 0.4, vec2<f32>(0.7, 0.3));
     let n2 = waveNormal(uv * scale * 1.0, t * 0.6, vec2<f32>(-0.5, 0.6));
     let n3 = waveNormal(uv * scale * 2.3, t * 0.8, vec2<f32>(0.3, -0.7));
     let n4 = waveNormal(uv * scale * 4.1, t * 1.2, vec2<f32>(-0.6, -0.4));
+
+    // Blend octaves with decreasing weight
     var waveN = n1 + n2 * 0.5 + n3 * 0.25 + n4 * 0.125;
     waveN = waveN * custom.waveStrength;
+
+    // Perturb base normal (assuming water is mostly flat, base normal ≈ up)
     let N = normalize(vec3<f32>(waveN.x, 1.0, waveN.y));
+
     let NdotV = max(dot(N, V), 0.0);
 
-    // Fresnel (Schlick)
+    // ── Fresnel (Schlick) ──
     let fresnel = custom.fresnelBias + (1.0 - custom.fresnelBias) * pow(1.0 - NdotV, custom.fresnelPower);
 
-    // Sky reflection
+    // ── Sky/environment reflection (procedural) ──
     let reflDir = reflect(-V, N);
-    let reflectionColor = proceduralSky(reflDir);
+    let skyColor = proceduralSky(reflDir);
+    let reflectionColor = skyColor;
 
-    // Water body color
+    // ── Water body color (depth-like gradient via view angle) ──
+    // Steep angles (sides of waves) → shallow/transparent
+    // Flat angles (looking down) → deep/opaque
     let depthFactor = pow(1.0 - NdotV, 0.7);
     let waterColor = mix(custom.deepColor.rgb, custom.shallowColor.rgb, depthFactor);
     let waterAlpha = mix(custom.deepColor.a, custom.shallowColor.a, depthFactor);
 
-    // Subsurface scattering
+    // ── Subsurface scattering ──
     var sss = vec3<f32>(0.0);
     if (scene.numDirLights > 0u) {
         let lightDir = normalize(-scene.dirLights[0].direction.xyz);
         let sssLight = lightDir + N * 0.2;
         let sssDot = pow(clamp(dot(V, -sssLight), 0.0, 1.0), 3.0);
+        // Wave sides glow with SSS color
         let sssMask = (1.0 - NdotV) * 0.5 + 0.5;
         sss = custom.sssColor.rgb * sssDot * custom.sssIntensity * sssMask;
     }
 
-    // Mix reflection and water via Fresnel
+    // ── Mix reflection and water body via Fresnel ──
     var color = mix(waterColor + sss, reflectionColor, clamp(fresnel, 0.0, 1.0));
 
-    // Specular highlights
+    // ── Specular highlights (Blinn-Phong) ──
     for (var i = 0u; i < scene.numDirLights; i = i + 1u) {
         let light = scene.dirLights[i];
         let L = normalize(-light.direction.xyz);
@@ -108,6 +79,7 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         let radiance = light.color.rgb * light.color.w;
         color = color + radiance * spec * fresnel;
     }
+
     for (var i = 0u; i < scene.numPointLights; i = i + 1u) {
         let light = scene.pointLights[i];
         let toLight = light.position.xyz - worldPos;
@@ -122,7 +94,7 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         color = color + radiance * spec * fresnel;
     }
 
-    // Caustics
+    // ── Caustics (procedural, underwater effect visible on surface) ──
     let causticsVal = caustics(uv * custom.causticsScale, t * 0.3);
     if (scene.numDirLights > 0u) {
         let lightIntensity = scene.dirLights[0].color.w;
@@ -130,16 +102,20 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         color = color + lightColor * causticsVal * custom.causticsIntensity * lightIntensity * (1.0 - fresnel);
     }
 
-    // Foam
+    // ── Foam (procedural, wave crest-based) ──
     let foamNoise = foam(uv * scale * 2.0, t);
     let wavePeak = max(waveN.x + waveN.y, 0.0) * 2.0;
     let foamMask = smoothstep(custom.foamThreshold, custom.foamThreshold + 0.3, wavePeak + foamNoise * 0.4);
     color = mix(color, custom.foamColor.rgb, foamMask * custom.foamColor.a);
     let alpha = clamp(waterAlpha + foamMask * 0.5 + fresnel * 0.3, 0.0, 1.0);
 
+    // ── Fog ──
     color = applyFog(color, worldPos);
+
     return vec4<f32>(color, alpha);
 }
+
+// ── Hash functions for procedural noise ──
 
 fn hash21(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
@@ -154,20 +130,26 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return fract(sin(n.xy) * 43758.5453123);
 }
 
+// ── Procedural wave normal (returns xz displacement) ──
+
 fn waveNormal(uv: vec2<f32>, t: f32, dir: vec2<f32>) -> vec2<f32> {
     let p = uv + dir * t;
     let eps = 0.05;
+
     let h0 = waveHeight(p);
     let hx = waveHeight(p + vec2<f32>(eps, 0.0));
     let hy = waveHeight(p + vec2<f32>(0.0, eps));
+
     return vec2<f32>(h0 - hx, h0 - hy) / eps;
 }
 
 fn waveHeight(p: vec2<f32>) -> f32 {
+    // Multi-frequency sine waves with noise modulation
     var h = 0.0;
     var freq = 1.0;
     var amp = 1.0;
     var pos = p;
+
     for (var i = 0; i < 4; i = i + 1) {
         let n = hash21(floor(pos * 0.5)) * 0.5;
         h = h + sin(pos.x * freq + pos.y * freq * 0.7 + n * 6.28) * amp;
@@ -176,8 +158,11 @@ fn waveHeight(p: vec2<f32>) -> f32 {
         amp = amp * 0.45;
         pos = vec2<f32>(pos.x * 1.2 - pos.y * 0.3, pos.y * 1.2 + pos.x * 0.3);
     }
+
     return h * 0.15;
 }
+
+// ── Procedural caustics ──
 
 fn caustics(uv: vec2<f32>, t: f32) -> f32 {
     let TAU = 6.28318530718;
@@ -185,93 +170,81 @@ fn caustics(uv: vec2<f32>, t: f32) -> f32 {
     var ip = p;
     var c = 1.0;
     let intensity = 0.005;
+
     for (var n = 0; n < 4; n = n + 1) {
         let tt = t * (1.0 - 3.5 / f32(n + 1));
-        ip = p + vec2<f32>(cos(tt - ip.x) + sin(tt + ip.y), sin(tt - ip.y) + cos(tt + ip.x));
-        c = c + 1.0 / length(vec2<f32>(p.x / (sin(ip.x + tt) / intensity), p.y / (cos(ip.y + tt) / intensity)));
+        ip = p + vec2<f32>(
+            cos(tt - ip.x) + sin(tt + ip.y),
+            sin(tt - ip.y) + cos(tt + ip.x)
+        );
+        c = c + 1.0 / length(vec2<f32>(
+            p.x / (sin(ip.x + tt) / intensity),
+            p.y / (cos(ip.y + tt) / intensity)
+        ));
     }
     c = c / 4.0;
     c = 1.17 - pow(c, 1.4);
     return pow(abs(c), 8.0);
 }
 
+// ── Procedural foam noise ──
+
 fn foam(uv: vec2<f32>, t: f32) -> f32 {
     let p1 = uv + vec2<f32>(t * 0.15, t * 0.08);
     let p2 = uv * 1.7 + vec2<f32>(-t * 0.1, t * 0.12);
-    return smoothstep(0.1, 0.5, min(voronoiNoise(p1), voronoiNoise(p2)));
+
+    let v1 = voronoiNoise(p1);
+    let v2 = voronoiNoise(p2);
+
+    // Combine two layers of Voronoi for organic foam look
+    return smoothstep(0.1, 0.5, min(v1, v2));
 }
 
 fn voronoiNoise(uv: vec2<f32>) -> f32 {
     let i = floor(uv);
     let f = fract(uv);
     var minDist = 1.0;
+
     for (var y = -1; y <= 1; y = y + 1) {
         for (var x = -1; x <= 1; x = x + 1) {
             let neighbor = vec2<f32>(f32(x), f32(y));
-            let diff = neighbor + hash22(i + neighbor) - f;
-            minDist = min(minDist, length(diff));
+            let point = hash22(i + neighbor);
+            let diff = neighbor + point - f;
+            let dist = length(diff);
+            minDist = min(minDist, dist);
         }
     }
     return minDist;
 }
 
+// ── Procedural sky for reflections ──
+
 fn proceduralSky(dir: vec3<f32>) -> vec3<f32> {
+    // Simple sky gradient
     let up = max(dir.y, 0.0);
+    let horizon = 1.0 - abs(dir.y);
+
+    // Sky gradient: horizon warm, zenith deep blue
     let zenithColor = vec3<f32>(0.15, 0.3, 0.65);
     let horizonColor = vec3<f32>(0.6, 0.7, 0.85);
     let groundColor = vec3<f32>(0.15, 0.18, 0.2);
+
     var sky: vec3<f32>;
-    if (dir.y >= 0.0) { sky = mix(horizonColor, zenithColor, pow(up, 0.5)); }
-    else { sky = mix(horizonColor, groundColor, pow(-dir.y, 0.3)); }
+    if (dir.y >= 0.0) {
+        sky = mix(horizonColor, zenithColor, pow(up, 0.5));
+    } else {
+        sky = mix(horizonColor, groundColor, pow(-dir.y, 0.3));
+    }
+
+    // Sun disk (approximate, from first directional light if available)
     if (scene.numDirLights > 0u) {
         let sunDir = normalize(-scene.dirLights[0].direction.xyz);
         let sunDot = max(dot(dir, sunDir), 0.0);
-        sky = sky + scene.dirLights[0].color.rgb * scene.dirLights[0].color.w * (pow(sunDot, 256.0) * 3.0 + pow(sunDot, 8.0) * 0.3);
+        let sunDisk = pow(sunDot, 256.0) * 3.0;
+        let sunGlow = pow(sunDot, 8.0) * 0.3;
+        let sunColor = scene.dirLights[0].color.rgb * scene.dirLights[0].color.w;
+        sky = sky + sunColor * (sunDisk + sunGlow);
     }
+
     return sky;
-}
-`;
-
-export async function seedProject(projectFs: ProjectFileSystem): Promise<void> {
-  // Only seed if materials/ doesn't exist yet
-  const hasDir = await projectFs.exists('materials');
-  if (hasDir) return;
-
-  await projectFs.ensureDir('materials');
-  await projectFs.ensureDir('scenes');
-  await projectFs.ensureDir('shaders');
-
-  const writes: Promise<void>[] = [];
-
-  for (const [key, params] of Object.entries(SEED_MATERIALS)) {
-    const name = key.charAt(0).toUpperCase() + key.slice(1);
-    const data: MaterialAssetData = { name, ...params };
-    const json = serializeMaterialAsset(data);
-    writes.push(projectFs.writeFile(`materials/${key}.mat.json`, json));
-  }
-
-  // Empty scene (only if none exists)
-  if (!(await projectFs.exists('scenes/main.scene.json'))) {
-    writes.push(projectFs.writeFile('scenes/main.scene.json', JSON.stringify({ gameObjects: [] }, null, 2)));
-  }
-
-  // Example custom shader
-  if (!(await projectFs.exists('shaders/example.wgsl'))) {
-    writes.push(projectFs.writeFile('shaders/example.wgsl', EXAMPLE_SHADER));
-  }
-
-  // Water shader
-  if (!(await projectFs.exists('shaders/water.wgsl'))) {
-    writes.push(projectFs.writeFile('shaders/water.wgsl', WATER_SHADER));
-  }
-
-  // Default project settings
-  if (!(await projectFs.exists('project-settings.json'))) {
-    writes.push(projectFs.writeFile(
-      'project-settings.json',
-      JSON.stringify(DEFAULT_PROJECT_SETTINGS, null, 2),
-    ));
-  }
-
-  await Promise.all(writes);
 }
