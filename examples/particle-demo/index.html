@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atmos – Particle System Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    h1 { font-size: 1.2rem; margin-bottom: 8px; color: #aaa; }
+    canvas { width: 900px; height: 600px; border-radius: 8px; }
+
+    .info {
+      margin-top: 12px;
+      display: flex;
+      gap: 24px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .info .emitter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .info .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .fire { background: #ff6600; }
+    .sparks { background: #ffcc44; }
+    .dust { background: #8888aa; }
+  </style>
+</head>
+<body>
+  <h1>Atmos Particle System Demo</h1>
+  <canvas id="canvas" width="900" height="600"></canvas>
+  <div class="info">
+    <div class="emitter"><span class="dot fire"></span> Fire (additive, rising)</div>
+    <div class="emitter"><span class="dot sparks"></span> Sparks (additive, gravity)</div>
+    <div class="emitter"><span class="dot dust"></span> Dust (alpha blend, omnidirectional)</div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

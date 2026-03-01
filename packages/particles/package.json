@@ -1,0 +1,42 @@
+{
+  "name": "@certe/atmos-particles",
+  "description": "GPU-accelerated particle system for the Atmos Engine — billboard quads, emission, physics, color/size over lifetime",
+  "version": "0.8.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/certesolutions-cyber/atmos.git",
+    "directory": "packages/particles"
+  },
+  "homepage": "https://github.com/certesolutions-cyber/atmos",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "particles",
+    "particle-system",
+    "vfx",
+    "game-engine",
+    "webgpu",
+    "atmos"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
+  "dependencies": {
+    "@certe/atmos-core": "^0.8.8",
+    "@certe/atmos-math": "^0.8.8",
+    "@certe/atmos-renderer": "^0.8.8"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
