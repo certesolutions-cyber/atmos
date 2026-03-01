@@ -1,0 +1,41 @@
+{
+  "name": "@certe/atmos-audio",
+  "description": "Spatial 3D audio system for the Atmos Engine — Web Audio API, AudioListener, AudioSource",
+  "version": "0.8.8",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/certesolutions-cyber/atmos.git",
+    "directory": "packages/audio"
+  },
+  "homepage": "https://github.com/certesolutions-cyber/atmos",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "audio",
+    "spatial-audio",
+    "3d-audio",
+    "web-audio",
+    "game-engine",
+    "atmos"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
+  "dependencies": {
+    "@certe/atmos-core": "^0.8.8",
+    "@certe/atmos-math": "^0.8.8"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

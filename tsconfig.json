@@ -11,6 +11,7 @@
     { "path": "packages/animation" },
     { "path": "packages/assets" },
     { "path": "packages/terrain" },
+    { "path": "packages/audio" },
     { "path": "packages/editor" }
   ]
 }

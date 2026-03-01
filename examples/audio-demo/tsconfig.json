@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/math" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/renderer" },
+    { "path": "../../packages/audio" }
+  ]
+}
