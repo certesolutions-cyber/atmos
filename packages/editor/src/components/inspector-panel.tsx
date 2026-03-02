@@ -4,6 +4,7 @@ import { getComponentDef, getAllRegisteredComponents, Transform } from '@certe/a
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
 import { getProperty, setProperty } from '../property-setters.js';
+import { isPrefabLocked, getPrefabRoot } from '../scene-operations.js';
 import { NumberField } from './fields/number-field.js';
 import { Vec3Field } from './fields/vec3-field.js';
 import { QuatField } from './fields/quat-field.js';
@@ -390,6 +391,9 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
     refresh();
   };
 
+  const locked = isPrefabLocked(selected);
+  const prefabRoot = getPrefabRoot(selected);
+
   return (
     <div style={panelStyle}>
       <div style={headerStyle}>
@@ -398,6 +402,11 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
           {selected.name}
         </span>
       </div>
+      {prefabRoot && (
+        <div style={{ padding: '4px 10px', fontSize: '10px', color: '#b888e8', background: '#2a1a3a', borderBottom: '1px solid #3a2a4a' }}>
+          Prefab: {prefabRoot.prefabSource} (locked)
+        </div>
+      )}
       <div
         style={{
           flex: 1,
@@ -442,7 +451,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
                 )}
                 {entry.name}
               </span>
-              {!entry.isTransform && entry.component && (
+              {!entry.isTransform && entry.component && !locked && (
                 <button
                   style={removeBtnStyle}
                   title="Remove Component"
@@ -458,7 +467,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
           </div>
         ))}
 
-        <div style={{ position: 'relative' }}>
+        {!locked && <div style={{ position: 'relative' }}>
           <button
             style={addBtnStyle}
             onClick={() => setShowAddDropdown(!showAddDropdown)}
@@ -494,7 +503,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
               </div>
             </div>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );

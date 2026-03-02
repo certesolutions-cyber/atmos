@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess } from '@certe/atmos-core';
+import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess, serializePrefab } from '@certe/atmos-core';
 import type { DeserializeContext, Component, GameObject } from '@certe/atmos-core';
 import type { EditorState } from '../editor-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
@@ -32,6 +32,8 @@ interface EditorShellProps {
   onLoadModel?: (entry: AssetEntry) => void;
   onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
+  onDropPrefab?: (path: string, parent: GameObject | null) => void;
+  onLoadPrefab?: (entry: AssetEntry) => void;
   renderSystem?: import('@certe/atmos-renderer').RenderSystem;
 }
 
@@ -152,7 +154,7 @@ const HIDE_SPINNERS_CSS = `
 export function EditorShell({
   editorState, projectFs, onOpenProject, deserializeContext, componentFactory, componentFilter, componentRemover,
   primitiveFactory, orbitCamera, canvas,
-  showAssetBrowser, onAttachScript, onLoadModel, onLoadScene, onDropModel, renderSystem,
+  showAssetBrowser, onAttachScript, onLoadModel, onLoadScene, onDropModel, onDropPrefab, onLoadPrefab, renderSystem,
 }: EditorShellProps) {
   const [, setTick] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -271,6 +273,36 @@ export function EditorShell({
     await projectFs.writeFile(`scenes/${name}.scene.json`, json);
   }, [editorState]);
 
+  const handleSaveAsPrefab = useCallback(async () => {
+    const pfs = editorState.projectFs;
+    if (!pfs?.isOpen) return;
+    // Count non-transient roots
+    const roots = editorState.scene.roots.filter((r) => !r.transient);
+    if (roots.length === 0) return;
+    if (roots.length > 1) {
+      const wrap = confirm('Multiple root objects found. Wrap them under a single parent?');
+      if (!wrap) return;
+      const wrapper = new (await import('@certe/atmos-core')).GameObject('PrefabRoot');
+      for (const r of roots) {
+        r.setParent(wrapper);
+        editorState.scene.updateRootStatus(r);
+      }
+      editorState.scene.add(wrapper);
+    }
+    const input = window.prompt('Prefab name:', 'my-prefab');
+    if (!input) return;
+    const name = input.trim().replace(/\.prefab\.json$/i, '');
+    if (!name) return;
+    try {
+      const data = serializePrefab(editorState.scene);
+      const json = JSON.stringify(data, null, 2);
+      await pfs.writeFile(`prefabs/${name}.prefab.json`, json);
+      showToast(`Saved ${name}.prefab.json`);
+    } catch (err) {
+      console.warn('[Editor] Failed to save prefab:', err);
+    }
+  }, [editorState, showToast]);
+
   const handleLoad = useCallback(async () => {
     const projectFs = editorState.projectFs;
     if (projectFs?.isOpen) {
@@ -383,6 +415,9 @@ export function EditorShell({
             <button style={btnBase} onClick={handleSaveAs}>Save As</button>
           )}
           <button style={btnBase} onClick={handleLoad}>Load</button>
+          {editorState.projectFs?.isOpen && (
+            <button style={btnBase} onClick={handleSaveAsPrefab}>Save Prefab</button>
+          )}
         </div>
 
         <div style={sepStyle} />
@@ -467,6 +502,7 @@ export function EditorShell({
           editorState={editorState}
           primitiveFactory={primitiveFactory}
           onDropModel={onDropModel ? (path, parent) => onDropModel(path, parent) : undefined}
+          onDropPrefab={onDropPrefab ? (path, parent) => onDropPrefab(path, parent) : undefined}
           onFocusObject={orbitCamera ? (obj) => {
             obj.transform.updateWorldMatrix();
             const wm = obj.transform.worldMatrix;
@@ -505,6 +541,7 @@ export function EditorShell({
                 onAttachScript={onAttachScript}
                 onLoadModel={onLoadModel}
                 onLoadScene={onLoadScene}
+                onLoadPrefab={onLoadPrefab}
                 style={{ height: `${assetBrowserHeight}px`, minHeight: `${assetBrowserHeight}px` }}
               />
             </>

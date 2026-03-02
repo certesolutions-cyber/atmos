@@ -44,6 +44,8 @@ export interface MountEditorOptions {
   onLoadModel?: (entry: AssetEntry) => void;
   onLoadScene?: (entry: AssetEntry) => void;
   onDropModel?: (path: string, target: GameObject | null) => void;
+  onDropPrefab?: (path: string, parent: GameObject | null) => void;
+  onLoadPrefab?: (entry: AssetEntry) => void;
   physics?: EditorPhysicsPlugin;
 }
 
@@ -205,6 +207,8 @@ export function mountEditor(
       onLoadModel: options?.onLoadModel,
       onLoadScene: options?.onLoadScene,
       onDropModel: options?.onDropModel,
+      onDropPrefab: options?.onDropPrefab,
+      onLoadPrefab: options?.onLoadPrefab,
       renderSystem: options?.renderSystem,
     }),
   );

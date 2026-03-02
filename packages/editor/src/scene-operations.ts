@@ -29,6 +29,21 @@ export function setOnDuplicate(fn: DuplicateCallback | null): void {
   _onDuplicate = fn;
 }
 
+/** Check if an object is part of a locked prefab instance. */
+export function isPrefabLocked(obj: GameObject): boolean {
+  return obj.prefabLocked;
+}
+
+/** Walk up the hierarchy to find the prefab instance root (the node with prefabSource). */
+export function getPrefabRoot(obj: GameObject): GameObject | null {
+  let current: GameObject | null = obj;
+  while (current) {
+    if (current.prefabSource) return current;
+    current = current.parent;
+  }
+  return null;
+}
+
 export function findObjectById(scene: Scene, id: number): GameObject | null {
   for (const obj of scene.getAllObjects()) {
     if (obj.id === id) return obj;
@@ -71,6 +86,10 @@ function clonePropertyValue(value: unknown): unknown {
 
 function cloneObjectShallow(source: GameObject): GameObject {
   const copy = new GameObjectClass(source.name + ' (Copy)');
+
+  // Copy prefab fields
+  copy.prefabSource = source.prefabSource;
+  copy.prefabLocked = source.prefabLocked;
 
   // Copy transform
   copy.transform.setPositionFrom(source.transform.position);
@@ -142,11 +161,14 @@ export function deleteGameObject(
   scene: Scene,
   target: GameObject,
   editorState: EditorState,
-): void {
+): boolean {
+  // Block deleting a locked child that is not the prefab root
+  if (target.prefabLocked && !target.prefabSource) return false;
+
   // Recursively delete children first
   const children = [...target.children];
   for (const child of children) {
-    deleteGameObject(scene, child, editorState);
+    deleteGameObjectInternal(scene, child, editorState);
   }
 
   // Remove from selection if target was selected
@@ -156,6 +178,22 @@ export function deleteGameObject(
   target.setParent(null);
 
   // Remove from scene
+  scene.remove(target);
+  return true;
+}
+
+/** Internal recursive delete that skips the prefab lock check (used when deleting a prefab root's children). */
+function deleteGameObjectInternal(
+  scene: Scene,
+  target: GameObject,
+  editorState: EditorState,
+): void {
+  const children = [...target.children];
+  for (const child of children) {
+    deleteGameObjectInternal(scene, child, editorState);
+  }
+  editorState.removeFromSelection(target);
+  target.setParent(null);
   scene.remove(target);
 }
 
@@ -169,9 +207,17 @@ function isDescendant(obj: GameObject, potentialAncestor: GameObject): boolean {
 }
 
 export function canReparent(child: GameObject, newParent: GameObject | null): boolean {
-  if (!newParent) return true; // root is always valid
+  if (!newParent) {
+    // Moving to root: block if child is a locked non-root node inside a prefab
+    if (child.prefabLocked && !child.prefabSource) return false;
+    return true;
+  }
   if (child === newParent) return false;
   if (isDescendant(newParent, child)) return false;
+  // Block reparenting locked children within/out of a prefab
+  if (child.prefabLocked && !child.prefabSource) return false;
+  // Block reparenting into a locked prefab subtree
+  if (newParent.prefabLocked) return false;
   if (_reparentValidator && !_reparentValidator(child, newParent)) return false;
   return true;
 }

@@ -8,6 +8,7 @@ interface AssetBrowserPanelProps {
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
   onLoadModel?: (entry: AssetEntry) => void;
   onLoadScene?: (entry: AssetEntry) => void;
+  onLoadPrefab?: (entry: AssetEntry) => void;
   style?: React.CSSProperties;
 }
 
@@ -112,6 +113,7 @@ const BADGE_COLORS: Record<string, { bg: string; color: string }> = {
 const MODEL_EXTENSIONS = new Set(['glb', 'gltf']);
 const MATERIAL_EXTENSION = '.mat.json';
 const SCENE_EXTENSION = '.scene.json';
+const PREFAB_EXTENSION = '.prefab.json';
 const TEXTURE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp']);
 
 const contextMenuStyle: React.CSSProperties = {
@@ -156,7 +158,7 @@ function badgeFor(entry: AssetEntry): { label: string; bg: string; color: string
 
 /* ── Component ──────────────────────────────────────── */
 
-export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, onLoadScene, style }: AssetBrowserPanelProps) {
+export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, onLoadScene, onLoadPrefab, style }: AssetBrowserPanelProps) {
   const [, setTick] = useState(0);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [search, setSearch] = useState('');
@@ -268,13 +270,14 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, on
           const isModel = MODEL_EXTENSIONS.has(entry.extension.toLowerCase());
           const isMaterial = entry.name.endsWith(MATERIAL_EXTENSION);
           const isScene = entry.name.endsWith(SCENE_EXTENSION);
+          const isPrefab = entry.name.endsWith(PREFAB_EXTENSION);
           const isTexture = TEXTURE_EXTENSIONS.has(entry.extension.toLowerCase());
           const isSelected = selectedPath === entry.path;
 
           return (
             <div
               key={entry.path}
-              draggable={isScript || isModel || isMaterial || isTexture}
+              draggable={isScript || isModel || isMaterial || isTexture || isPrefab}
               style={{
                 ...rowStyle,
                 background: isSelected ? rowSelectedBg : 'transparent',
@@ -294,6 +297,10 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, on
                   const name = entry.name.replace(/\.scene\.json$/, '');
                   if (confirm(`Load scene "${name}"?`)) onLoadScene(entry);
                 }
+                else if (isPrefab && onLoadPrefab) {
+                  const name = entry.name.replace(/\.prefab\.json$/, '');
+                  if (confirm(`Edit prefab "${name}"?`)) onLoadPrefab(entry);
+                }
                 else if (isScript) handleAttach(entry);
                 else if (isModel && onLoadModel) onLoadModel(entry);
               }}
@@ -301,6 +308,9 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, on
               onDragStart={(e) => {
                 if (isScript) {
                   e.dataTransfer.setData('application/x-atmos-script', entry.path);
+                  e.dataTransfer.effectAllowed = 'copy';
+                } else if (isPrefab) {
+                  e.dataTransfer.setData('application/x-atmos-prefab', entry.path);
                   e.dataTransfer.effectAllowed = 'copy';
                 } else if (isModel) {
                   e.dataTransfer.setData('application/x-atmos-model', entry.path);
@@ -325,7 +335,7 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, on
               <span style={{ ...badgeBase, background: badge.bg, color: badge.color }}>
                 {badge.label}
               </span>
-              <span style={isScript ? { color: '#8cd68c' } : isModel ? { color: '#e8a848' } : isMaterial ? { color: '#b888e8' } : undefined}>
+              <span style={isScript ? { color: '#8cd68c' } : isModel ? { color: '#e8a848' } : isMaterial ? { color: '#b888e8' } : isPrefab ? { color: '#b888e8' } : undefined}>
                 {entry.name}
               </span>
               {isScript && (
@@ -346,6 +356,11 @@ export function AssetBrowserPanel({ editorState, onAttachScript, onLoadModel, on
               {isScene && (
                 <span style={{ fontSize: '9px', color: '#5a8a8a', marginLeft: '4px' }}>
                   Scene
+                </span>
+              )}
+              {isPrefab && (
+                <span style={{ fontSize: '9px', color: '#6a4a8a', marginLeft: '4px' }}>
+                  Prefab
                 </span>
               )}
             </div>
