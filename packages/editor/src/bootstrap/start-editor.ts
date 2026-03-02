@@ -1,4 +1,5 @@
-import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@certe/atmos-core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess, instantiatePrefab, deserializePrefab } from '@certe/atmos-core';
+import type { PrefabData } from '@certe/atmos-core';
 import type { PhysicsStepper } from '@certe/atmos-core';
 import {
   initWebGPU,
@@ -263,6 +264,45 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     }
   };
 
+  // Prefab loading helpers
+  const loadPrefabData = async (path: string): Promise<PrefabData | null> => {
+    try {
+      const json = await projectFs.readTextFile(path);
+      return JSON.parse(json) as PrefabData;
+    } catch (err) {
+      console.error('[Editor] Failed to load prefab:', err);
+      return null;
+    }
+  };
+
+  // Drag-and-drop prefab instantiation
+  const onDropPrefab = async (path: string, parent: import('@certe/atmos-core').GameObject | null) => {
+    const edState = lazyState.current;
+    if (!edState) return;
+    const data = await loadPrefabData(path);
+    if (!data) return;
+    const tempScene = instantiatePrefab(data, path, deserializeCtx);
+    if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+    const root = tempScene.roots[0];
+    if (!root) return;
+    if (parent) root.setParent(parent);
+    edState.scene.add(root);
+    edState.select(root);
+  };
+
+  // Double-click prefab in asset browser → open for editing
+  const onLoadPrefab = async (entry: { path: string; name: string }) => {
+    const edState = lazyState.current;
+    if (!edState || !projectFs.isOpen) return;
+    const data = await loadPrefabData(entry.path);
+    if (!data) return;
+    const scene = deserializePrefab(data, deserializeCtx);
+    if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+    const name = entry.name.replace(/\.prefab\.json$/, '');
+    edState.sceneName = `[Prefab] ${name}`;
+    edState.setScene(scene);
+  };
+
   // 8b. ProjectFS lifecycle
   const initProject = async () => {
     await seedProject(projectFs);
@@ -343,6 +383,8 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
         }
       },
       onDropModel,
+      onDropPrefab,
+      onLoadPrefab,
       primitiveFactory,
       componentFactory,
       componentFilter,

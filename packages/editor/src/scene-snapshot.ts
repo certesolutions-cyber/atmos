@@ -17,6 +17,8 @@ interface GameObjectSnapshot {
   id: number;
   transform: TransformSnapshot;
   components: ComponentSnapshot[];
+  prefabSource?: string | null;
+  prefabLocked?: boolean;
 }
 
 export type SceneSnapshot = GameObjectSnapshot[];
@@ -69,6 +71,8 @@ export function restoreSnapshot(scene: Scene, snapshot: SceneSnapshot): void {
     t.setPositionFrom(entry.transform.position);
     t.setRotationFrom(entry.transform.rotation);
     t.setScaleFrom(entry.transform.scale);
+    go.prefabSource = entry.prefabSource ?? null;
+    go.prefabLocked = entry.prefabLocked ?? false;
   }
 
   // Pass 2: Restore component properties (setters may trigger joint recreation
@@ -120,7 +124,7 @@ function snapshotGameObject(go: GameObject): GameObjectSnapshot {
     components.push({ ctorName: comp.constructor.name, properties });
   }
 
-  return {
+  const snap: GameObjectSnapshot = {
     id: go.id,
     transform: {
       position: Array.from(t.position),
@@ -129,6 +133,9 @@ function snapshotGameObject(go: GameObject): GameObjectSnapshot {
     },
     components,
   };
+  if (go.prefabSource) snap.prefabSource = go.prefabSource;
+  if (go.prefabLocked) snap.prefabLocked = true;
+  return snap;
 }
 
 function resolveValue(

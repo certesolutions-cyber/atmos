@@ -18,6 +18,8 @@ export interface GameObjectData {
   /** @deprecated Use parentId instead */
   parentName?: string | null;
   components: ComponentData[];
+  prefabSource?: string;
+  prefabLocked?: boolean;
 }
 
 export interface PostProcessData {
@@ -104,12 +106,15 @@ export function serializeScene(scene: Scene): SceneData {
       components.push({ type: def.name, data });
     }
 
-    gameObjects.push({
+    const entry: GameObjectData = {
       name: obj.name,
       id: obj.id,
       parentId: obj.parent?.id ?? null,
       components,
-    });
+    };
+    if (obj.prefabSource) entry.prefabSource = obj.prefabSource;
+    if (obj.prefabLocked) entry.prefabLocked = true;
+    gameObjects.push(entry);
   }
 
   return { gameObjects };
@@ -164,6 +169,8 @@ export function deserializeScene(data: SceneData, context?: DeserializeContext):
   }
   for (const objData of data.gameObjects) {
     const go = new GameObject(objData.name);
+    if (objData.prefabSource) go.prefabSource = objData.prefabSource;
+    if (objData.prefabLocked) go.prefabLocked = true;
     if (objData.id !== undefined) objectsById.set(objData.id, go);
     objectsByName.set(objData.name, go);
 

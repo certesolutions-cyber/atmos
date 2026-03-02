@@ -10,6 +10,12 @@ export class GameObject {
   /** If true, this object and its children are skipped during serialization. */
   transient = false;
 
+  /** Path to .prefab.json file. Only set on the prefab instance root. */
+  prefabSource: string | null = null;
+
+  /** When true, the editor prevents structural changes (add/remove components/children). */
+  prefabLocked = false;
+
   private readonly _components: Component[] = [];
   private _parent: GameObject | null = null;
   private readonly _children: GameObject[] = [];

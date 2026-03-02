@@ -10,6 +10,7 @@ import {
   deleteGameObject,
   canReparent,
   reparentGameObject,
+  isPrefabLocked,
 } from '../scene-operations.js';
 import type { PrimitiveType } from '../editor-mount.js';
 
@@ -18,6 +19,7 @@ interface HierarchyPanelProps {
   primitiveFactory?: (type: PrimitiveType, name: string) => GameObject;
   onFocusObject?: (obj: import('@certe/atmos-core').GameObject) => void;
   onDropModel?: (path: string, parent: import('@certe/atmos-core').GameObject | null) => void;
+  onDropPrefab?: (path: string, parent: import('@certe/atmos-core').GameObject | null) => void;
   style?: React.CSSProperties;
 }
 
@@ -88,7 +90,7 @@ function flattenHierarchy(
   return result;
 }
 
-export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel, style }: HierarchyPanelProps) {
+export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, onDropModel, onDropPrefab, style }: HierarchyPanelProps) {
   const [tick, setTick] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; obj: import('@certe/atmos-core').GameObject | null } | null>(null);
@@ -185,8 +187,10 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
   const buildContextMenuItems = (): MenuItem[] => {
     if (!contextMenu) return [];
     const parent = contextMenu.obj;
+    const locked = parent ? isPrefabLocked(parent) : false;
+    const isLockedChild = locked && !parent?.prefabSource;
 
-    const createItems: MenuItem[] = [
+    const createItems: MenuItem[] = locked ? [] : [
       {
         label: 'Create Empty',
         action: () => {
@@ -211,37 +215,52 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
 
     if (!parent) return createItems;
 
-    return [
-      ...createItems,
-      {
-        label: 'Duplicate',
-        action: () => {
-          const copy = duplicateGameObject(editorState.scene, parent);
-          editorState.select(copy);
-          refresh();
-        },
+    const items: MenuItem[] = [...createItems];
+
+    // Duplicate is always allowed (creates a copy outside the locked subtree)
+    items.push({
+      label: 'Duplicate',
+      action: () => {
+        const copy = duplicateGameObject(editorState.scene, parent);
+        editorState.select(copy);
+        refresh();
       },
-      {
+    });
+
+    // Rename blocked for locked children
+    if (!isLockedChild) {
+      items.push({
         label: 'Rename',
         action: () => {
           setRenameId(parent.id);
         },
-      },
-      {
+      });
+    }
+
+    // Delete: allowed for prefab root (deletes entire instance), blocked for locked children
+    if (!isLockedChild) {
+      items.push({
         label: 'Delete',
         action: () => {
           deleteGameObject(editorState.scene, parent, editorState);
           refresh();
         },
-      },
-    ];
+      });
+    }
+
+    return items;
   };
 
   const contextMenuItems = buildContextMenuItems();
 
-  // Drop on panel background = reparent to root or model drop
+  // Drop on panel background = reparent to root, model drop, or prefab drop
   const handlePanelDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    const prefabPath = e.dataTransfer.getData('application/x-atmos-prefab');
+    if (prefabPath && onDropPrefab) {
+      onDropPrefab(prefabPath, null);
+      return;
+    }
     const modelPath = e.dataTransfer.getData('application/x-atmos-model');
     if (modelPath && onDropModel) {
       onDropModel(modelPath, null);
@@ -255,7 +274,7 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
 
   const handlePanelDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/x-atmos-model') ? 'copy' : 'move';
+    e.dataTransfer.dropEffect = (e.dataTransfer.types.includes('application/x-atmos-model') || e.dataTransfer.types.includes('application/x-atmos-prefab')) ? 'copy' : 'move';
   };
 
   return (
@@ -287,6 +306,7 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
             onReparent={handleReparent}
             onContextMenu={handleContextMenu}
             onDropModel={onDropModel}
+            onDropPrefab={onDropPrefab}
             filterMatch={filterMatch}
             renameId={renameId}
             onRenameComplete={handleRenameComplete}
