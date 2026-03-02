@@ -1,8 +1,8 @@
 {
   "gameObjects": [
     {
-      "name": "Cube",
-      "id": 341,
+      "name": "Plane",
+      "id": 1,
       "parentId": null,
       "components": [
         {
@@ -10,7 +10,60 @@
           "data": {
             "position": [
               0,
+              0.060851193964481354,
+              0
+            ],
+            "rotation": [
               0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              10,
+              10,
+              10
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:plane",
+            "materialSource": "materials/vesi2.mat.json",
+            "material.albedo": [
+              0.16078431904315948,
+              0,
+              0.9607843160629272,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cube",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.5134008526802063,
               0
             ],
             "rotation": [
@@ -55,7 +108,7 @@
     },
     {
       "name": "Directional Light",
-      "id": 342,
+      "id": 3,
       "parentId": null,
       "components": [
         {
@@ -63,14 +116,14 @@
           "data": {
             "position": [
               0,
-              1.5704253911972046,
-              1.3556479215621948
+              3.4252259731292725,
+              0
             ],
             "rotation": [
-              -0.4226182699203491,
+              -0.5,
               0,
               0,
-              0.9063078165054321
+              0.8660253882408142
             ],
             "scale": [
               1,

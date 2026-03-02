@@ -369,7 +369,8 @@ export class RenderSystem implements Renderer {
     for (const obj of this._scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
       if (mr && mr.enabled) {
-        if ((!mr.mesh && mr.meshSource) || (!mr.material && mr.materialSource)) {
+        if ((!mr.mesh && mr.meshSource) || (!mr.material && mr.materialSource)
+          || (mr.material?.shaderType === 'custom' && mr.material.customShaderPath && !mr.customPipelineResources)) {
           this._autoResolveMeshRenderer(mr);
         }
         mr.ensureGPU(this);

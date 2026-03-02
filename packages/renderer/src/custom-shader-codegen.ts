@@ -108,17 +108,12 @@ function generateCustomUniformsStruct(descriptor: CustomShaderDescriptor): strin
     const wgslType = WGSL_TYPE_MAP[prop.type]!;
     lines.push(`  ${prop.name}: ${wgslType},`);
     const padCount = PAD_SIZE[prop.type]!;
-    if (padCount > 0) {
-      // Add padding to fill the 16-byte slot
-      if (padCount === 1) {
-        lines.push(`  _pad${padIdx}: f32,`);
-      } else if (padCount === 2) {
-        lines.push(`  _pad${padIdx}: vec2<f32>,`);
-      } else {
-        lines.push(`  _pad${padIdx}: vec3<f32>,`);
-      }
-      padIdx++;
+    // Use individual f32 padding fields to avoid WGSL alignment gaps
+    // (vec2/vec3 have alignment > 4 which causes implicit padding)
+    for (let p = 0; p < padCount; p++) {
+      lines.push(`  _pad${padIdx}_${p}: f32,`);
     }
+    if (padCount > 0) padIdx++;
   }
 
   lines.push('};');

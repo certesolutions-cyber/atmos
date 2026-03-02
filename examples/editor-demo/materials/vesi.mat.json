@@ -1,0 +1,33 @@
+{
+  "name": "vesi",
+  "shader": "custom",
+  "albedo": [
+    0,
+    0.3,
+    0.5,
+    0.8
+  ],
+  "metallic": 0,
+  "roughness": 0.3,
+  "customShaderPath": "shaders/water.wgsl",
+  "customUniforms": {
+    "waveScale": 2,
+    "fresnelPower": 5,
+    "fresnelBias": 0.02,
+    "specularIntensity": 3,
+    "specularPower": 128,
+    "foamThreshold": 6,
+    "causticsIntensity": 0.8,
+    "causticsScale": 0.2,
+    "sssIntensity": 0.3,
+    "foamColor": [
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "customTextures": {
+    "envMap": "textures/panoramic-view-sea.jpg"
+  }
+}

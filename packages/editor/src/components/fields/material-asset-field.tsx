@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { ShaderType } from '@certe/atmos-renderer';
 import type { MaterialManager } from '../../material-manager.js';
+import type { EditorState } from '../../editor-state.js';
 
 interface MaterialAssetFieldProps {
   label: string;
   value: string;
   materialManager: MaterialManager;
+  editorState?: EditorState;
   onChange: (path: string) => void;
 }
 
@@ -86,7 +88,7 @@ const dialogBtnRow: React.CSSProperties = {
   marginTop: '12px',
 };
 
-export function MaterialAssetField({ label, value, materialManager, onChange }: MaterialAssetFieldProps) {
+export function MaterialAssetField({ label, value, materialManager, editorState, onChange }: MaterialAssetFieldProps) {
   const [options, setOptions] = useState<string[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -144,6 +146,15 @@ export function MaterialAssetField({ label, value, materialManager, onChange }: 
             <option key={opt} value={opt}>{displayName(opt)}</option>
           ))}
         </select>
+        {editorState && value && (
+          <button
+            style={newBtnStyle}
+            onClick={() => editorState.selectMaterial(value)}
+            title="Edit Material"
+          >
+            ...
+          </button>
+        )}
         <button style={newBtnStyle} onClick={() => setShowCreate(true)} title="New Material">+</button>
       </div>
 

@@ -87,16 +87,22 @@ export async function createCustomPipeline(
     fragment: {
       module: fragmentModule,
       entryPoint: 'main',
-      targets: [{ format: HDR_FORMAT }],
+      targets: [{
+        format: HDR_FORMAT,
+        blend: {
+          color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+          alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+        },
+      }],
     },
     multisample: { count: MSAA_SAMPLE_COUNT },
     primitive: {
       topology: 'triangle-list',
-      cullMode: 'back',
+      cullMode: 'none',
     },
     depthStencil: {
-      depthWriteEnabled: true,
-      depthCompare: 'less',
+      depthWriteEnabled: false,
+      depthCompare: 'less-equal',
       format: 'depth24plus',
     },
   });

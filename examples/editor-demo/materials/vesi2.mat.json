@@ -1,0 +1,47 @@
+{
+  "name": "vesi2",
+  "shader": "custom",
+  "albedo": [
+    0.1607843137254902,
+    0,
+    0.9607843137254902,
+    1
+  ],
+  "metallic": 0,
+  "roughness": 0.5,
+  "customShaderPath": "shaders/water.wgsl",
+  "customUniforms": {
+    "waveSpeed": 1,
+    "waveScale": 2,
+    "causticsScale": 0.4,
+    "waveStrength": 0.4,
+    "causticsIntensity": 0.1,
+    "specularIntensity": 60,
+    "specularPower": 256,
+    "foamThreshold": 0.9,
+    "sssIntensity": 0.9,
+    "sssColor": [
+      0.12156862745098039,
+      1,
+      0.8549019607843137,
+      1
+    ],
+    "deepColor": [
+      0,
+      0,
+      0,
+      0.95
+    ],
+    "shallowColor": [
+      0.10588235294117647,
+      0.2980392156862745,
+      0.39215686274509803,
+      0.6
+    ],
+    "fresnelPower": 10,
+    "fresnelBias": 0.05
+  },
+  "customTextures": {
+    "envMap": "textures/panoramic-view-sea.jpg"
+  }
+}

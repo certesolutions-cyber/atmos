@@ -127,6 +127,7 @@ function renderField(
   selfId: number,
   materialManager?: MaterialManager,
   target?: Component,
+  editorState?: EditorState,
 ) {
   const value = getProperty(component, def);
   const label = def.key.split('.').pop()!;
@@ -240,6 +241,7 @@ function renderField(
           label={label}
           value={(value as string) ?? ''}
           materialManager={materialManager}
+          editorState={editorState}
           onChange={(path) => {
             setProperty(component, def, path);
             const target = component as Record<string, unknown>;
@@ -278,7 +280,24 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
   if (matPath && materialManager) {
     return (
       <div style={panelStyle}>
-        <div style={headerStyle}>Inspector</div>
+        <div style={headerStyle}>
+          <button
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6ab0d6',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontFamily: 'inherit',
+              padding: '0 4px 0 0',
+            }}
+            onClick={() => editorState.selectMaterial(null)}
+            title="Back to object"
+          >
+            &larr;
+          </button>
+          Material
+        </div>
         <div style={{ flex: 1, overflow: 'auto' }}>
           <MaterialInspector
             editorState={editorState}
@@ -454,7 +473,7 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
             </div>
             {entry.properties
               .filter((prop) => !prop.visibleWhen || prop.visibleWhen(entry.target))
-              .map((prop) => renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager, entry.component))}
+              .map((prop) => renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager, entry.component, editorState))}
           </div>
         ))}
 

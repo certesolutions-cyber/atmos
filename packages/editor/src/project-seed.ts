@@ -43,8 +43,8 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
 /// @property waveSpeed: float = 1.0
 /// @property waveScale: float = 1.0
 /// @property waveStrength: float = 0.4
-/// @property specularPower: float = 512.0
-/// @property specularIntensity: float = 3.0
+/// @property specularPower: float = 128.0
+/// @property specularIntensity: float = 2.0
 /// @property fresnelPower: float = 5.0
 /// @property fresnelBias: float = 0.02
 /// @property sssColor: vec4 = (0.1, 0.7, 0.45, 1.0)
@@ -53,60 +53,64 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
 /// @property causticsIntensity: float = 0.35
 /// @property foamColor: vec4 = (0.95, 0.97, 1.0, 1.0)
 /// @property foamThreshold: float = 0.65
+/// @texture envMap
 
 @fragment fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     let time = scene.cameraPos.w;
     let worldPos = input.worldPosition;
-    let baseNormal = normalize(input.worldNormal);
     let V = normalize(scene.cameraPos.xyz - worldPos);
     let uv = worldPos.xz;
 
-    // Multi-octave procedural wave normals
     let t = time * custom.waveSpeed;
     let scale = custom.waveScale;
-    let n1 = waveNormal(uv * scale * 0.5, t * 0.4, vec2<f32>(0.7, 0.3));
-    let n2 = waveNormal(uv * scale * 1.0, t * 0.6, vec2<f32>(-0.5, 0.6));
-    let n3 = waveNormal(uv * scale * 2.3, t * 0.8, vec2<f32>(0.3, -0.7));
-    let n4 = waveNormal(uv * scale * 4.1, t * 1.2, vec2<f32>(-0.6, -0.4));
-    var waveN = n1 + n2 * 0.5 + n3 * 0.25 + n4 * 0.125;
-    waveN = waveN * custom.waveStrength;
+
+    // Wave normal via analytical derivatives
+    let waveResult = computeWaves(uv * scale, t);
+    let waveN = waveResult.xy * custom.waveStrength;
+    let waveH = waveResult.z;
+
     let N = normalize(vec3<f32>(waveN.x, 1.0, waveN.y));
     let NdotV = max(dot(N, V), 0.0);
 
     // Fresnel (Schlick)
     let fresnel = custom.fresnelBias + (1.0 - custom.fresnelBias) * pow(1.0 - NdotV, custom.fresnelPower);
 
-    // Sky reflection
+    // Sky/environment reflection
     let reflDir = reflect(-V, N);
-    let reflectionColor = proceduralSky(reflDir);
+    let reflectionColor = sampleEnvironment(reflDir);
 
-    // Water body color
-    let depthFactor = pow(1.0 - NdotV, 0.7);
-    let waterColor = mix(custom.deepColor.rgb, custom.shallowColor.rgb, depthFactor);
-    let waterAlpha = mix(custom.deepColor.a, custom.shallowColor.a, depthFactor);
+    // Water body color (angle-based approximation, not true depth)
+    let angleFactor = pow(1.0 - NdotV, 0.7);
+    let waterColor = mix(custom.deepColor.rgb, custom.shallowColor.rgb, angleFactor);
+    let waterAlpha = custom.shallowColor.a;
 
-    // Subsurface scattering
+    // Subsurface scattering (edge glow + forward scatter)
     var sss = vec3<f32>(0.0);
     if (scene.numDirLights > 0u) {
         let lightDir = normalize(-scene.dirLights[0].direction.xyz);
-        let sssLight = lightDir + N * 0.2;
-        let sssDot = pow(clamp(dot(V, -sssLight), 0.0, 1.0), 3.0);
-        let sssMask = (1.0 - NdotV) * 0.5 + 0.5;
-        sss = custom.sssColor.rgb * sssDot * custom.sssIntensity * sssMask;
+        let NdotL = max(dot(N, lightDir), 0.0);
+        let edgeGlow = pow(1.0 - NdotV, 2.0) * NdotL;
+        let fwdScatter = pow(clamp(dot(V, -lightDir), 0.0, 1.0), 4.0);
+        sss = custom.sssColor.rgb * (edgeGlow + fwdScatter) * custom.sssIntensity;
     }
 
-    // Mix reflection and water via Fresnel
-    var color = mix(waterColor + sss, reflectionColor, clamp(fresnel, 0.0, 1.0));
+    var color = mix(waterColor, reflectionColor, clamp(fresnel, 0.0, 1.0));
+    color = color + sss;
 
-    // Specular highlights
+    // Specular highlights (half-vector Fresnel for sun path)
     for (var i = 0u; i < scene.numDirLights; i = i + 1u) {
         let light = scene.dirLights[i];
         let L = normalize(-light.direction.xyz);
-        let H = normalize(V + L);
-        let NdotH = max(dot(N, H), 0.0);
-        let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
-        let radiance = light.color.rgb * light.color.w;
-        color = color + radiance * spec * fresnel;
+        let NdotL = max(dot(N, L), 0.0);
+        if (NdotL > 0.0) {
+            let H = normalize(V + L);
+            let NdotH = max(dot(N, H), 0.0);
+            let HdotV = max(dot(H, V), 0.0);
+            let specF = 0.02 + 0.98 * pow(1.0 - HdotV, 5.0);
+            let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
+            let radiance = light.color.rgb * light.color.w;
+            color = color + radiance * spec * specF * NdotL;
+        }
     }
     for (var i = 0u; i < scene.numPointLights; i = i + 1u) {
         let light = scene.pointLights[i];
@@ -115,11 +119,16 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         let range = light.position.w;
         let atten = max(1.0 - (dist * dist) / (range * range), 0.0);
         let L = toLight / max(dist, 0.0001);
-        let H = normalize(V + L);
-        let NdotH = max(dot(N, H), 0.0);
-        let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
-        let radiance = light.color.rgb * light.color.w * atten * atten;
-        color = color + radiance * spec * fresnel;
+        let NdotL = max(dot(N, L), 0.0);
+        if (NdotL > 0.0) {
+            let H = normalize(V + L);
+            let NdotH = max(dot(N, H), 0.0);
+            let HdotV = max(dot(H, V), 0.0);
+            let specF = 0.02 + 0.98 * pow(1.0 - HdotV, 5.0);
+            let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
+            let radiance = light.color.rgb * light.color.w * atten * atten;
+            color = color + radiance * spec * specF * NdotL;
+        }
     }
 
     // Caustics
@@ -130,15 +139,56 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         color = color + lightColor * causticsVal * custom.causticsIntensity * lightIntensity * (1.0 - fresnel);
     }
 
-    // Foam
-    let foamNoise = foam(uv * scale * 2.0, t);
-    let wavePeak = max(waveN.x + waveN.y, 0.0) * 2.0;
-    let foamMask = smoothstep(custom.foamThreshold, custom.foamThreshold + 0.3, wavePeak + foamNoise * 0.4);
+    // Foam (slope-based)
+    let slope = length(waveN);
+    let foamNoise = smoothNoise(uv * scale * 3.0 + vec2<f32>(t * 0.1, t * 0.07));
+    let foamNoise2 = smoothNoise(uv * scale * 5.0 - vec2<f32>(t * 0.08, t * 0.12));
+    let foamVal = foamNoise * foamNoise2;
+    let foamFromSlope = smoothstep(custom.foamThreshold * 0.3, custom.foamThreshold, slope);
+    let foamMask = foamFromSlope * foamVal;
     color = mix(color, custom.foamColor.rgb, foamMask * custom.foamColor.a);
-    let alpha = clamp(waterAlpha + foamMask * 0.5 + fresnel * 0.3, 0.0, 1.0);
+
+    let alpha = clamp(mix(waterAlpha * 0.4, 1.0, fresnel) + foamMask * 0.3, 0.0, 1.0);
 
     color = applyFog(color, worldPos);
+    color = clamp(color, vec3<f32>(0.0), vec3<f32>(100.0));
     return vec4<f32>(color, alpha);
+}
+
+// 8 Gerstner-style waves with analytical derivatives
+// Returns vec3(dh/dx, dh/dz, height)
+fn computeWaves(uv: vec2<f32>, t: f32) -> vec3<f32> {
+    var dx = 0.0;
+    var dy = 0.0;
+    var h  = 0.0;
+
+    let noiseLo = smoothNoise(uv * 0.13) * 0.6 + 0.7;
+    let noiseHi = smoothNoise(uv * 0.37 + 1.7) * 0.4 + 0.8;
+
+    h += wave(uv, t, vec2<f32>( 0.70,  0.32), 0.37, 1.00 * noiseLo, 0.80, &dx, &dy);
+    h += wave(uv, t, vec2<f32>(-0.45,  0.63), 0.61, 0.60 * noiseLo, 1.10, &dx, &dy);
+    h += wave(uv, t, vec2<f32>( 0.25, -0.72), 0.93, 0.40 * noiseHi, 0.95, &dx, &dy);
+    h += wave(uv, t, vec2<f32>(-0.67, -0.38), 1.31, 0.25 * noiseHi, 1.30, &dx, &dy);
+    h += wave(uv, t, vec2<f32>( 0.88, -0.10), 1.87, 0.15 * noiseLo, 1.50, &dx, &dy);
+    h += wave(uv, t, vec2<f32>(-0.20,  0.90), 2.71, 0.10 * noiseHi, 1.80, &dx, &dy);
+    h += wave(uv, t, vec2<f32>( 0.55,  0.55), 3.57, 0.07 * noiseLo, 2.10, &dx, &dy);
+    h += wave(uv, t, vec2<f32>(-0.80,  0.25), 4.73, 0.04 * noiseHi, 2.50, &dx, &dy);
+
+    return vec3<f32>(-dx, -dy, h);
+}
+
+fn wave(
+    uv: vec2<f32>, t: f32,
+    dir: vec2<f32>, freq: f32, amp: f32, speed: f32,
+    dx: ptr<function, f32>, dy: ptr<function, f32>,
+) -> f32 {
+    let d = normalize(dir);
+    let phase = dot(d, uv) * freq + t * speed;
+    let s = sin(phase) * amp;
+    let c = cos(phase) * amp * freq;
+    *dx += c * d.x;
+    *dy += c * d.y;
+    return s;
 }
 
 fn hash21(p: vec2<f32>) -> f32 {
@@ -147,72 +197,39 @@ fn hash21(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    let n = vec3<f32>(dot(p, vec2<f32>(127.1, 311.7)),
-                      dot(p, vec2<f32>(269.5, 183.3)),
-                      dot(p, vec2<f32>(419.2, 371.9)));
-    return fract(sin(n.xy) * 43758.5453123);
-}
-
-fn waveNormal(uv: vec2<f32>, t: f32, dir: vec2<f32>) -> vec2<f32> {
-    let p = uv + dir * t;
-    let eps = 0.05;
-    let h0 = waveHeight(p);
-    let hx = waveHeight(p + vec2<f32>(eps, 0.0));
-    let hy = waveHeight(p + vec2<f32>(0.0, eps));
-    return vec2<f32>(h0 - hx, h0 - hy) / eps;
-}
-
-fn waveHeight(p: vec2<f32>) -> f32 {
-    var h = 0.0;
-    var freq = 1.0;
-    var amp = 1.0;
-    var pos = p;
-    for (var i = 0; i < 4; i = i + 1) {
-        let n = hash21(floor(pos * 0.5)) * 0.5;
-        h = h + sin(pos.x * freq + pos.y * freq * 0.7 + n * 6.28) * amp;
-        h = h + cos(pos.y * freq * 1.3 - pos.x * freq * 0.4 + n * 3.14) * amp * 0.7;
-        freq = freq * 2.1;
-        amp = amp * 0.45;
-        pos = vec2<f32>(pos.x * 1.2 - pos.y * 0.3, pos.y * 1.2 + pos.x * 0.3);
-    }
-    return h * 0.15;
+fn smoothNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let a = hash21(i);
+    let b = hash21(i + vec2<f32>(1.0, 0.0));
+    let c = hash21(i + vec2<f32>(0.0, 1.0));
+    let d = hash21(i + vec2<f32>(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 fn caustics(uv: vec2<f32>, t: f32) -> f32 {
-    let TAU = 6.28318530718;
-    var p = ((uv % TAU) + TAU) % TAU - vec2<f32>(250.0);
-    var ip = p;
-    var c = 1.0;
-    let intensity = 0.005;
-    for (var n = 0; n < 4; n = n + 1) {
-        let tt = t * (1.0 - 3.5 / f32(n + 1));
-        ip = p + vec2<f32>(cos(tt - ip.x) + sin(tt + ip.y), sin(tt - ip.y) + cos(tt + ip.x));
-        c = c + 1.0 / length(vec2<f32>(p.x / (sin(ip.x + tt) / intensity), p.y / (cos(ip.y + tt) / intensity)));
-    }
-    c = c / 4.0;
-    c = 1.17 - pow(c, 1.4);
-    return pow(abs(c), 8.0);
+    let layer1 = causticsLayer(uv, t, vec2<f32>(3.7, 2.3), vec2<f32>(1.1, 0.7));
+    let layer2 = causticsLayer(uv * 1.4 + 3.1, t, vec2<f32>(4.3, 3.1), vec2<f32>(0.9, 1.2));
+    let c = layer1 * 0.6 + layer2 * 0.4;
+    return c * c;
 }
 
-fn foam(uv: vec2<f32>, t: f32) -> f32 {
-    let p1 = uv + vec2<f32>(t * 0.15, t * 0.08);
-    let p2 = uv * 1.7 + vec2<f32>(-t * 0.1, t * 0.12);
-    return smoothstep(0.1, 0.5, min(voronoiNoise(p1), voronoiNoise(p2)));
+fn causticsLayer(uv: vec2<f32>, t: f32, freq: vec2<f32>, speed: vec2<f32>) -> f32 {
+    let a = sin(uv.x * freq.x + t * speed.x + sin(uv.y * freq.y + t * speed.y) * 1.5);
+    let b = sin(uv.y * freq.x * 1.1 - t * speed.y + sin(uv.x * freq.y * 0.9 - t * speed.x) * 1.3);
+    return (a * b) * 0.5 + 0.5;
 }
 
-fn voronoiNoise(uv: vec2<f32>) -> f32 {
-    let i = floor(uv);
-    let f = fract(uv);
-    var minDist = 1.0;
-    for (var y = -1; y <= 1; y = y + 1) {
-        for (var x = -1; x <= 1; x = x + 1) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let diff = neighbor + hash22(i + neighbor) - f;
-            minDist = min(minDist, length(diff));
-        }
+fn sampleEnvironment(dir: vec3<f32>) -> vec3<f32> {
+    let dim = textureDimensions(envMap);
+    if (dim.x <= 1u && dim.y <= 1u) {
+        return proceduralSky(dir);
     }
-    return minDist;
+    let d = normalize(dir);
+    let u = atan2(d.z, d.x) * (0.5 / PI) + 0.5;
+    let v = acos(clamp(d.y, -1.0, 1.0)) / PI;
+    return textureSampleLevel(envMap, envMapSampler, vec2<f32>(u, v), 0.0).rgb;
 }
 
 fn proceduralSky(dir: vec3<f32>) -> vec3<f32> {

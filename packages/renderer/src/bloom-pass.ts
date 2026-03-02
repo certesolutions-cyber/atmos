@@ -22,7 +22,9 @@ export class BloomPass {
   private readonly _sampler: GPUSampler;
   private readonly _downBGL: GPUBindGroupLayout;
   private readonly _upBGL: GPUBindGroupLayout;
-  private readonly _paramsBuffer: GPUBuffer;
+  // One params buffer per pass to avoid queue.writeBuffer race
+  // (all writeBuffer calls execute before command encoder submit)
+  private readonly _passBuffers: GPUBuffer[] = [];
 
   private readonly _paramsData = new Float32Array(4);
 
@@ -39,10 +41,14 @@ export class BloomPass {
       magFilter: 'linear',
     });
 
-    this._paramsBuffer = device.createBuffer({
-      size: 16,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+    // MIP_COUNT downsample + (MIP_COUNT-1) upsample = 2*MIP_COUNT - 1 passes
+    const totalPasses = 2 * MIP_COUNT - 1;
+    for (let i = 0; i < totalPasses; i++) {
+      this._passBuffers.push(device.createBuffer({
+        size: 16,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      }));
+    }
 
     // Bind group layouts (identical for both: texture + sampler + params)
     this._downBGL = device.createBindGroupLayout({
@@ -124,19 +130,20 @@ export class BloomPass {
     for (let i = 0; i < MIP_COUNT; i++) {
       const srcView = i === 0 ? hdrView : this._mipViews[i - 1]!;
       const isFirst = i === 0 ? 1.0 : 0.0;
+      const buf = this._passBuffers[i]!;
 
       this._paramsData[0] = this.threshold;
       this._paramsData[1] = isFirst;
       this._paramsData[2] = 0;
       this._paramsData[3] = 0;
-      this._device.queue.writeBuffer(this._paramsBuffer, 0, this._paramsData as GPUAllowSharedBufferSource);
+      this._device.queue.writeBuffer(buf, 0, this._paramsData as GPUAllowSharedBufferSource);
 
       const bg = this._device.createBindGroup({
         layout: this._downBGL,
         entries: [
           { binding: 0, resource: srcView },
           { binding: 1, resource: this._sampler },
-          { binding: 2, resource: { buffer: this._paramsBuffer } },
+          { binding: 2, resource: { buffer: buf } },
         ],
       });
 
@@ -157,18 +164,20 @@ export class BloomPass {
     // --- Upsample chain (additive blend) ---
     for (let i = MIP_COUNT - 2; i >= 0; i--) {
       const srcView = this._mipViews[i + 1]!;
+      const buf = this._passBuffers[MIP_COUNT + (MIP_COUNT - 2 - i)]!;
+
       this._paramsData[0] = this.radius;
       this._paramsData[1] = 0;
       this._paramsData[2] = 0;
       this._paramsData[3] = 0;
-      this._device.queue.writeBuffer(this._paramsBuffer, 0, this._paramsData as GPUAllowSharedBufferSource);
+      this._device.queue.writeBuffer(buf, 0, this._paramsData as GPUAllowSharedBufferSource);
 
       const bg = this._device.createBindGroup({
         layout: this._upBGL,
         entries: [
           { binding: 0, resource: srcView },
           { binding: 1, resource: this._sampler },
-          { binding: 2, resource: { buffer: this._paramsBuffer } },
+          { binding: 2, resource: { buffer: buf } },
         ],
       });
 
@@ -191,6 +200,6 @@ export class BloomPass {
 
   destroy(): void {
     for (const tex of this._mipTextures) tex.destroy();
-    this._paramsBuffer.destroy();
+    for (const buf of this._passBuffers) buf.destroy();
   }
 }
