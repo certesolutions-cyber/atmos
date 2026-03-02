@@ -355,7 +355,9 @@ export class RenderSystem implements Renderer {
       end: this.fogEnd,
       color: this.fogColor,
     };
-    writeSceneUniforms(this._sceneData, cameraEye, sceneLights, this._light, fog, this._elapsedTime);
+    const camNear = this._activeCamera?.near ?? this._camera.near;
+    const camFar = this._activeCamera?.far ?? this._camera.far;
+    writeSceneUniforms(this._sceneData, cameraEye, sceneLights, this._light, fog, this._elapsedTime, camNear, camFar);
     device.queue.writeBuffer(this._sceneBuffer, 0, this._sceneData as GPUAllowSharedBufferSource);
 
     // Frustum culling + MeshRenderer uniform writes
@@ -436,13 +438,17 @@ export class RenderSystem implements Renderer {
       this._depthPrepass.execute(this._encoder, this._scene, vpMatrix, depthExtraDraw);
     }
 
-    // --- On-demand scene depth pass for screenToWorldPoint readback ---
-    if (this._pendingReadbacks.length > 0) {
+    // --- Scene depth pass (for readback + custom shader depth access) ---
+    const hasTransparent = meshRenderers.some(mr => mr.customPipelineResources);
+    const needSceneDepth = this._pendingReadbacks.length > 0 || hasTransparent;
+    if (needSceneDepth) {
       if (!this._sceneDepthPass) {
         this._sceneDepthPass = new SceneDepthPass(device, this._pipelineResources.objectBindGroupLayout, canvasW, canvasH);
       }
       this._sceneDepthPass.resize(canvasW, canvasH);
-      this._sceneDepthPass.execute(this._encoder, vpMatrix, meshRenderers, skinnedRenderers, terrainRenderers);
+      // Only pass opaque MRs to scene depth (not transparent/custom ones)
+      const opaqueForDepth = meshRenderers.filter(mr => !mr.customPipelineResources);
+      this._sceneDepthPass.execute(this._encoder, vpMatrix, opaqueForDepth, skinnedRenderers, terrainRenderers);
       Mat4.invert(this._invVPMatrix, vpMatrix);
 
       // Encode pixel copies for all pending readbacks
@@ -497,12 +503,19 @@ export class RenderSystem implements Renderer {
     // Set shadow bind group once for all objects
     this._pass.setBindGroup(2, shadowBindGroup);
 
-    // Draw all MeshRenderers
+    // Split MeshRenderers: opaque first, then transparent (custom pipeline)
+    const opaqueMRs: typeof meshRenderers = [];
+    const transparentMRs: typeof meshRenderers = [];
     for (const mr of meshRenderers) {
-      // Custom pipeline switches invalidate the shadow bind group
       if (mr.customPipelineResources) {
-        this._pass.setBindGroup(2, shadowBindGroup);
+        transparentMRs.push(mr);
+      } else {
+        opaqueMRs.push(mr);
       }
+    }
+
+    // Draw opaque MeshRenderers
+    for (const mr of opaqueMRs) {
       mr.draw(this._pass);
     }
 
@@ -520,6 +533,23 @@ export class RenderSystem implements Renderer {
     // Overlay callbacks (grid, gizmos, etc.)
     for (const cb of this._overlayCallbacks) {
       cb(this._pass, vpMatrix, cameraEye);
+    }
+
+    // Draw transparent MeshRenderers last (custom pipelines with alpha blending)
+    if (transparentMRs.length > 0) {
+      // Create depth bind group (group 3) from scene depth pass
+      let depthBindGroup: GPUBindGroup | undefined;
+      if (this._sceneDepthPass && transparentMRs[0]?.customPipelineResources) {
+        depthBindGroup = device.createBindGroup({
+          layout: transparentMRs[0].customPipelineResources.depthBindGroupLayout,
+          entries: [
+            { binding: 0, resource: this._sceneDepthPass.depthTexture.createView() },
+          ],
+        });
+      }
+      for (const mr of transparentMRs) {
+        mr.draw(this._pass, shadowBindGroup, depthBindGroup);
+      }
     }
   }
 

@@ -38,21 +38,22 @@ const EXAMPLE_SHADER = `/// @property baseColor: vec4 = (0.2, 0.6, 1.0, 1.0)
 }
 `;
 
-const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
-/// @property deepColor: vec4 = (0.0, 0.12, 0.25, 0.95)
-/// @property waveSpeed: float = 1.0
-/// @property waveScale: float = 1.0
-/// @property waveStrength: float = 0.4
-/// @property specularPower: float = 128.0
-/// @property specularIntensity: float = 2.0
-/// @property fresnelPower: float = 5.0
-/// @property fresnelBias: float = 0.02
-/// @property sssColor: vec4 = (0.1, 0.7, 0.45, 1.0)
-/// @property sssIntensity: float = 0.6
-/// @property causticsScale: float = 0.8
-/// @property causticsIntensity: float = 0.35
-/// @property foamColor: vec4 = (0.95, 0.97, 1.0, 1.0)
-/// @property foamThreshold: float = 0.65
+const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.13, 0.22, 0.6)
+/// @property deepColor: vec4 = (0.0, 0.0, 0.06, 0.95)
+/// @property depthFalloff: float = 2.0
+/// @property waveSpeed: float = 2.0
+/// @property waveScale: float = 4.0
+/// @property waveStrength: float = 0.2
+/// @property specularPower: float = 512.0
+/// @property specularIntensity: float = 40.0
+/// @property fresnelPower: float = 20.0
+/// @property fresnelBias: float = 0.01
+/// @property sssColor: vec4 = (0.14, 0.35, 0.55, 1.0)
+/// @property sssIntensity: float = 0.8
+/// @property causticsScale: float = 0.1
+/// @property causticsIntensity: float = 0.1
+/// @property foamColor: vec4 = (0.72, 0.78, 0.88, 1.0)
+/// @property foamThreshold: float = 0.6
 /// @texture envMap
 
 @fragment fn main(input: FragmentInput) -> @location(0) vec4<f32> {
@@ -67,22 +68,28 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
     // Wave normal via analytical derivatives
     let waveResult = computeWaves(uv * scale, t);
     let waveN = waveResult.xy * custom.waveStrength;
-    let waveH = waveResult.z;
 
     let N = normalize(vec3<f32>(waveN.x, 1.0, waveN.y));
     let NdotV = max(dot(N, V), 0.0);
 
     // Fresnel (Schlick)
-    let fresnel = custom.fresnelBias + (1.0 - custom.fresnelBias) * pow(1.0 - NdotV, custom.fresnelPower);
+    let F = clamp(custom.fresnelBias + (1.0 - custom.fresnelBias) * pow(1.0 - NdotV, custom.fresnelPower), 0.0, 1.0);
 
-    // Sky/environment reflection
+    // Roughness from wave slope
+    let slope = length(waveN);
+    let roughness = clamp(slope * 0.8, 0.02, 1.0);
+
+    // Sky/environment reflection (roughness-blurred)
     let reflDir = reflect(-V, N);
-    let reflectionColor = sampleEnvironment(reflDir);
+    let reflectionColor = sampleEnvironment(reflDir, roughness);
 
-    // Water body color (angle-based approximation, not true depth)
-    let angleFactor = pow(1.0 - NdotV, 0.7);
-    let waterColor = mix(custom.deepColor.rgb, custom.shallowColor.rgb, angleFactor);
-    let waterAlpha = custom.shallowColor.a;
+    // Depth-based water color
+    let sceneZ = getSceneDepth(input.fragCoord);
+    let waterZ = getFragmentDepth(input.fragCoord);
+    let waterDepth = max(sceneZ - waterZ, 0.0);
+    let depthFactor = 1.0 - exp(-waterDepth / max(custom.depthFalloff, 0.01));
+    let waterColor = mix(custom.shallowColor.rgb, custom.deepColor.rgb, depthFactor);
+    let waterAlpha = mix(custom.shallowColor.a, custom.deepColor.a, depthFactor);
 
     // Subsurface scattering (edge glow + forward scatter)
     var sss = vec3<f32>(0.0);
@@ -94,10 +101,12 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         sss = custom.sssColor.rgb * (edgeGlow + fwdScatter) * custom.sssIntensity;
     }
 
-    var color = mix(waterColor, reflectionColor, clamp(fresnel, 0.0, 1.0));
-    color = color + sss;
+    // Energy-conserving composition
+    var color = waterColor * (1.0 - F);
+    color = color + reflectionColor * F;
+    color = color + sss * (1.0 - F);
 
-    // Specular highlights (half-vector Fresnel for sun path)
+    // Direct specular (scaled by F, no separate specF)
     for (var i = 0u; i < scene.numDirLights; i = i + 1u) {
         let light = scene.dirLights[i];
         let L = normalize(-light.direction.xyz);
@@ -105,11 +114,9 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         if (NdotL > 0.0) {
             let H = normalize(V + L);
             let NdotH = max(dot(N, H), 0.0);
-            let HdotV = max(dot(H, V), 0.0);
-            let specF = 0.02 + 0.98 * pow(1.0 - HdotV, 5.0);
             let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
             let radiance = light.color.rgb * light.color.w;
-            color = color + radiance * spec * specF * NdotL;
+            color = color + radiance * spec * NdotL * (0.25 + 0.75 * F);
         }
     }
     for (var i = 0u; i < scene.numPointLights; i = i + 1u) {
@@ -123,11 +130,9 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
         if (NdotL > 0.0) {
             let H = normalize(V + L);
             let NdotH = max(dot(N, H), 0.0);
-            let HdotV = max(dot(H, V), 0.0);
-            let specF = 0.02 + 0.98 * pow(1.0 - HdotV, 5.0);
             let spec = pow(NdotH, custom.specularPower) * custom.specularIntensity;
             let radiance = light.color.rgb * light.color.w * atten * atten;
-            color = color + radiance * spec * specF * NdotL;
+            color = color + radiance * spec * NdotL * (0.25 + 0.75 * F);
         }
     }
 
@@ -136,11 +141,10 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
     if (scene.numDirLights > 0u) {
         let lightIntensity = scene.dirLights[0].color.w;
         let lightColor = scene.dirLights[0].color.rgb;
-        color = color + lightColor * causticsVal * custom.causticsIntensity * lightIntensity * (1.0 - fresnel);
+        color = color + lightColor * causticsVal * custom.causticsIntensity * lightIntensity * (1.0 - F);
     }
 
     // Foam (slope-based)
-    let slope = length(waveN);
     let foamNoise = smoothNoise(uv * scale * 3.0 + vec2<f32>(t * 0.1, t * 0.07));
     let foamNoise2 = smoothNoise(uv * scale * 5.0 - vec2<f32>(t * 0.08, t * 0.12));
     let foamVal = foamNoise * foamNoise2;
@@ -148,7 +152,8 @@ const WATER_SHADER = `/// @property shallowColor: vec4 = (0.0, 0.55, 0.55, 0.6)
     let foamMask = foamFromSlope * foamVal;
     color = mix(color, custom.foamColor.rgb, foamMask * custom.foamColor.a);
 
-    let alpha = clamp(mix(waterAlpha * 0.4, 1.0, fresnel) + foamMask * 0.3, 0.0, 1.0);
+    // Alpha (depth-based: shallow=transparent, deep=opaque)
+    let alpha = clamp(waterAlpha + foamMask * 0.25, 0.0, 1.0);
 
     color = applyFog(color, worldPos);
     color = clamp(color, vec3<f32>(0.0), vec3<f32>(100.0));
@@ -221,31 +226,17 @@ fn causticsLayer(uv: vec2<f32>, t: f32, freq: vec2<f32>, speed: vec2<f32>) -> f3
     return (a * b) * 0.5 + 0.5;
 }
 
-fn sampleEnvironment(dir: vec3<f32>) -> vec3<f32> {
+fn sampleEnvironment(dir: vec3<f32>, roughness: f32) -> vec3<f32> {
     let dim = textureDimensions(envMap);
     if (dim.x <= 1u && dim.y <= 1u) {
-        return proceduralSky(dir);
+        return vec3<f32>(0.0);
     }
     let d = normalize(dir);
     let u = atan2(d.z, d.x) * (0.5 / PI) + 0.5;
     let v = acos(clamp(d.y, -1.0, 1.0)) / PI;
-    return textureSampleLevel(envMap, envMapSampler, vec2<f32>(u, v), 0.0).rgb;
-}
-
-fn proceduralSky(dir: vec3<f32>) -> vec3<f32> {
-    let up = max(dir.y, 0.0);
-    let zenithColor = vec3<f32>(0.15, 0.3, 0.65);
-    let horizonColor = vec3<f32>(0.6, 0.7, 0.85);
-    let groundColor = vec3<f32>(0.15, 0.18, 0.2);
-    var sky: vec3<f32>;
-    if (dir.y >= 0.0) { sky = mix(horizonColor, zenithColor, pow(up, 0.5)); }
-    else { sky = mix(horizonColor, groundColor, pow(-dir.y, 0.3)); }
-    if (scene.numDirLights > 0u) {
-        let sunDir = normalize(-scene.dirLights[0].direction.xyz);
-        let sunDot = max(dot(dir, sunDir), 0.0);
-        sky = sky + scene.dirLights[0].color.rgb * scene.dirLights[0].color.w * (pow(sunDot, 256.0) * 3.0 + pow(sunDot, 8.0) * 0.3);
-    }
-    return sky;
+    let maxMip = floor(log2(f32(max(dim.x, dim.y))));
+    let lod = roughness * maxMip;
+    return textureSampleLevel(envMap, envMapSampler, vec2<f32>(u, v), lod).rgb;
 }
 `;
 

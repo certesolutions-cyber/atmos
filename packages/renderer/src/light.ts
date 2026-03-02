@@ -172,6 +172,8 @@ export function writeSceneUniforms(
   fallback?: LightSettings,
   fog?: FogSettings,
   time?: number,
+  cameraNear?: number,
+  cameraFar?: number,
 ): void {
   // Zero everything first
   out.fill(0);
@@ -233,10 +235,14 @@ export function writeSceneUniforms(
     out[138] = fog.density;
     out[139] = fog.start;
     out[140] = fog.end;
-    // float indices 141-143 are padding for vec4 alignment
+    // float indices 141-142 = cameraNear/cameraFar, 143 = padding
     out[144] = fog.color[0]!;
     out[145] = fog.color[1]!;
     out[146] = fog.color[2]!;
     out[147] = 0; // pad
   }
+
+  // Camera near/far — float indices 141-142 (byte 564-571)
+  out[141] = cameraNear ?? 0.1;
+  out[142] = cameraFar ?? 1000;
 }

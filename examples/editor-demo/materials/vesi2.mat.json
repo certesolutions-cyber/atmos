@@ -11,35 +11,41 @@
   "roughness": 0.5,
   "customShaderPath": "shaders/water.wgsl",
   "customUniforms": {
-    "waveSpeed": 1,
-    "waveScale": 2,
-    "causticsScale": 0.4,
-    "waveStrength": 0.4,
+    "waveSpeed": 2,
+    "waveScale": 4,
+    "causticsScale": 0.1,
+    "waveStrength": 0.2,
     "causticsIntensity": 0.1,
-    "specularIntensity": 60,
-    "specularPower": 256,
-    "foamThreshold": 0.9,
-    "sssIntensity": 0.9,
+    "specularIntensity": 40,
+    "specularPower": 512,
+    "foamThreshold": 0.6,
+    "sssIntensity": 0.8,
     "sssColor": [
-      0.12156862745098039,
-      1,
-      0.8549019607843137,
+      0.13725490196078433,
+      0.34509803921568627,
+      0.5450980392156862,
       1
     ],
     "deepColor": [
       0,
-      0,
-      0,
+      0.00392156862745098,
+      0.058823529411764705,
       0.95
     ],
     "shallowColor": [
-      0.10588235294117647,
-      0.2980392156862745,
-      0.39215686274509803,
+      0,
+      0.12549019607843137,
+      0.2196078431372549,
       0.6
     ],
-    "fresnelPower": 10,
-    "fresnelBias": 0.05
+    "fresnelPower": 20,
+    "fresnelBias": 0.01,
+    "foamColor": [
+      0.7176470588235294,
+      0.7803921568627451,
+      0.8823529411764706,
+      1
+    ]
   },
   "customTextures": {
     "envMap": "textures/panoramic-view-sea.jpg"

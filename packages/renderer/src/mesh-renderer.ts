@@ -198,7 +198,7 @@ export class MeshRenderer extends Component {
     }
   }
 
-  draw(pass: GPURenderPassEncoder): void {
+  draw(pass: GPURenderPassEncoder, shadowBindGroup?: GPUBindGroup, depthBindGroup?: GPUBindGroup): void {
     if (!this.mesh || !this.bindGroup) return;
 
     // Custom pipeline path
@@ -206,6 +206,8 @@ export class MeshRenderer extends Component {
       pass.setPipeline(this.customPipelineResources.pipeline);
       pass.setBindGroup(0, this.bindGroup);
       pass.setBindGroup(1, this.customMaterialBindGroup);
+      if (shadowBindGroup) pass.setBindGroup(2, shadowBindGroup);
+      if (depthBindGroup) pass.setBindGroup(3, depthBindGroup);
       pass.setVertexBuffer(0, this.mesh.vertexBuffer);
       pass.setIndexBuffer(this.mesh.indexBuffer, this.mesh.indexFormat);
       pass.drawIndexed(this.mesh.indexCount);

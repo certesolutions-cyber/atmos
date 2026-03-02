@@ -67,7 +67,9 @@ export class SimpleMaterialLoader {
     prop: 'albedoTexture' | 'normalTexture' | 'metallicRoughnessTexture',
     texturePath: string,
   ): Promise<void> {
-    const cached = this._textureCache.get(texturePath);
+    const srgb = prop === 'albedoTexture';
+    const cacheKey = srgb ? texturePath : `${texturePath}:linear`;
+    const cached = this._textureCache.get(cacheKey);
     if (cached) {
       mat[prop] = cached;
       mat.textureVersion++;
@@ -80,8 +82,8 @@ export class SimpleMaterialLoader {
       if (!res.ok) return;
       const blob = await res.blob();
       const decoded = await decodeImageToRGBA(blob);
-      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height);
-      this._textureCache.set(texturePath, handle);
+      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height, srgb);
+      this._textureCache.set(cacheKey, handle);
       mat[prop] = handle;
       mat.textureVersion++;
     } catch (err) {

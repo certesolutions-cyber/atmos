@@ -254,8 +254,9 @@ export class MaterialManager {
   }
 
   /** Load a texture handle (with caching). */
-  private async _loadTexture(texturePath: string): Promise<GPUTextureHandle | null> {
-    const cached = this._textureCache.get(texturePath);
+  private async _loadTexture(texturePath: string, srgb = true): Promise<GPUTextureHandle | null> {
+    const cacheKey = srgb ? texturePath : `${texturePath}:linear`;
+    const cached = this._textureCache.get(cacheKey);
     if (cached) return cached;
 
     try {
@@ -264,8 +265,8 @@ export class MaterialManager {
       const mimeMap: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
       const blob = new Blob([buffer], { type: mimeMap[ext] ?? 'image/png' });
       const decoded = await decodeImageToRGBA(blob);
-      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height);
-      this._textureCache.set(texturePath, handle);
+      const handle = createTextureFromRGBA(this._device, decoded.data, decoded.width, decoded.height, srgb);
+      this._textureCache.set(cacheKey, handle);
       return handle;
     } catch (err) {
       console.warn(`[MaterialManager] Failed to load texture: ${texturePath}`, err);
@@ -283,7 +284,8 @@ export class MaterialManager {
       return;
     }
 
-    const handle = await this._loadTexture(texturePath);
+    const srgb = prop === 'albedoTexture';
+    const handle = await this._loadTexture(texturePath, srgb);
     mat[prop] = handle;
     mat.textureVersion++;
   }

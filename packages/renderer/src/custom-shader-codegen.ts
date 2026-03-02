@@ -59,6 +59,10 @@ const MAX_SPOT_LIGHTS: u32 = 4u;
   // 5. Shadow code (group 2)
   parts.push(SHADOW_FRAGMENT_WGSL);
 
+  // 5b. Scene depth texture (group 3) for depth-based effects
+  parts.push(`@group(3) @binding(0) var sceneDepth: texture_depth_2d;`);
+  parts.push('');
+
   // 6. PBR helper functions (available for use, not required)
   parts.push(PBR_FUNCTIONS_WGSL);
 
@@ -83,10 +87,29 @@ fn applyFog(color: vec3<f32>, worldPosition: vec3<f32>) -> vec3<f32> {
 
   // 8. FragmentInput struct
   parts.push(`struct FragmentInput {
+  @builtin(position) fragCoord: vec4<f32>,
   @location(0) worldPosition: vec3<f32>,
   @location(1) worldNormal: vec3<f32>,
   @location(2) uv: vec2<f32>,
 };
+
+// Linearize a [0..1] depth buffer value to view-space distance
+fn linearizeDepth(d: f32, near: f32, far: f32) -> f32 {
+  return near * far / (far - d * (far - near));
+}
+
+// Get the linear depth of the opaque scene behind this fragment.
+// Returns the view-space distance, or a very large value if nothing is there.
+fn getSceneDepth(fragCoord: vec4<f32>) -> f32 {
+  let coord = vec2<i32>(fragCoord.xy);
+  let rawDepth = textureLoad(sceneDepth, coord, 0);
+  return linearizeDepth(rawDepth, scene.cameraNear, scene.cameraFar);
+}
+
+// Get linear depth of the current fragment (water surface).
+fn getFragmentDepth(fragCoord: vec4<f32>) -> f32 {
+  return linearizeDepth(fragCoord.z, scene.cameraNear, scene.cameraFar);
+}
 `);
 
   // 9. User's fragment code

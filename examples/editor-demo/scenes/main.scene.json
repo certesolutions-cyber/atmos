@@ -47,8 +47,8 @@
             "material.emissiveIntensity": 0,
             "material.texTilingX": 1,
             "material.texTilingY": 1,
-            "castShadow": true,
-            "receiveSSAO": true
+            "castShadow": false,
+            "receiveSSAO": false
           }
         }
       ]
@@ -63,7 +63,7 @@
           "data": {
             "position": [
               0,
-              -0.5134008526802063,
+              -0.23988337814807892,
               0
             ],
             "rotation": [
@@ -148,6 +148,49 @@
             "shadowDistance": 50,
             "shadowFarSize": 80,
             "shadowFarDistance": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 4,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.1,
+            "far": 100,
+            "isMainCamera": true,
+            "clearColor": [
+              1,
+              1,
+              1,
+              1
+            ]
           }
         }
       ]

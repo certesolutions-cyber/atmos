@@ -37,7 +37,9 @@ struct SceneUniforms {
   fogDensity: f32,
   fogStart: f32,
   fogEnd: f32,
-  _fogPad: f32,
+  cameraNear: f32,
+  cameraFar: f32,
+  _fogPad2: f32,
   fogColor: vec4<f32>,
 };
 `;

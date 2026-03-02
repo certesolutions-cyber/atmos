@@ -34,17 +34,22 @@ export function getWhiteFallbackTexture(device: GPUDevice): GPUTextureHandle {
   return _whiteFallback;
 }
 
-/** Create a GPU texture from raw RGBA pixel data with auto-generated mipmaps. */
+/** Create a GPU texture from raw RGBA pixel data with auto-generated mipmaps.
+ *  @param srgb If true (default), uses rgba8unorm-srgb so sRGB-encoded images
+ *              are correctly decoded to linear on GPU read. Pass false for
+ *              linear data textures (normal maps, metallic-roughness maps). */
 export function createTextureFromRGBA(
   device: GPUDevice,
   data: Uint8Array,
   width: number,
   height: number,
+  srgb = true,
 ): GPUTextureHandle {
+  const format: GPUTextureFormat = srgb ? 'rgba8unorm-srgb' : 'rgba8unorm';
   const mipLevelCount = Math.floor(Math.log2(Math.max(width, height))) + 1;
   const texture = device.createTexture({
     size: [width, height],
-    format: 'rgba8unorm',
+    format,
     mipLevelCount,
     usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
   });

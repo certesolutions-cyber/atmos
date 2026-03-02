@@ -3,7 +3,7 @@
  *
  * Uses the same vertex shader, object bind group (group 0), and shadow bind
  * group (group 2) as the standard PBR pipeline. Group 1 is dynamically
- * generated from the CustomShaderDescriptor.
+ * generated from the CustomShaderDescriptor. Group 3 provides scene depth.
  */
 
 import type { CustomShaderDescriptor } from './custom-shader-parser.js';
@@ -15,6 +15,7 @@ import { generateCustomFragmentShader } from './custom-shader-codegen.js';
 
 export interface CustomPipelineResources extends PipelineResources {
   descriptor: CustomShaderDescriptor;
+  depthBindGroupLayout: GPUBindGroupLayout;
 }
 
 export async function createCustomPipeline(
@@ -66,8 +67,15 @@ export async function createCustomPipeline(
 
   const materialBindGroupLayout = device.createBindGroupLayout({ entries: materialEntries });
 
+  // Group 3: scene depth texture for depth-based effects (transparency, water)
+  const depthBindGroupLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
+    ],
+  });
+
   const pipelineLayout = device.createPipelineLayout({
-    bindGroupLayouts: [objectBindGroupLayout, materialBindGroupLayout, shadowBindGroupLayout],
+    bindGroupLayouts: [objectBindGroupLayout, materialBindGroupLayout, shadowBindGroupLayout, depthBindGroupLayout],
   });
 
   const pipeline = device.createRenderPipeline({
@@ -112,6 +120,7 @@ export async function createCustomPipeline(
     objectBindGroupLayout,
     materialBindGroupLayout,
     shadowBindGroupLayout,
+    depthBindGroupLayout,
     bindGroupLayout: objectBindGroupLayout,
     descriptor,
   };
