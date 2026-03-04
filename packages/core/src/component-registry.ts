@@ -1,4 +1,4 @@
-export type PropertyType = 'number' | 'string' | 'boolean' | 'vec3' | 'quat' | 'color' | 'enum' | 'gameObjectRef' | 'materialAsset';
+export type PropertyType = 'number' | 'string' | 'boolean' | 'vec3' | 'quat' | 'color' | 'enum' | 'gameObjectRef' | 'materialAsset' | 'texture';
 
 export interface PropertyDefBase {
   visibleWhen?: (target: unknown) => boolean;
@@ -55,6 +55,11 @@ export interface MaterialAssetPropertyDef extends PropertyDefBase {
   type: 'materialAsset';
 }
 
+export interface TexturePropertyDef extends PropertyDefBase {
+  key: string;
+  type: 'texture';
+}
+
 export type PropertyDef =
   | NumberPropertyDef
   | Vec3PropertyDef
@@ -64,7 +69,8 @@ export type PropertyDef =
   | StringPropertyDef
   | BooleanPropertyDef
   | GameObjectRefPropertyDef
-  | MaterialAssetPropertyDef;
+  | MaterialAssetPropertyDef
+  | TexturePropertyDef;
 
 export interface ComponentDef {
   name: string;

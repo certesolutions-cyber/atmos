@@ -118,6 +118,111 @@ fn getFragmentDepth(fragCoord: vec4<f32>) -> f32 {
   return parts.join('\n');
 }
 
+/**
+ * Generates a custom vertex shader with user's displaceVertex function.
+ * Layout: group 0 = ObjectUniforms, group 1 binding 0 = CustomUniforms, group 1 binding 1 = SceneUniforms.
+ */
+export function generateCustomVertexShader(descriptor: CustomShaderDescriptor): string {
+  const parts: string[] = [];
+
+  parts.push(generateCustomUniformsStruct(descriptor));
+  parts.push(SCENE_STRUCTS_WGSL);
+
+  // Object uniforms (group 0)
+  parts.push(`struct ObjectUniforms {
+  mvp: mat4x4<f32>,
+  model: mat4x4<f32>,
+  normalMatrix: mat4x4<f32>,
+};
+@group(0) @binding(0) var<uniform> object: ObjectUniforms;
+`);
+
+  // Group 1: custom + scene uniforms (VERTEX | FRAGMENT visible)
+  parts.push(`@group(1) @binding(0) var<uniform> custom: CustomUniforms;`);
+  parts.push(`@group(1) @binding(1) var<uniform> scene: SceneUniforms;`);
+  parts.push('');
+
+  // User's vertex code (contains displaceVertex function)
+  parts.push(descriptor.vertexSource!);
+  parts.push('');
+
+  // Generated vertex main
+  parts.push(`struct VertexInput {
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) uv: vec2<f32>,
+};
+
+struct VertexOutput {
+  @builtin(position) clipPosition: vec4<f32>,
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) worldNormal: vec3<f32>,
+  @location(2) uv: vec2<f32>,
+};
+
+@vertex
+fn main(input: VertexInput) -> VertexOutput {
+  let displaced = displaceVertex(input.position, input.normal, input.uv);
+  var output: VertexOutput;
+  let worldPos = object.model * vec4<f32>(displaced, 1.0);
+  output.clipPosition = object.mvp * vec4<f32>(displaced, 1.0);
+  output.worldPosition = worldPos.xyz;
+  output.worldNormal = (object.normalMatrix * vec4<f32>(input.normal, 0.0)).xyz;
+  output.uv = input.uv;
+  return output;
+}
+`);
+
+  return parts.join('\n');
+}
+
+/**
+ * Generates a shadow vertex shader for custom vertex displacement.
+ * Layout: group 0 = ObjectUniforms, group 1 = lightVP, group 2 = scene + custom uniforms.
+ */
+export function generateCustomShadowVertexShader(descriptor: CustomShaderDescriptor): string {
+  const parts: string[] = [];
+
+  parts.push(generateCustomUniformsStruct(descriptor));
+  parts.push(SCENE_STRUCTS_WGSL);
+
+  // Object uniforms (group 0)
+  parts.push(`struct ObjectUniforms {
+  mvp: mat4x4<f32>,
+  model: mat4x4<f32>,
+  normalMatrix: mat4x4<f32>,
+};
+@group(0) @binding(0) var<uniform> object: ObjectUniforms;
+`);
+
+  // Group 1: lightVP (same layout as standard shadow passes)
+  parts.push(`@group(1) @binding(0) var<uniform> lightVP: mat4x4<f32>;`);
+  parts.push('');
+
+  // Group 2: scene + custom uniforms
+  parts.push(`@group(2) @binding(0) var<uniform> scene: SceneUniforms;`);
+  parts.push(`@group(2) @binding(1) var<uniform> custom: CustomUniforms;`);
+  parts.push('');
+
+  // User's vertex code
+  parts.push(descriptor.vertexSource!);
+  parts.push('');
+
+  // Generated shadow vertex main (needs pos+normal+uv for displaceVertex)
+  parts.push(`@vertex
+fn main(
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) uv: vec2<f32>,
+) -> @builtin(position) vec4<f32> {
+  let displaced = displaceVertex(position, normal, uv);
+  return lightVP * object.model * vec4<f32>(displaced, 1.0);
+}
+`);
+
+  return parts.join('\n');
+}
+
 function generateCustomUniformsStruct(descriptor: CustomShaderDescriptor): string {
   if (descriptor.properties.length === 0) {
     // Need at least a dummy field for the uniform buffer

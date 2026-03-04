@@ -2,7 +2,7 @@
   "gameObjects": [
     {
       "name": "Terrain",
-      "id": 2,
+      "id": 12,
       "parentId": null,
       "components": [
         {
@@ -29,24 +29,36 @@
         {
           "type": "TerrainWorld",
           "data": {
-            "loadRadius": 12,
-            "unloadRadius": 14,
+            "loadRadius": 14,
+            "unloadRadius": 16,
             "maxBuildsPerFrame": 10,
             "buildBudgetMs": 8,
             "config.chunkSize": 16,
-            "config.voxelSize": 0.8,
+            "config.voxelSize": 1,
             "config.isoLevel": 0,
             "config.smoothNormals": true,
-            "cameraTarget": 4,
+            "cameraTarget": 14,
             "lodConfig.lodDistances.0": 3,
             "lodConfig.lodDistances.1": 6
+          }
+        },
+        {
+          "type": "World2D",
+          "data": {
+            "heightmapUrl": "assets/heightmap.jpg",
+            "scaleX": 0.5,
+            "scaleZ": 0.5,
+            "scaleY": 30,
+            "loadRadius": 14,
+            "unloadRadius": 16,
+            "maxBuildsPerFrame": 10
           }
         }
       ]
     },
     {
       "name": "Cube",
-      "id": 3,
+      "id": 13,
       "parentId": null,
       "components": [
         {
@@ -89,6 +101,8 @@
               0
             ],
             "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
             "castShadow": true,
             "receiveSSAO": true
           }
@@ -96,7 +110,7 @@
         {
           "type": "FPSWalker",
           "data": {
-            "moveSpeed": 5,
+            "moveSpeed": 10,
             "lookSpeed": 0.002,
             "gravity": 20,
             "jumpSpeed": 8,
@@ -107,8 +121,8 @@
     },
     {
       "name": "Camera",
-      "id": 4,
-      "parentId": 3,
+      "id": 14,
+      "parentId": 13,
       "components": [
         {
           "type": "Transform",
@@ -150,7 +164,7 @@
     },
     {
       "name": "Directional Light",
-      "id": 5,
+      "id": 15,
       "parentId": null,
       "components": [
         {

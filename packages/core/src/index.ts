@@ -27,9 +27,10 @@ export type {
   BooleanPropertyDef,
   GameObjectRefPropertyDef,
   MaterialAssetPropertyDef,
+  TexturePropertyDef,
 } from './component-registry.js';
 export { registerCoreBuiltins } from './register-builtins.js';
 export { serializeScene, deserializeScene, applyComponentData, serializePostProcess, applyPostProcess } from './scene-serializer.js';
 export type { SceneData, GameObjectData, ComponentData, DeserializeContext, PostProcessData } from './scene-serializer.js';
-export { serializePrefab, deserializePrefab, instantiatePrefab, lockSubtree } from './prefab.js';
-export type { PrefabData } from './prefab.js';
+export { serializePrefab, deserializePrefab, instantiatePrefab, lockSubtree, resolvePrefabInstances } from './prefab.js';
+export type { PrefabData, PrefabLoader } from './prefab.js';

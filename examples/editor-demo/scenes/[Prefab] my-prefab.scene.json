@@ -2,16 +2,16 @@
   "gameObjects": [
     {
       "name": "Cube",
-      "id": 1,
+      "id": 7,
       "parentId": null,
       "components": [
         {
           "type": "Transform",
           "data": {
             "position": [
-              -0.2547242045402527,
-              0.16184048354625702,
-              2.1122612953186035
+              0,
+              0,
+              0
             ],
             "rotation": [
               0,
@@ -54,16 +54,16 @@
       ]
     },
     {
-      "name": "Wobble Sphere",
-      "id": 2,
-      "parentId": null,
+      "name": "Sphere",
+      "id": 8,
+      "parentId": 7,
       "components": [
         {
           "type": "Transform",
           "data": {
             "position": [
-              -0.3779393136501312,
-              1.250651478767395,
+              0,
+              0.5326328873634338,
               0
             ],
             "rotation": [
@@ -83,11 +83,11 @@
           "type": "MeshRenderer",
           "data": {
             "meshSource": "primitive:sphere",
-            "materialSource": "materials/wobble.mat.json",
+            "materialSource": "materials/default.mat.json",
             "material.albedo": [
-              1,
-              1,
-              1,
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
               1
             ],
             "material.metallic": 0,
@@ -107,62 +107,16 @@
       ]
     },
     {
-      "name": "Directional Light",
-      "id": 3,
-      "parentId": null,
+      "name": "Sphere",
+      "id": 9,
+      "parentId": 7,
       "components": [
         {
           "type": "Transform",
           "data": {
             "position": [
-              0.15105164051055908,
-              3.4252259731292725,
-              0
-            ],
-            "rotation": [
-              -0.3420201539993286,
-              0,
-              0,
-              0.9396926164627075
-            ],
-            "scale": [
-              1,
-              1,
-              1
-            ]
-          }
-        },
-        {
-          "type": "DirectionalLight",
-          "data": {
-            "color": [
-              1,
-              1,
-              1
-            ],
-            "intensity": 1,
-            "castShadows": true,
-            "shadowIntensity": 1,
-            "shadowResolution": 2048,
-            "shadowSize": 20,
-            "shadowDistance": 50,
-            "shadowFarSize": 80,
-            "shadowFarDistance": 200
-          }
-        }
-      ]
-    },
-    {
-      "name": "Camera",
-      "id": 4,
-      "parentId": null,
-      "components": [
-        {
-          "type": "Transform",
-          "data": {
-            "position": [
-              0,
-              0,
+              0.3645302951335907,
+              -0.16359078884124756,
               0
             ],
             "rotation": [
@@ -175,61 +129,18 @@
               1,
               1,
               1
-            ]
-          }
-        },
-        {
-          "type": "Camera",
-          "data": {
-            "fovY": 0.7853981633974483,
-            "near": 0.1,
-            "far": 100,
-            "isMainCamera": true,
-            "clearColor": [
-              1,
-              1,
-              1,
-              1
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Plane HD",
-      "id": 5,
-      "parentId": null,
-      "components": [
-        {
-          "type": "Transform",
-          "data": {
-            "position": [
-              0,
-              -0.27026936411857605,
-              0
-            ],
-            "rotation": [
-              0,
-              0,
-              0,
-              1
-            ],
-            "scale": [
-              5,
-              1,
-              5
             ]
           }
         },
         {
           "type": "MeshRenderer",
           "data": {
-            "meshSource": "primitive:planeHd",
-            "materialSource": "materials/vesi2.mat.json",
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/default.mat.json",
             "material.albedo": [
-              0.16078431904315948,
-              0,
-              0.9607843160629272,
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
               1
             ],
             "material.metallic": 0,
@@ -242,8 +153,8 @@
             "material.emissiveIntensity": 0,
             "material.texTilingX": 1,
             "material.texTilingY": 1,
-            "castShadow": false,
-            "receiveSSAO": false
+            "castShadow": true,
+            "receiveSSAO": true
           }
         }
       ]

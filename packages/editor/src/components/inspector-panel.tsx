@@ -14,6 +14,7 @@ import { BooleanField } from './fields/boolean-field.js';
 import { GameObjectRefField } from './fields/game-object-ref-field.js';
 import { StringField } from './fields/string-field.js';
 import { MaterialAssetField } from './fields/material-asset-field.js';
+import { TextureField } from './fields/texture-field.js';
 import { MaterialInspector } from './material-inspector.js';
 
 interface InspectorPanelProps {
@@ -218,6 +219,10 @@ function renderField(
           key={def.key}
           label={label}
           value={(value as string) ?? ''}
+          onChange={(v) => {
+            setProperty(component, def, v);
+            refresh();
+          }}
         />
       );
     case 'gameObjectRef':
@@ -228,6 +233,20 @@ function renderField(
           value={(value as GameObject | null) ?? null}
           scene={scene}
           selfId={selfId}
+          onChange={(v) => {
+            setProperty(component, def, v);
+            refresh();
+          }}
+        />
+      );
+    case 'texture':
+      if (!materialManager) return null;
+      return (
+        <TextureField
+          key={def.key}
+          label={label}
+          value={(value as string) ?? ''}
+          materialManager={materialManager}
           onChange={(v) => {
             setProperty(component, def, v);
             refresh();

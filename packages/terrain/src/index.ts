@@ -1,5 +1,6 @@
 // Types
 export type { DensityFn, DensityWithWeightsFn, DensitySample, SplatWeightFn, SplatTextures } from './types.js';
+export type { HeightFn, HeightmapData } from './types.js';
 export type { ChunkCoord, TerrainConfig, MeshData, TerrainEdit, LODConfig } from './types.js';
 export { BrushShape, ChunkState, DEFAULT_TERRAIN_CONFIG, DEFAULT_LOD_CONFIG } from './types.js';
 
@@ -22,6 +23,9 @@ export {
   intersectDensity,
   subtractDensity,
   noiseTerrain,
+  heightFnTerrain,
+  heightmapTerrain,
+  imageToHeightmap,
 } from './density-field.js';
 
 // Chunk

@@ -176,9 +176,10 @@ export function HierarchyPanel({ editorState, primitiveFactory, onFocusObject, o
     }
   }, [editorState, lastClickedId, roots, filterMatch]);
 
-  const primitiveTypes: PrimitiveType[] = ['cube', 'sphere', 'cylinder', 'plane', 'camera', 'directionalLight', 'pointLight', 'spotLight'];
+  const primitiveTypes: PrimitiveType[] = ['cube', 'sphere', 'cylinder', 'plane', 'planeHd', 'camera', 'directionalLight', 'pointLight', 'spotLight'];
 
   const labelMap: Partial<Record<PrimitiveType, string>> = {
+    planeHd: 'Plane HD',
     directionalLight: 'Directional Light',
     pointLight: 'Point Light',
     spotLight: 'Spot Light',

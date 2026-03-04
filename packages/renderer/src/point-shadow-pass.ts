@@ -164,7 +164,7 @@ export class PointShadowPass {
     const casters: MeshRenderer[] = [];
     for (const obj of scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
-      if (!mr || !mr.enabled || !mr.castShadow || !mr.mesh || !mr.bindGroup) continue;
+      if (!mr || !mr.enabled || !mr.castShadow || !mr.mesh || !mr.bindGroup || mr.customPipelineResources?.shadowPipeline) continue;
       const bs = mr.worldBoundingSphere;
       if (bs) {
         const dx = bs.center[0]! - lx;

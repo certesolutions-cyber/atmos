@@ -120,7 +120,7 @@ export class DirectionalShadowPass {
 
     for (const obj of scene.getAllObjects()) {
       const mr = obj.getComponent(MeshRenderer);
-      if (mr && mr.enabled && mr.castShadow && mr.mesh && mr.bindGroup) {
+      if (mr && mr.enabled && mr.castShadow && mr.mesh && mr.bindGroup && !mr.customPipelineResources?.shadowPipeline) {
         pass.setBindGroup(0, mr.bindGroup);
         pass.setVertexBuffer(0, mr.mesh.vertexBuffer);
         pass.setIndexBuffer(mr.mesh.indexBuffer, mr.mesh.indexFormat);

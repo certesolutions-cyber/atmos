@@ -30,5 +30,9 @@ export function createGeometryCache(device: GPUDevice): MeshRecord {
   const cylinderMesh = createMesh(device, cylinderGeo.vertices, cylinderGeo.indices, S);
   cylinderMesh.bounds = cylinderGeo.bounds;
 
-  return { cube: cubeMesh, plane: planeMesh, sphere: sphereMesh, cylinder: cylinderMesh };
+  const planeHdGeo = createPlaneGeometry(20, 20, 128, 128);
+  const planeHdMesh = createMesh(device, planeHdGeo.vertices, planeHdGeo.indices, S);
+  planeHdMesh.bounds = planeHdGeo.bounds;
+
+  return { cube: cubeMesh, plane: planeMesh, planeHd: planeHdMesh, sphere: sphereMesh, cylinder: cylinderMesh };
 }

@@ -50,3 +50,58 @@ export function lockSubtree(go: GameObject): void {
     lockSubtree(child);
   }
 }
+
+/** Callback that loads a prefab file by path, returning null on failure. */
+export type PrefabLoader = (path: string) => Promise<PrefabData | null>;
+
+/**
+ * Replace prefab reference stubs in a scene with fresh prefab instances.
+ * Stubs are GameObjects with `prefabSource` set. For each stub the prefab
+ * file is loaded (and cached), instantiated, and the stub is swapped out
+ * while preserving name, transform, and parent.
+ */
+export async function resolvePrefabInstances(
+  scene: Scene,
+  loadPrefab: PrefabLoader,
+  context?: DeserializeContext,
+): Promise<void> {
+  const stubs = [...scene.getAllObjects()].filter((o) => o.prefabSource);
+  if (stubs.length === 0) return;
+
+  const cache = new Map<string, PrefabData | null>();
+
+  for (const stub of stubs) {
+    const prefabPath = stub.prefabSource!;
+
+    // Cache-load prefab data
+    if (!cache.has(prefabPath)) {
+      cache.set(prefabPath, await loadPrefab(prefabPath));
+    }
+    const data = cache.get(prefabPath)!;
+    if (!data) {
+      console.warn(`[Prefab] Missing prefab file: ${prefabPath} — leaving stub as-is`);
+      continue;
+    }
+
+    // Instantiate fresh locked subtree
+    const tempScene = instantiatePrefab(data, prefabPath, context);
+    if (context?.onComplete) await context.onComplete();
+    const freshRoot = tempScene.roots.filter((r) => !r.transient)[0];
+    if (!freshRoot) continue;
+
+    // Copy stub's name, transform, parent
+    freshRoot.name = stub.name;
+    const sp = stub.transform.position;
+    const sr = stub.transform.rotation;
+    const ss = stub.transform.scale;
+    freshRoot.transform.setPosition(sp[0]!, sp[1]!, sp[2]!);
+    freshRoot.transform.setRotation(sr[0]!, sr[1]!, sr[2]!, sr[3]!);
+    freshRoot.transform.setScale(ss[0]!, ss[1]!, ss[2]!);
+
+    if (stub.parent) freshRoot.setParent(stub.parent);
+
+    // Swap: remove stub, add fresh
+    scene.remove(stub);
+    scene.add(freshRoot);
+  }
+}

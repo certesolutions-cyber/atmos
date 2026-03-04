@@ -6,7 +6,7 @@
  *   /// @texture name
  *
  * Supported property types: float, vec2, vec3, vec4
- * Max 3 @texture declarations per shader.
+ * Max 8 @texture declarations per shader.
  */
 
 export interface CustomPropertyDef {
@@ -28,9 +28,13 @@ export interface CustomShaderDescriptor {
   textures: CustomTextureDef[];
   uniformBufferSize: number;
   fragmentSource: string;
+  /** Vertex displacement code (lines between /// @vertex and @fragment fn). Null if no vertex section. */
+  vertexSource: string | null;
+  /** If true, shader is opaque: depth write enabled, backface culling, drawn with opaque objects. */
+  opaque: boolean;
 }
 
-const MAX_CUSTOM_TEXTURES = 3;
+export const MAX_CUSTOM_TEXTURES = 8;
 
 const FLOAT_COUNTS: Record<string, number> = {
   float: 1,
@@ -53,15 +57,22 @@ function parseDefaults(raw: string, floatCount: number): number[] {
   return result;
 }
 
+const VERTEX_MARKER_RE = /^\/\/\/\s*@vertex\s*$/;
+const OPAQUE_RE = /^\/\/\/\s*@opaque\s*$/;
+const FRAGMENT_FN_RE = /^@fragment\s+fn\b/;
+
 export function parseCustomShader(wgslSource: string): CustomShaderDescriptor {
   const lines = wgslSource.split('\n');
   const properties: CustomPropertyDef[] = [];
   const textures: CustomTextureDef[] = [];
   const sourceLines: string[] = [];
+  const vertexLines: string[] = [];
 
   let byteOffset = 0;
   // Texture bindings start at 2 (0=custom uniforms, 1=scene uniforms)
   let nextTextureBinding = 2;
+  let inVertexSection = false;
+  let opaque = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -99,7 +110,30 @@ export function parseCustomShader(wgslSource: string): CustomShaderDescriptor {
       continue;
     }
 
-    sourceLines.push(line);
+    // Detect /// @opaque marker
+    if (OPAQUE_RE.test(trimmed)) {
+      opaque = true;
+      continue;
+    }
+
+    // Detect /// @vertex marker
+    if (VERTEX_MARKER_RE.test(trimmed)) {
+      inVertexSection = true;
+      continue;
+    }
+
+    // Detect @fragment fn — ends vertex section, starts fragment
+    if (inVertexSection && FRAGMENT_FN_RE.test(trimmed)) {
+      inVertexSection = false;
+      sourceLines.push(line);
+      continue;
+    }
+
+    if (inVertexSection) {
+      vertexLines.push(line);
+    } else {
+      sourceLines.push(line);
+    }
   }
 
   // Uniform buffer size must be a multiple of 16 bytes (std140), minimum 16
@@ -110,5 +144,7 @@ export function parseCustomShader(wgslSource: string): CustomShaderDescriptor {
     textures,
     uniformBufferSize,
     fragmentSource: sourceLines.join('\n'),
+    vertexSource: vertexLines.length > 0 ? vertexLines.join('\n') : null,
+    opaque,
   };
 }

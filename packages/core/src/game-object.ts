@@ -57,6 +57,11 @@ export class GameObject {
     for (const c of this._components) {
       if (c instanceof Ctor) return c;
     }
+    // Fallback: walk prototype chain by name.
+    // Handles duplicate module instances from Vite dynamic imports where instanceof fails.
+    for (const c of this._components) {
+      if (matchesByName(c, Ctor)) return c as T;
+    }
     return null;
   }
 
@@ -71,6 +76,23 @@ export class GameObject {
       if (component.onDestroy) component.onDestroy();
     }
   }
+}
+
+/**
+ * Walk the component's prototype chain and check if any constructor name
+ * matches the target class name. This handles cross-module duplicates
+ * (e.g. Vite dynamic import loading the same .ts file twice) where
+ * `instanceof` fails because the class identity differs.
+ */
+function matchesByName(comp: Component, Ctor: Function): boolean {
+  const targetName = Ctor.name;
+  if (!targetName) return false;
+  let proto = Object.getPrototypeOf(comp) as object | null;
+  while (proto && proto.constructor !== Object) {
+    if (proto.constructor.name === targetName) return true;
+    proto = Object.getPrototypeOf(proto) as object | null;
+  }
+  return false;
 }
 
 /** Reset ID counter (for testing only) */

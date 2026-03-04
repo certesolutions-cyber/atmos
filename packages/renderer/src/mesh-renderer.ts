@@ -33,6 +33,8 @@ export class MeshRenderer extends Component {
   customPipelineResources: CustomPipelineResources | null = null;
   /** Custom material bind group (group 1 for custom pipeline). */
   customMaterialBindGroup: GPUBindGroup | null = null;
+  /** Custom shadow bind group (group 2 for shadow pipeline: scene + custom uniforms). */
+  customShadowBindGroup: GPUBindGroup | null = null;
 
   private _device: GPUDevice | null = null;
   private _pipelineResources: PipelineResources | null = null;
@@ -158,6 +160,21 @@ export class MeshRenderer extends Component {
     });
   }
 
+  /** Create shadow bind group (group 2) for custom vertex displacement shadows. */
+  initCustomShadowBindGroup(sceneBuffer: GPUBuffer): void {
+    if (!this._device || !this.customPipelineResources?.shadowExtraBindGroupLayout) return;
+    if (this.customShadowBindGroup) return;
+    if (!this.material?.customUniformBuffer) return;
+
+    this.customShadowBindGroup = this._device.createBindGroup({
+      layout: this.customPipelineResources.shadowExtraBindGroupLayout,
+      entries: [
+        { binding: 0, resource: { buffer: sceneBuffer } },
+        { binding: 1, resource: { buffer: this.material.customUniformBuffer } },
+      ],
+    });
+  }
+
   writeUniforms(viewProjection: Mat4Type): void {
     if (!this._device || !this.uniformBuffer) return;
 
@@ -252,6 +269,7 @@ export class MeshRenderer extends Component {
     this.bindGroup = null;
     this.materialBindGroup = null;
     this.customMaterialBindGroup = null;
+    this.customShadowBindGroup = null;
     this.customPipelineResources = null;
     if (this.material?.customUniformBuffer) {
       this.material.customUniformBuffer.destroy();

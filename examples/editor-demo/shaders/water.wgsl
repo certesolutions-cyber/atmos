@@ -3,6 +3,8 @@
 /// @property depthFalloff: float = 2.0
 /// @property waveSpeed: float = 2.0
 /// @property waveScale: float = 4.0
+/// @property windDir: vec2 = (0.8, 0.2)
+/// @property windSpeed: float = 0.15
 /// @property waveStrength: float = 0.2
 /// @property specularPower: float = 512.0
 /// @property specularIntensity: float = 40.0
@@ -14,7 +16,20 @@
 /// @property causticsIntensity: float = 0.1
 /// @property foamColor: vec4 = (0.72, 0.78, 0.88, 1.0)
 /// @property foamThreshold: float = 0.6
+/// @property vertexWaveAmp: float = 0.04
 /// @texture envMap
+
+/// @vertex
+fn displaceVertex(position: vec3<f32>, normal: vec3<f32>, uv: vec2<f32>) -> vec3<f32> {
+    let time = scene.cameraPos.w;
+    let t = time * custom.waveSpeed;
+    let px = position.x * custom.waveScale;
+    let pz = position.z * custom.waveScale;
+    let h = sin(px * 0.37 + t * 0.80) * 0.5
+          + sin(pz * 0.61 + t * 1.10) * 0.3
+          + sin((px + pz) * 0.93 + t * 0.95) * 0.2;
+    return vec3<f32>(position.x, position.y + h * custom.vertexWaveAmp, position.z);
+}
 
 @fragment fn main(input: FragmentInput) -> @location(0) vec4<f32> {
     let time = scene.cameraPos.w;
@@ -26,7 +41,16 @@
     let scale = custom.waveScale;
 
     // ── Wave normal via analytical derivatives ──
-    let waveResult = computeWaves(uv * scale, t);
+    let warpFreq = 0.1;
+    let warpAmp  = 2.5;
+
+    let warp1 = smoothNoise(uv * warpFreq + t * 0.02);
+    let warp2 = smoothNoise(uv * warpFreq + 9.1 - t * 0.03);
+    let uvWarp = (uv * scale) + (vec2<f32>(warp1, warp2) - 0.5) * warpAmp; // 0.1..0.6
+
+    let wind = normalize(custom.windDir) * custom.windSpeed;
+    let uvAdv = uvWarp + wind * t;   // avain: UV siirtyy ajassa
+    let waveResult = computeWaves(uvAdv, t);
     let waveN = waveResult.xy * custom.waveStrength;
 
     let N = normalize(vec3<f32>(waveN.x, 1.0, waveN.y));
@@ -133,8 +157,11 @@ fn computeWaves(uv: vec2<f32>, t: f32) -> vec3<f32> {
     var dy = 0.0;
     var h  = 0.0;
 
-    let noiseLo = smoothNoise(uv * 0.13) * 0.6 + 0.7;
-    let noiseHi = smoothNoise(uv * 0.37 + 1.7) * 0.4 + 0.8;
+    let windA = vec2<f32>(0.07, 0.02) * t;
+    let windB = vec2<f32>(-0.03, 0.05) * t;
+
+    let noiseLo = smoothNoise(uv * 0.13 + windA) * 0.6 + 0.7;
+    let noiseHi = smoothNoise(uv * 0.37 + 1.7 + windB) * 0.4 + 0.8;
 
     h += wave(uv, t, vec2<f32>( 0.70,  0.32), 0.37, 1.00 * noiseLo, 0.80, &dx, &dy);
     h += wave(uv, t, vec2<f32>(-0.45,  0.63), 0.61, 0.60 * noiseLo, 1.10, &dx, &dy);
@@ -156,10 +183,13 @@ fn wave(
     let d = normalize(dir);
     let phase = dot(d, uv) * freq + t * speed;
     let s = sin(phase) * amp;
+    let s2 = s * 0.75 + 0.25 * sin(phase * 2.0); // epäsymmetriaa
+    let disp = s2 * amp;
+
     let c = cos(phase) * amp * freq;
     *dx += c * d.x;
     *dy += c * d.y;
-    return s;
+    return disp;
 }
 
 // ── Smooth value noise ──

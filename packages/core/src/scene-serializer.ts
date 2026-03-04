@@ -82,6 +82,9 @@ export function serializeScene(scene: Scene): SceneData {
 
   for (const obj of scene.getAllObjects()) {
     if (obj.transient) continue;
+    // Skip prefab children (locked but not the root) — only the root stub is saved
+    if (obj.prefabLocked && !obj.prefabSource) continue;
+
     const components: ComponentData[] = [];
 
     // Serialize Transform (always present)
@@ -94,16 +97,19 @@ export function serializeScene(scene: Scene): SceneData {
       components.push({ type: 'Transform', data });
     }
 
-    // Serialize other components
-    for (const comp of obj.getComponents()) {
-      const def = getComponentDef(comp.constructor as typeof Component);
-      if (!def || def.name === 'Transform') continue;
+    // For prefab roots, save only Transform (the rest comes from the prefab file)
+    if (!obj.prefabSource) {
+      // Serialize other components
+      for (const comp of obj.getComponents()) {
+        const def = getComponentDef(comp.constructor as typeof Component);
+        if (!def || def.name === 'Transform') continue;
 
-      const data: Record<string, unknown> = {};
-      for (const prop of def.properties) {
-        data[prop.key] = toSerializableValue(resolvePropertyPath(comp, prop.key));
+        const data: Record<string, unknown> = {};
+        for (const prop of def.properties) {
+          data[prop.key] = toSerializableValue(resolvePropertyPath(comp, prop.key));
+        }
+        components.push({ type: def.name, data });
       }
-      components.push({ type: def.name, data });
     }
 
     const entry: GameObjectData = {

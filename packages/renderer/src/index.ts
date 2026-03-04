@@ -85,9 +85,9 @@ export { createTerrainPipeline, TERRAIN_VERTEX_STRIDE_FLOATS, TERRAIN_VERTEX_STR
 export type { TerrainPipelineResources } from './terrain-pipeline.js';
 export { TerrainMeshRenderer } from './terrain-mesh-renderer.js';
 export { TERRAIN_VERTEX_SHADER, TERRAIN_FRAGMENT_SHADER } from './terrain-shader.js';
-export { parseCustomShader } from './custom-shader-parser.js';
+export { parseCustomShader, MAX_CUSTOM_TEXTURES } from './custom-shader-parser.js';
 export type { CustomPropertyDef, CustomTextureDef, CustomShaderDescriptor } from './custom-shader-parser.js';
-export { generateCustomFragmentShader } from './custom-shader-codegen.js';
+export { generateCustomFragmentShader, generateCustomVertexShader, generateCustomShadowVertexShader } from './custom-shader-codegen.js';
 export { createCustomPipeline } from './custom-pipeline.js';
 export type { CustomPipelineResources } from './custom-pipeline.js';
 export { SCENE_STRUCTS_WGSL } from './pbr-wgsl.js';

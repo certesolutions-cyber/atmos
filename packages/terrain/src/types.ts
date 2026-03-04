@@ -3,6 +3,21 @@ import type { GPUTextureHandle } from "@certe/atmos-renderer";
 /** Density function: positive = air, negative = solid, surface at isoLevel */
 export type DensityFn = (x: number, y: number, z: number) => number;
 
+/** 2D height function: world (x, z) → height (y) */
+export type HeightFn = (x: number, z: number) => number;
+
+/** Heightmap data: flat row-major Float32Array + dimensions */
+export interface HeightmapData {
+  heights: Float32Array;   // row-major, heights[z * width + x]
+  width: number;           // samples in X direction
+  depth: number;           // samples in Z direction
+  scaleX: number;          // world-space distance between samples in X
+  scaleZ: number;          // world-space distance between samples in Z
+  scaleY: number;          // height scaling (height * scaleY = world Y)
+  offsetX?: number;        // heightmap origin in world-space (default 0)
+  offsetZ?: number;        // (default 0)
+}
+
 export interface DensitySample {
   density: number;
   weights?: Float32Array;

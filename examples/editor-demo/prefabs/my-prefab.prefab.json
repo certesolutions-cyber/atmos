@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "gameObjects": [
+    {
+      "name": "Cube",
+      "id": 19,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere",
+      "id": 20,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0.5326328873634338,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sphere",
+      "id": 21,
+      "parentId": 19,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0.697539746761322,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:sphere",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    }
+  ]
+}

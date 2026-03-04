@@ -69,6 +69,12 @@ export class TerrainWorld extends Component {
   private _pendingRemoval: GameObject[] = [];
   private _initialized = false;
 
+  /** Destroy all chunks and reset state so the terrain can be re-initialized. */
+  reset(): void {
+    this._destroyAllChunks();
+    this._initialized = false;
+  }
+
   setDensityFn(fn: DensityFn): void {
     this._densityFn = fn;
   }

@@ -223,7 +223,7 @@ try {
     writeBundle(options) {
       if (!isBuild) return;
       const outDir = options.dir || path.resolve(root, 'dist');
-      const assetDirs = ['scenes', 'materials', 'textures', 'models', 'shaders'];
+      const assetDirs = ['scenes', 'materials', 'textures', 'models', 'shaders', 'prefabs'];
       for (const dir of assetDirs) {
         const src = path.resolve(root, dir);
         if (fs.existsSync(src)) {

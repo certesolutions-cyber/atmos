@@ -1,4 +1,4 @@
-import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess } from '@certe/atmos-core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess, resolvePrefabInstances } from '@certe/atmos-core';
 import type { PhysicsStepper } from '@certe/atmos-core';
 import {
   initWebGPU,
@@ -167,12 +167,22 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
   };
   const deserializeCtx = createDefaultDeserializeContext(factoryDeps);
 
+  // 10b. Prefab loader
+  const prefabLoader = async (path: string) => {
+    try {
+      const res = await fetch(assetBase + path);
+      if (!res.ok) return null;
+      return JSON.parse(await res.text());
+    } catch { return null; }
+  };
+
   // 11. Fetch + deserialize scene
   const sceneRes = await fetch(assetBase + config.scene);
   if (!sceneRes.ok) throw new Error(`Failed to fetch scene: ${config.scene}`);
   const sceneData = JSON.parse(await sceneRes.text());
   const loadedScene = deserializeScene(sceneData, deserializeCtx);
   if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+  await resolvePrefabInstances(loadedScene, prefabLoader, deserializeCtx);
 
   // 12. Switch render system to loaded scene + activate camera
   renderSystem.scene = loadedScene;
@@ -208,6 +218,7 @@ export async function startPlayer(config: PlayerConfig): Promise<PlayerApp> {
       const data = JSON.parse(await res.text());
       const newScene = deserializeScene(data, deserializeCtx);
       if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+      await resolvePrefabInstances(newScene, prefabLoader, deserializeCtx);
       renderSystem.scene = newScene;
       engine.scene = newScene;
       if (physicsSystem) physicsSystem.scene = newScene;

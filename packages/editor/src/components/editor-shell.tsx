@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess, serializePrefab } from '@certe/atmos-core';
+import { Scene, serializeScene, deserializeScene, serializePostProcess, applyPostProcess, serializePrefab, resolvePrefabInstances } from '@certe/atmos-core';
 import type { DeserializeContext, Component, GameObject } from '@certe/atmos-core';
 import type { EditorState } from '../editor-state.js';
 import type { OrbitCamera } from '../orbit-camera.js';
@@ -328,6 +328,18 @@ export function EditorShell({
         const ctx = deserializeContext;
         const scene = deserializeScene(data, ctx);
         if (ctx?.onComplete) await ctx.onComplete();
+        const pfs = editorState.projectFs;
+        if (pfs?.isOpen) {
+          await resolvePrefabInstances(scene, async (p: string) => {
+            try {
+              const raw = await pfs.readTextFile(p);
+              return JSON.parse(raw);
+            } catch (err) {
+              console.error('[Editor] Failed to load prefab:', err);
+              return null;
+            }
+          }, ctx);
+        }
         const name = scenePath.replace(/^scenes\//, '').replace(/\.scene\.json$/, '');
         editorState.sceneName = name;
         editorState.setScene(scene);
@@ -475,6 +487,7 @@ export function EditorShell({
               <option value="sphere">Sphere</option>
               <option value="cylinder">Cylinder</option>
               <option value="plane">Plane</option>
+              <option value="planeHd">Plane HD</option>
               <option value="camera">Camera</option>
               <option value="directionalLight">Directional Light</option>
               <option value="pointLight">Point Light</option>

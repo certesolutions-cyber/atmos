@@ -1,4 +1,4 @@
-import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess, instantiatePrefab, deserializePrefab } from '@certe/atmos-core';
+import { Engine, Scene, registerCoreBuiltins, deserializeScene, applyPostProcess, instantiatePrefab, deserializePrefab, resolvePrefabInstances } from '@certe/atmos-core';
 import type { PrefabData } from '@certe/atmos-core';
 import type { PhysicsStepper } from '@certe/atmos-core';
 import {
@@ -374,6 +374,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
           const data = JSON.parse(json);
           const scene = deserializeScene(data, deserializeCtx);
           if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+          await resolvePrefabInstances(scene, loadPrefabData, deserializeCtx);
           const name = entry.name.replace(/\.scene\.json$/, '');
           edState.sceneName = name;
           edState.setScene(scene);
@@ -560,6 +561,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
         const data = JSON.parse(json);
         const loadedScene = deserializeScene(data, deserializeCtx);
         if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+        await resolvePrefabInstances(loadedScene, loadPrefabData, deserializeCtx);
         editorState.setScene(loadedScene);
         if (data.postProcess) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);
       } catch (err) {
@@ -578,6 +580,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       const data = JSON.parse(json);
       const loaded = deserializeScene(data, deserializeCtx);
       if (deserializeCtx.onComplete) await deserializeCtx.onComplete();
+      await resolvePrefabInstances(loaded, loadPrefabData, deserializeCtx);
       edState.sceneName = name;
       edState.setScene(loaded);
       if (data.postProcess) applyPostProcess(renderSystem as unknown as Record<string, unknown>, data.postProcess);

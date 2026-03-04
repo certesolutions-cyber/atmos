@@ -17,7 +17,7 @@ import type { ScriptAsset, AssetEntry } from './asset-types.js';
 import type { ProjectFileSystem } from './project-fs.js';
 import type { EditorPhysicsPlugin } from './bootstrap/types.js';
 
-export type PrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'camera' | 'directionalLight' | 'pointLight' | 'spotLight';
+export type PrimitiveType = 'cube' | 'sphere' | 'cylinder' | 'plane' | 'planeHd' | 'camera' | 'directionalLight' | 'pointLight' | 'spotLight';
 
 const GIZMO_SCREEN_SCALE = 0.15;
 

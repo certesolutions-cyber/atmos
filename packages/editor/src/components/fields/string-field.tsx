@@ -3,6 +3,7 @@ import React from 'react';
 interface StringFieldProps {
   label: string;
   value: string;
+  onChange?: (value: string) => void;
 }
 
 const rowStyle: React.CSSProperties = {
@@ -22,11 +23,16 @@ const inputStyle: React.CSSProperties = {
   width: '140px',
 };
 
-export function StringField({ label, value }: StringFieldProps) {
+export function StringField({ label, value, onChange }: StringFieldProps) {
   return (
     <div style={rowStyle}>
       <span style={{ fontSize: '12px', color: '#aaa' }}>{label}</span>
-      <input style={inputStyle} value={value} readOnly />
+      <input
+        style={{ ...inputStyle, color: onChange ? '#ccc' : '#999' }}
+        value={value}
+        readOnly={!onChange}
+        onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      />
     </div>
   );
 }

@@ -1,8 +1,10 @@
-import { Component, Input } from '@certe/atmos-core';
-import type { PropertyDef } from '@certe/atmos-core';
-import { Vec3, Quat } from '@certe/atmos-math';
-import type { Vec3Type, QuatType } from '@certe/atmos-math';
-import { terrainDensity } from './terrain-density.js';
+import { Component, Input } from "@certe/atmos-core";
+import type { PropertyDef } from "@certe/atmos-core";
+import { Vec3, Quat } from "@certe/atmos-math";
+import type { Vec3Type, QuatType } from "@certe/atmos-math";
+import { TerrainDensityProvider } from "./terrainDensityProvider.js";
+import { World } from "./world.js";
+import { World2D } from "./world2D.js";
 
 /**
  * First-person walker that follows terrain surface via density field.
@@ -24,12 +26,14 @@ export class FPSWalker extends Component {
   /** How strongly feet are pushed out of solid per frame. */
   pushStrength = 60.0;
 
+  world: TerrainDensityProvider | null = null;
+
   static editorProperties: PropertyDef[] = [
-    { key: 'moveSpeed', type: 'number', min: 0, max: 50, step: 0.5 },
-    { key: 'lookSpeed', type: 'number', min: 0, max: 0.01, step: 0.0005 },
-    { key: 'gravity', type: 'number', min: 0, max: 60, step: 1 },
-    { key: 'jumpSpeed', type: 'number', min: 0, max: 20, step: 0.5 },
-    { key: 'eyeHeight', type: 'number', min: 0.5, max: 3, step: 0.1 },
+    { key: "moveSpeed", type: "number", min: 0, max: 50, step: 0.5 },
+    { key: "lookSpeed", type: "number", min: 0, max: 0.01, step: 0.0005 },
+    { key: "gravity", type: "number", min: 0, max: 60, step: 1 },
+    { key: "jumpSpeed", type: "number", min: 0, max: 20, step: 0.5 },
+    { key: "eyeHeight", type: "number", min: 0.5, max: 3, step: 0.1 },
   ];
 
   private _yaw = 0;
@@ -48,7 +52,7 @@ export class FPSWalker extends Component {
 
   // Pointer lock request (click to lock)
   private _onClick = () => {
-    const canvas = document.querySelector('canvas');
+    const canvas = document.querySelector("canvas");
     if (canvas && !document.pointerLockElement) {
       canvas.requestPointerLock();
     }
@@ -60,10 +64,24 @@ export class FPSWalker extends Component {
     this._velY = 0;
     this._grounded = false;
 
-    window.addEventListener('click', this._onClick);
+    window.addEventListener("click", this._onClick);
+  }
+
+  initWorld(): void {
+    const worlds = (
+      Component.findAll(World) as TerrainDensityProvider[]
+    ).concat(Component.findAll(World2D) || []);
+    const ready = worlds.find((w) => w.ready);
+    if (!ready) return;
+    this.world = ready;
   }
 
   onUpdate(dt: number): void {
+    if (!this.world || !this.world.ready) {
+      this.world = null;
+      this.initWorld();
+      return;
+    }
     if (!Input.current) return;
     const t = this.gameObject.transform;
 
@@ -71,7 +89,10 @@ export class FPSWalker extends Component {
     if (document.pointerLockElement) {
       this._yaw -= Input.current.mouseDelta.x * this.lookSpeed;
       this._pitch -= Input.current.mouseDelta.y * this.lookSpeed;
-      this._pitch = Math.max(-Math.PI * 0.49, Math.min(Math.PI * 0.49, this._pitch));
+      this._pitch = Math.max(
+        -Math.PI * 0.49,
+        Math.min(Math.PI * 0.49, this._pitch),
+      );
     }
     const pos = t.position;
     let px = pos[0]!;
@@ -83,20 +104,24 @@ export class FPSWalker extends Component {
     Vec3.set(this._right, Math.cos(this._yaw), 0, -Math.sin(this._yaw));
 
     Vec3.set(this._move, 0, 0, 0);
-    if (Input.current.getKey('KeyW')) Vec3.add(this._move, this._move, this._forward);
-    if (Input.current.getKey('KeyS')) Vec3.sub(this._move, this._move, this._forward);
-    if (Input.current.getKey('KeyD')) Vec3.add(this._move, this._move, this._right);
-    if (Input.current.getKey('KeyA')) Vec3.sub(this._move, this._move, this._right);
+    if (Input.current.getKey("KeyW"))
+      Vec3.add(this._move, this._move, this._forward);
+    if (Input.current.getKey("KeyS"))
+      Vec3.sub(this._move, this._move, this._forward);
+    if (Input.current.getKey("KeyD"))
+      Vec3.add(this._move, this._move, this._right);
+    if (Input.current.getKey("KeyA"))
+      Vec3.sub(this._move, this._move, this._right);
 
     const hLen = Math.hypot(this._move[0]!, this._move[2]!);
     if (hLen > 0.001) {
-      const speed = this.moveSpeed * dt / hLen;
+      const speed = (this.moveSpeed * dt) / hLen;
       px += this._move[0]! * speed;
       pz += this._move[2]! * speed;
     }
 
     // --- Jump ---
-    if (Input.current.getKey('Space') && this._grounded) {
+    if (Input.current.getKey("Space") && this._grounded) {
       this._velY = this.jumpSpeed;
       this._grounded = false;
     }
@@ -107,12 +132,13 @@ export class FPSWalker extends Component {
 
     // --- Terrain collision via density ---
     const feetY = py - this.eyeHeight;
-    const density = terrainDensity(px, feetY, pz);
+    const densityFn = this.world!.terrainDensity;
+    const density = densityFn(px, feetY, pz) || 0;
 
     if (density < 0) {
       // Inside solid — compute gradient to find "up" direction
       const eps = this.gradientEps;
-      const fn = terrainDensity;
+      const fn = densityFn;
       const gx = fn(px + eps, feetY, pz) - fn(px - eps, feetY, pz);
       const gy = fn(px, feetY + eps, pz) - fn(px, feetY - eps, pz);
       const gz = fn(px, feetY, pz + eps) - fn(px, feetY, pz - eps);
@@ -130,18 +156,19 @@ export class FPSWalker extends Component {
       }
 
       // If gradient points mostly up, we're grounded
-      if (glen > 1e-6 && (gy / glen) > 0.5) {
+      if (glen > 1e-6 && gy / glen > 0.5) {
         this._grounded = true;
         if (this._velY < 0) this._velY = 0;
       }
     } else {
       // Above surface — estimate world distance using gradient magnitude
       const eps = this.gradientEps;
-      const fn = terrainDensity;
+      const fn = densityFn;
       const gy = fn(px, feetY + eps, pz) - fn(px, feetY - eps, pz);
       const gradY = gy / (2 * eps);
       // density / |gradY| ≈ distance in world units above surface
-      const approxDist = Math.abs(gradY) > 1e-6 ? density / Math.abs(gradY) : density * 20;
+      const approxDist =
+        Math.abs(gradY) > 1e-6 ? density / Math.abs(gradY) : density * 20;
       this._grounded = approxDist < 0.3;
       if (this._grounded && this._velY < 0) {
         this._velY = 0;
@@ -160,6 +187,6 @@ export class FPSWalker extends Component {
   }
 
   onDestroy(): void {
-    window.removeEventListener('click', this._onClick);
+    window.removeEventListener("click", this._onClick);
   }
 }

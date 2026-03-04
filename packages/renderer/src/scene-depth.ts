@@ -82,6 +82,7 @@ export class SceneDepthPass {
     meshRenderers: readonly MeshRenderer[],
     skinnedRenderers: readonly SkinnedMeshRenderer[],
     terrainRenderers: readonly TerrainMeshRenderer[],
+    extraDraw?: (pass: GPURenderPassEncoder) => void,
   ): void {
     this._device.queue.writeBuffer(this._vpBuffer, 0, vpMatrix as GPUAllowSharedBufferSource);
 
@@ -137,6 +138,8 @@ export class SceneDepthPass {
         pass.drawIndexed(tmr.mesh.indexCount);
       }
     }
+
+    extraDraw?.(pass);
 
     pass.end();
   }

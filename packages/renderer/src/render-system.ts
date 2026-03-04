@@ -194,6 +194,7 @@ export class RenderSystem implements Renderer {
       if (mr && mr.material?.customShaderPath === shaderPath) {
         mr.customPipelineResources = null;
         mr.customMaterialBindGroup = null;
+        mr.customShadowBindGroup = null;
       }
     }
   }
@@ -214,6 +215,7 @@ export class RenderSystem implements Renderer {
       case 'cube': { const g = createCubeGeometry(); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
       case 'sphere': { const g = createSphereGeometry(0.5, 24, 16); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
       case 'plane': { const g = createPlaneGeometry(20, 20); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
+      case 'planeHd': { const g = createPlaneGeometry(20, 20, 128, 128); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
       case 'cylinder': { const g = createCylinderGeometry(0.5, 0.5, 1, 16); mesh = createMesh(device, g.vertices, g.indices, S); mesh.bounds = g.bounds; break; }
       default: return null;
     }
@@ -380,6 +382,9 @@ export class RenderSystem implements Renderer {
         if (!bs || isSphereInFrustum(this._frustumPlanes, bs)) {
           if (mr.customPipelineResources) {
             mr.initCustomMaterialBindGroup(this._sceneBuffer);
+            if (mr.customPipelineResources.shadowPipeline) {
+              mr.initCustomShadowBindGroup(this._sceneBuffer);
+            }
           } else {
             mr.initMaterialBindGroup(this._sceneBuffer);
           }
@@ -439,15 +444,17 @@ export class RenderSystem implements Renderer {
     }
 
     // --- Scene depth pass (for readback + custom shader depth access) ---
-    const hasTransparent = meshRenderers.some(mr => mr.customPipelineResources);
+    const hasTransparent = meshRenderers.some(mr => mr.customPipelineResources && !mr.customPipelineResources.descriptor.opaque);
     const needSceneDepth = this._pendingReadbacks.length > 0 || hasTransparent;
     if (needSceneDepth) {
       if (!this._sceneDepthPass) {
         this._sceneDepthPass = new SceneDepthPass(device, this._pipelineResources.objectBindGroupLayout, canvasW, canvasH);
       }
       this._sceneDepthPass.resize(canvasW, canvasH);
-      // Only pass opaque MRs to scene depth (not transparent/custom ones)
-      const opaqueForDepth = meshRenderers.filter(mr => !mr.customPipelineResources);
+      // Only pass non-custom MRs to scene depth (transparent custom ones sample this).
+      // Opaque custom shaders with vertex displacement are excluded here and drawn
+      // separately via their own shadow pipelines (same pattern as shadow passes).
+      const opaqueForDepth = meshRenderers.filter(mr => !mr.customPipelineResources?.shadowPipeline);
       this._sceneDepthPass.execute(this._encoder, vpMatrix, opaqueForDepth, skinnedRenderers, terrainRenderers);
       Mat4.invert(this._invVPMatrix, vpMatrix);
 
@@ -503,11 +510,11 @@ export class RenderSystem implements Renderer {
     // Set shadow bind group once for all objects
     this._pass.setBindGroup(2, shadowBindGroup);
 
-    // Split MeshRenderers: opaque first, then transparent (custom pipeline)
+    // Split MeshRenderers: opaque first, then transparent (non-opaque custom pipeline)
     const opaqueMRs: typeof meshRenderers = [];
     const transparentMRs: typeof meshRenderers = [];
     for (const mr of meshRenderers) {
-      if (mr.customPipelineResources) {
+      if (mr.customPipelineResources && !mr.customPipelineResources.descriptor.opaque) {
         transparentMRs.push(mr);
       } else {
         opaqueMRs.push(mr);
@@ -515,8 +522,25 @@ export class RenderSystem implements Renderer {
     }
 
     // Draw opaque MeshRenderers
+    // Opaque custom shaders need shadow (group 2) + depth (group 3) bind groups
+    let opaqueDummyDepthBG: GPUBindGroup | null = null;
     for (const mr of opaqueMRs) {
-      mr.draw(this._pass);
+      if (mr.customPipelineResources) {
+        if (!opaqueDummyDepthBG) {
+          // Create a 1x1 dummy depth texture for group 3 (opaque shaders don't sample it)
+          const dummyTex = device.createTexture({
+            size: [1, 1], format: 'depth24plus',
+            usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT,
+          });
+          opaqueDummyDepthBG = device.createBindGroup({
+            layout: mr.customPipelineResources.depthBindGroupLayout,
+            entries: [{ binding: 0, resource: dummyTex.createView() }],
+          });
+        }
+        mr.draw(this._pass, shadowBindGroup, opaqueDummyDepthBG);
+      } else {
+        mr.draw(this._pass);
+      }
     }
 
     // Draw skinned mesh renderers (pass shadow bind group since pipeline switch invalidates it)
@@ -530,12 +554,7 @@ export class RenderSystem implements Renderer {
       this._pass.setBindGroup(2, shadowBindGroup);
     }
 
-    // Overlay callbacks (grid, gizmos, etc.)
-    for (const cb of this._overlayCallbacks) {
-      cb(this._pass, vpMatrix, cameraEye);
-    }
-
-    // Draw transparent MeshRenderers last (custom pipelines with alpha blending)
+    // Draw transparent MeshRenderers (custom pipelines with alpha blending)
     if (transparentMRs.length > 0) {
       // Create depth bind group (group 3) from scene depth pass
       let depthBindGroup: GPUBindGroup | undefined;
@@ -551,12 +570,27 @@ export class RenderSystem implements Renderer {
         mr.draw(this._pass, shadowBindGroup, depthBindGroup);
       }
     }
+
+    // Overlay callbacks (grid, gizmos) drawn last so they're always visible
+    for (const cb of this._overlayCallbacks) {
+      cb(this._pass, vpMatrix, cameraEye);
+    }
   }
 
   private _makeExtraShadowDraw(): ((pass: GPURenderPassEncoder) => void) | undefined {
     const hasT = this._terrainRenderers.length > 0;
     const hasS = this._skinnedMeshRenderers.length > 0;
-    if (!hasT && !hasS) return undefined;
+
+    // Collect custom vertex MRs that need shadow draws
+    const customVertexMRs: MeshRenderer[] = [];
+    for (const mr of this._meshRenderers) {
+      if (mr.castShadow && mr.customPipelineResources?.shadowPipeline && mr.customShadowBindGroup) {
+        customVertexMRs.push(mr);
+      }
+    }
+    const hasC = customVertexMRs.length > 0;
+
+    if (!hasT && !hasS && !hasC) return undefined;
 
     // Terrain shadow pipeline (lazy)
     let terrainPipeline: GPURenderPipeline | null = null;
@@ -596,25 +630,58 @@ export class RenderSystem implements Renderer {
           pass.drawIndexed(smr.mesh.indexCount);
         }
       }
+      // Draw custom vertex displacement shadows
+      for (const mr of customVertexMRs) {
+        pass.setPipeline(mr.customPipelineResources!.shadowPipeline!);
+        pass.setBindGroup(0, mr.bindGroup!);
+        pass.setBindGroup(2, mr.customShadowBindGroup!);
+        pass.setVertexBuffer(0, mr.mesh!.vertexBuffer);
+        pass.setIndexBuffer(mr.mesh!.indexBuffer, mr.mesh!.indexFormat);
+        pass.drawIndexed(mr.mesh!.indexCount);
+      }
     };
   }
 
   /** Like _makeExtraShadowDraw but filters by receiveSSAO flag (for depth prepass only). */
   private _makeDepthPrepassExtraDraw(): ((pass: GPURenderPassEncoder) => void) | undefined {
     const ssaoTerrain = this._terrainRenderers.filter(t => t.receiveSSAO);
-    if (ssaoTerrain.length === 0) return undefined;
-    if (!this._terrainShadowPipeline) {
-      this._terrainShadowPipeline = this._createTerrainShadowPipeline();
+
+    // Custom vertex MRs that want SSAO depth
+    const customVertexMRs: MeshRenderer[] = [];
+    for (const mr of this._meshRenderers) {
+      if (mr.receiveSSAO && mr.customPipelineResources?.shadowPipeline && mr.customShadowBindGroup) {
+        customVertexMRs.push(mr);
+      }
     }
-    const pipeline = this._terrainShadowPipeline;
+
+    if (ssaoTerrain.length === 0 && customVertexMRs.length === 0) return undefined;
+
+    let terrainPipeline: GPURenderPipeline | null = null;
+    if (ssaoTerrain.length > 0) {
+      if (!this._terrainShadowPipeline) {
+        this._terrainShadowPipeline = this._createTerrainShadowPipeline();
+      }
+      terrainPipeline = this._terrainShadowPipeline;
+    }
+
     return (pass: GPURenderPassEncoder) => {
-      pass.setPipeline(pipeline);
-      for (const tmr of ssaoTerrain) {
-        if (!tmr.mesh || !tmr.bindGroup) continue;
-        pass.setBindGroup(0, tmr.bindGroup);
-        pass.setVertexBuffer(0, tmr.mesh.vertexBuffer);
-        pass.setIndexBuffer(tmr.mesh.indexBuffer, tmr.mesh.indexFormat);
-        pass.drawIndexed(tmr.mesh.indexCount);
+      if (terrainPipeline) {
+        pass.setPipeline(terrainPipeline);
+        for (const tmr of ssaoTerrain) {
+          if (!tmr.mesh || !tmr.bindGroup) continue;
+          pass.setBindGroup(0, tmr.bindGroup);
+          pass.setVertexBuffer(0, tmr.mesh.vertexBuffer);
+          pass.setIndexBuffer(tmr.mesh.indexBuffer, tmr.mesh.indexFormat);
+          pass.drawIndexed(tmr.mesh.indexCount);
+        }
+      }
+      for (const mr of customVertexMRs) {
+        pass.setPipeline(mr.customPipelineResources!.shadowPipeline!);
+        pass.setBindGroup(0, mr.bindGroup!);
+        pass.setBindGroup(2, mr.customShadowBindGroup!);
+        pass.setVertexBuffer(0, mr.mesh!.vertexBuffer);
+        pass.setIndexBuffer(mr.mesh!.indexBuffer, mr.mesh!.indexFormat);
+        pass.drawIndexed(mr.mesh!.indexCount);
       }
     };
   }

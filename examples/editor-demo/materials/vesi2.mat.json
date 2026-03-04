@@ -12,12 +12,12 @@
   "customShaderPath": "shaders/water.wgsl",
   "customUniforms": {
     "waveSpeed": 2,
-    "waveScale": 4,
-    "causticsScale": 0.1,
+    "waveScale": 2,
+    "causticsScale": 0,
     "waveStrength": 0.2,
     "causticsIntensity": 0.1,
-    "specularIntensity": 40,
-    "specularPower": 512,
+    "specularIntensity": 20,
+    "specularPower": 1024,
     "foamThreshold": 0.6,
     "sssIntensity": 0.8,
     "sssColor": [
@@ -38,14 +38,16 @@
       0.2196078431372549,
       0.6
     ],
-    "fresnelPower": 20,
+    "fresnelPower": 5,
     "fresnelBias": 0.01,
     "foamColor": [
       0.7176470588235294,
       0.7803921568627451,
       0.8823529411764706,
       1
-    ]
+    ],
+    "depthFalloff": 1,
+    "windSpeed": 0.5
   },
   "customTextures": {
     "envMap": "textures/panoramic-view-sea.jpg"

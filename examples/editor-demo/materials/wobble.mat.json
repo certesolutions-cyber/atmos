@@ -1,0 +1,16 @@
+{
+  "name": "Wobble",
+  "shader": "custom",
+  "albedo": [1, 1, 1, 1],
+  "metallic": 0,
+  "roughness": 0.5,
+  "customShaderPath": "shaders/wobble.wgsl",
+  "customUniforms": {
+    "amplitude": 0.3,
+    "frequency": 3.0,
+    "speed": 2.0,
+    "color1": [0.1, 0.6, 1.0, 1.0],
+    "color2": [1.0, 0.2, 0.4, 1.0]
+  },
+  "customTextures": {}
+}

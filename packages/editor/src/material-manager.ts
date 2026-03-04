@@ -113,6 +113,16 @@ export class MaterialManager {
     }
   }
 
+  /** List image files from all project directories. */
+  async listAllTextures(): Promise<string[]> {
+    try {
+      const files = await this._projectFs.listFiles();
+      return files.filter((f) => /\.(png|jpg|jpeg|webp)$/i.test(f));
+    } catch {
+      return [];
+    }
+  }
+
   /** List .wgsl shader files in the shaders/ directory. */
   async listShaders(): Promise<string[]> {
     try {
