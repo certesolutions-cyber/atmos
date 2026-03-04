@@ -1,0 +1,21 @@
+{
+  "name": "clipmap-terrain-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@certe/atmos-core": "*",
+    "@certe/atmos-math": "*",
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-editor": "*",
+    "@certe/atmos-clipmap-terrain": "*"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0"
+  }
+}

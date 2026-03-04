@@ -126,6 +126,8 @@ export interface EditorConfig {
   showAssetBrowser?: boolean;
   /** Callback invoked when a script is attached to a GameObject. */
   onAttachScript?: (script: ScriptAsset, go: GameObject) => void;
+  /** Extra predicate for components that should survive play/pause snapshot restore (GPU-owning, etc.). */
+  isEngineComponent?: (comp: Component) => boolean;
 }
 
 /** Return value of startEditor(). */

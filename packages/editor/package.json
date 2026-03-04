@@ -70,6 +70,7 @@
   },
   "dependencies": {
     "@certe/atmos-animation": "^0.8.8",
+    "@certe/atmos-clipmap-terrain": "^0.8.8",
     "@certe/atmos-assets": "^0.8.8",
     "@certe/atmos-core": "^0.8.8",
     "@certe/atmos-math": "^0.8.8",

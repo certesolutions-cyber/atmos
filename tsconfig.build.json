@@ -8,6 +8,7 @@
     { "path": "packages/animation" },
     { "path": "packages/assets" },
     { "path": "packages/terrain" },
+    { "path": "packages/clipmap-terrain" },
     { "path": "packages/editor" }
   ]
 }

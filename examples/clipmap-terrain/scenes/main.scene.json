@@ -1,0 +1,313 @@
+{
+  "gameObjects": [
+    {
+      "name": "Empty",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -20,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "ProceduralTerrain",
+          "data": {}
+        },
+        {
+          "type": "ClipmapTerrain",
+          "data": {
+            "config.gridSize": 65,
+            "config.cellSize": 0.5,
+            "config.levels": 6,
+            "config.heightmapResolution": 1024,
+            "config.heightmapWorldSize": 2048,
+            "castShadow": true,
+            "receiveSSAO": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "player",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "FPSWalker",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 3,
+      "parentId": 2,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.1,
+            "far": 600,
+            "isMainCamera": true,
+            "clearColor": [
+              0.7058823704719543,
+              0.7450980544090271,
+              0.7843137383460999,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-0",
+      "id": 52,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-1",
+      "id": 53,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-2",
+      "id": 54,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-3",
+      "id": 55,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-4",
+      "id": 56,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "clipmap-ring-5",
+      "id": 57,
+      "parentId": 1,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1.2,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": true,
+    "fogMode": "linear",
+    "fogDensity": 0.003,
+    "fogStart": 300,
+    "fogEnd": 600,
+    "fogColor": [
+      0.7058823704719543,
+      0.7450980544090271,
+      0.7843137383460999
+    ]
+  }
+}

@@ -22,6 +22,7 @@ import type { ModelAsset } from '@certe/atmos-assets';
 import { Vec3 } from '@certe/atmos-math';
 import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
 import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@certe/atmos-animation';
+import { registerClipmapTerrainBuiltins } from '@certe/atmos-clipmap-terrain';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -51,6 +52,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   registerCoreBuiltins();
   registerRendererBuiltins();
   registerAnimationBuiltins();
+  registerClipmapTerrainBuiltins();
 
   // 2. DOM setup + WebGPU
   injectBaseStyles();
@@ -512,7 +514,8 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     || c instanceof PointLight || c instanceof SpotLight
     || c instanceof AnimationMixer
     || c instanceof AnimationHandler
-    || (config.physics?.isPhysicsComponent(c) ?? false);
+    || (config.physics?.isPhysicsComponent(c) ?? false)
+    || (config.isEngineComponent?.(c) ?? false);
 
   cleanups.push(editorState.on('pauseChanged', () => {
     engine.paused = editorState.paused;

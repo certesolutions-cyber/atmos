@@ -27,7 +27,7 @@ export { Camera } from './camera.js';
 export type { ScreenToWorldProvider } from './camera.js';
 export { SceneDepthPass } from './scene-depth.js';
 export { RenderSystem, createDefaultCamera } from './render-system.js';
-export type { CameraSettings, OverlayCallback, MaterialLoader, ShaderLoader } from './render-system.js';
+export type { CameraSettings, OverlayCallback, MaterialLoader, ShaderLoader, RendererPlugin } from './render-system.js';
 export { registerRendererBuiltins } from './register-builtins.js';
 export {
   createDefaultMaterialAsset,
@@ -90,4 +90,4 @@ export type { CustomPropertyDef, CustomTextureDef, CustomShaderDescriptor } from
 export { generateCustomFragmentShader, generateCustomVertexShader, generateCustomShadowVertexShader } from './custom-shader-codegen.js';
 export { createCustomPipeline } from './custom-pipeline.js';
 export type { CustomPipelineResources } from './custom-pipeline.js';
-export { SCENE_STRUCTS_WGSL } from './pbr-wgsl.js';
+export { SCENE_STRUCTS_WGSL, PBR_FUNCTIONS_WGSL, LIGHT_LOOP_WGSL, FOG_WGSL } from './pbr-wgsl.js';

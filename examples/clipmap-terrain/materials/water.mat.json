@@ -1,0 +1,13 @@
+{
+  "name": "Water",
+  "shader": "custom",
+  "albedo": [
+    0,
+    0.3,
+    0.5,
+    0.8
+  ],
+  "metallic": 0,
+  "roughness": 0.3,
+  "customShaderPath": "shaders/water.wgsl"
+}

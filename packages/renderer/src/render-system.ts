@@ -65,6 +65,21 @@ export type MaterialLoader = (path: string) => Promise<Material>;
 /** Pluggable shader source loader — reads .wgsl text from a project path. */
 export type ShaderLoader = (path: string) => Promise<string>;
 
+/**
+ * Plugin interface for external renderer types (e.g. clipmap terrain).
+ * Avoids circular dependency: external packages register draw callbacks.
+ */
+export interface RendererPlugin {
+  /** Called during beginFrame() to update + collect renderers. */
+  collect(vpMatrix: Float32Array, cameraEye: Float32Array, sceneBuffer: GPUBuffer): void;
+  /** Draw into the main render pass. */
+  draw(pass: GPURenderPassEncoder, shadowBindGroup: GPUBindGroup): void;
+  /** Draw into shadow passes. Returns true if it drew anything. */
+  drawShadow?(pass: GPURenderPassEncoder): void;
+  /** Draw into depth prepass. */
+  drawDepth?(pass: GPURenderPassEncoder): void;
+}
+
 export class RenderSystem implements Renderer {
   /** The active RenderSystem, set automatically on construction. */
   static current: RenderSystem | null = null;
@@ -125,6 +140,8 @@ export class RenderSystem implements Renderer {
   private _shaderLoader: ShaderLoader | null = null;
   // Pending custom shader pipeline builds (dedup)
   private readonly _pendingShaders = new Map<string, Promise<CustomPipelineResources | null>>();
+  // Registered renderer plugins (e.g. clipmap terrain)
+  private readonly _rendererPlugins = new Set<RendererPlugin>();
 
   bloomIntensity = 0.5;
   bloomThreshold = 1.0;
@@ -182,6 +199,16 @@ export class RenderSystem implements Renderer {
   /** Set the shader loader used to load custom .wgsl sources from the project. */
   setShaderLoader(loader: ShaderLoader): void {
     this._shaderLoader = loader;
+  }
+
+  /** Register an external renderer plugin (e.g. clipmap terrain). */
+  addRendererPlugin(plugin: RendererPlugin): void {
+    this._rendererPlugins.add(plugin);
+  }
+
+  /** Remove a previously registered renderer plugin. */
+  removeRendererPlugin(plugin: RendererPlugin): void {
+    this._rendererPlugins.delete(plugin);
   }
 
   /** Invalidate a cached custom pipeline (called on .wgsl hot-reload). */
@@ -415,6 +442,11 @@ export class RenderSystem implements Renderer {
       }
     }
 
+    // Collect from renderer plugins
+    for (const plugin of this._rendererPlugins) {
+      plugin.collect(vpMatrix as Float32Array, cameraEye, this._sceneBuffer);
+    }
+
     this._encoder = device.createCommandEncoder();
 
     // --- Shadow passes (via ShadowManager) ---
@@ -554,6 +586,11 @@ export class RenderSystem implements Renderer {
       this._pass.setBindGroup(2, shadowBindGroup);
     }
 
+    // Draw renderer plugins (e.g. clipmap terrain)
+    for (const plugin of this._rendererPlugins) {
+      plugin.draw(this._pass, shadowBindGroup);
+    }
+
     // Draw transparent MeshRenderers (custom pipelines with alpha blending)
     if (transparentMRs.length > 0) {
       // Create depth bind group (group 3) from scene depth pass
@@ -590,7 +627,9 @@ export class RenderSystem implements Renderer {
     }
     const hasC = customVertexMRs.length > 0;
 
-    if (!hasT && !hasS && !hasC) return undefined;
+    const hasPlugins = this._rendererPlugins.size > 0;
+
+    if (!hasT && !hasS && !hasC && !hasPlugins) return undefined;
 
     // Terrain shadow pipeline (lazy)
     let terrainPipeline: GPURenderPipeline | null = null;
@@ -605,6 +644,7 @@ export class RenderSystem implements Renderer {
     const skinnedRes = hasS ? this.skinnedPipelineResources : null;
     const tRenderers = this._terrainRenderers;
     const sRenderers = this._skinnedMeshRenderers;
+    const plugins = [...this._rendererPlugins];
 
     return (pass: GPURenderPassEncoder) => {
       // Draw terrain shadows
@@ -639,6 +679,10 @@ export class RenderSystem implements Renderer {
         pass.setIndexBuffer(mr.mesh!.indexBuffer, mr.mesh!.indexFormat);
         pass.drawIndexed(mr.mesh!.indexCount);
       }
+      // Draw renderer plugin shadows
+      for (const plugin of plugins) {
+        plugin.drawShadow?.(pass);
+      }
     };
   }
 
@@ -654,7 +698,8 @@ export class RenderSystem implements Renderer {
       }
     }
 
-    if (ssaoTerrain.length === 0 && customVertexMRs.length === 0) return undefined;
+    const depthPlugins = [...this._rendererPlugins].filter(p => p.drawDepth);
+    if (ssaoTerrain.length === 0 && customVertexMRs.length === 0 && depthPlugins.length === 0) return undefined;
 
     let terrainPipeline: GPURenderPipeline | null = null;
     if (ssaoTerrain.length > 0) {
@@ -682,6 +727,9 @@ export class RenderSystem implements Renderer {
         pass.setVertexBuffer(0, mr.mesh!.vertexBuffer);
         pass.setIndexBuffer(mr.mesh!.indexBuffer, mr.mesh!.indexFormat);
         pass.drawIndexed(mr.mesh!.indexCount);
+      }
+      for (const plugin of depthPlugins) {
+        plugin.drawDepth!(pass);
       }
     };
   }
