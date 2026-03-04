@@ -1,0 +1,147 @@
+{
+  "gameObjects": [
+    {
+      "name": "PBR Grid",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "PBRGridSetup",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "name": "Directional Light",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              -0.4226182699203491,
+              0,
+              0,
+              0.9063078165054321
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 1.5,
+            "castShadows": true,
+            "shadowIntensity": 0.7,
+            "shadowResolution": 2048,
+            "shadowSize": 20,
+            "shadowDistance": 50,
+            "shadowFarSize": 80,
+            "shadowFarDistance": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "Camera",
+      "id": 103,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              2.5825302600860596,
+              11.512819290161133
+            ],
+            "rotation": [
+              -0.08827531337738037,
+              0,
+              0,
+              0.996096134185791
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "Camera",
+          "data": {
+            "fovY": 0.7853981633974483,
+            "near": 0.1,
+            "far": 100,
+            "isMainCamera": true,
+            "clearColor": [
+              0.05000000074505806,
+              0.05000000074505806,
+              0.10000000149011612,
+              1
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": false,
+    "fogMode": "linear",
+    "fogDensity": 0.02,
+    "fogStart": 10,
+    "fogEnd": 100,
+    "fogColor": [
+      0.699999988079071,
+      0.75,
+      0.800000011920929
+    ]
+  }
+}

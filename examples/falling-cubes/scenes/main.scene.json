@@ -1,0 +1,48 @@
+{
+  "gameObjects": [
+    {
+      "name": "Setup",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "FallingCubesSetup",
+          "data": {}
+        }
+      ]
+    },
+    {
+      "name": "Directional Light",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 0, 0],
+            "rotation": [-0.4226182699203491, 0, 0, 0.9063078165054321],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [1, 1, 1],
+            "intensity": 1.5,
+            "castShadows": true,
+            "shadowIntensity": 0.7,
+            "shadowResolution": 2048
+          }
+        }
+      ]
+    }
+  ]
+}

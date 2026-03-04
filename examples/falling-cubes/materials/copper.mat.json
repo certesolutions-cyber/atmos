@@ -1,0 +1,12 @@
+{
+  "name": "Copper",
+  "shader": "pbr",
+  "albedo": [
+    0.95,
+    0.64,
+    0.54,
+    1
+  ],
+  "metallic": 1,
+  "roughness": 0.4
+}

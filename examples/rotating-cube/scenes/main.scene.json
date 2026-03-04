@@ -1,0 +1,62 @@
+{
+  "gameObjects": [
+    {
+      "name": "Cube",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0, 1],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:cube",
+            "material.albedo": [1, 0.2, 0.2, 1],
+            "material.metallic": 0.3,
+            "material.roughness": 0.5,
+            "castShadow": true,
+            "receiveSSAO": true
+          }
+        },
+        {
+          "type": "Rotator",
+          "data": {
+            "speedX": 0.5,
+            "speedY": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Directional Light",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [0, 0, 0],
+            "rotation": [-0.4226182699203491, 0, 0, 0.9063078165054321],
+            "scale": [1, 1, 1]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [1, 1, 1],
+            "intensity": 1.5,
+            "castShadows": true,
+            "shadowIntensity": 0.7,
+            "shadowResolution": 2048
+          }
+        }
+      ]
+    }
+  ]
+}

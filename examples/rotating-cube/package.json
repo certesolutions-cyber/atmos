@@ -6,10 +6,12 @@
   "dependencies": {
     "@certe/atmos-core": "*",
     "@certe/atmos-math": "*",
-    "@certe/atmos-renderer": "*"
+    "@certe/atmos-renderer": "*",
+    "@certe/atmos-editor": "*"
   },
   "devDependencies": {
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "@vitejs/plugin-react": "^4.3.0"
   },
   "scripts": {
     "dev": "vite",
