@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { expandLSystem, mulberry32 } from '../lsystem.js';
+import { expandLSystem, mulberry32, resolveSpeciesRules } from '../lsystem.js';
+import { DEFAULT_TREE_SPECIES_CONFIG } from '../types.js';
 
 describe('mulberry32', () => {
   it('produces deterministic values for same seed', () => {
@@ -94,5 +95,50 @@ describe('expandLSystem', () => {
     ];
     const result = expandLSystem('FFA', rules, 1, 1);
     expect(result).toBe('FFF[+FA][-FA]');
+  });
+});
+
+describe('resolveSpeciesRules', () => {
+  it('returns config axiom/rules for decurrent mode', () => {
+    const config = { ...DEFAULT_TREE_SPECIES_CONFIG, branchMode: 'decurrent' as const };
+    const resolved = resolveSpeciesRules(config);
+    expect(resolved.axiom).toBe(config.axiom);
+    expect(resolved.rules).toBe(config.rules);
+  });
+
+  it('returns excurrent rules for excurrent mode', () => {
+    const config = { ...DEFAULT_TREE_SPECIES_CONFIG, branchMode: 'excurrent' as const };
+    const resolved = resolveSpeciesRules(config);
+    expect(resolved.axiom).toBe('FFA');
+    // Should have only A rule (branches are pre-expanded inline using G symbol)
+    expect(resolved.rules.length).toBe(1);
+    const aRule = resolved.rules[0]!;
+    expect(aRule.symbol).toBe('A');
+    // A rule should end with A (central leader persists)
+    expect(aRule.replacement.endsWith('A')).toBe(true);
+    // A rule should contain G (short branch step) and L (leaves)
+    expect(aRule.replacement).toContain('G');
+    expect(aRule.replacement).toContain('L');
+  });
+
+  it('excurrent mode produces a tree with central trunk and G steps', () => {
+    const config = { ...DEFAULT_TREE_SPECIES_CONFIG, branchMode: 'excurrent' as const, iterations: 3 };
+    const resolved = resolveSpeciesRules(config);
+    const output = expandLSystem(resolved.axiom, resolved.rules, config.iterations, config.seed);
+    expect(output).toContain('F');
+    expect(output).toContain('G');
+    expect(output).toContain('[');
+    expect(output).toContain('L');
+  });
+
+  it('excurrent branch complexity scales with excurrentBranchIterations', () => {
+    const configShort = { ...DEFAULT_TREE_SPECIES_CONFIG, branchMode: 'excurrent' as const, iterations: 2, excurrentBranchIterations: 0 };
+    const configDeep = { ...DEFAULT_TREE_SPECIES_CONFIG, branchMode: 'excurrent' as const, iterations: 2, excurrentBranchIterations: 3 };
+    const resolvedShort = resolveSpeciesRules(configShort);
+    const resolvedDeep = resolveSpeciesRules(configDeep);
+    // Deeper branch iterations produce longer A rules (more pre-expanded branch body)
+    const shortLen = resolvedShort.rules[0]!.replacement.length;
+    const deepLen = resolvedDeep.rules[0]!.replacement.length;
+    expect(deepLen).toBeGreaterThan(shortLen);
   });
 });

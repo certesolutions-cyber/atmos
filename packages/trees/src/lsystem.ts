@@ -11,7 +11,7 @@
  *   L  – leaf placement marker
  */
 
-import type { LSystemRule } from './types.js';
+import type { LSystemRule, TreeSpeciesConfig } from './types.js';
 
 /**
  * Mulberry32 seeded PRNG. Returns a function that produces [0, 1) on each call.
@@ -90,4 +90,40 @@ export function expandLSystem(
   }
 
   return current;
+}
+
+/**
+ * Recursively build a pre-expanded lateral branch string for excurrent mode.
+ * Uses 'G' symbol (short forward step) instead of 'F'.
+ * depth=0 → 'GL', depth=1 → 'G[+GL][-GL]L', depth=2 → 'G[+G[+GL][-GL]L][-G[+GL][-GL]L]L', etc.
+ */
+function buildExcurrentBranch(depth: number): string {
+  if (!Number.isFinite(depth) || depth <= 0) return 'GL';
+  const sub = buildExcurrentBranch(depth - 1);
+  return `G[+${sub}][-${sub}]L`;
+}
+
+/**
+ * Resolve the effective axiom and rules for a species config.
+ *
+ * For 'decurrent' mode, returns the config's own axiom/rules unchanged.
+ * For 'excurrent' mode, generates monopodial rules where a central leader (A)
+ * persists and lateral branches (B) grow off at the configured branchAngle.
+ */
+export function resolveSpeciesRules(config: TreeSpeciesConfig): { axiom: string; rules: LSystemRule[] } {
+  if (config.branchMode !== 'excurrent') {
+    return { axiom: config.axiom, rules: config.rules };
+  }
+
+  // Excurrent (monopodial): strong central trunk with whorls of lateral branches.
+  // Branches are pre-expanded to `excurrentBranchIterations` depth using G (short step),
+  // so L-system `iterations` only controls trunk height / whorl count.
+  const branch = buildExcurrentBranch(config.excurrentBranchIterations ?? 2);
+  return {
+    axiom: 'FFA',
+    rules: [
+      // Trunk: grow one segment, sprout 4 lateral branches in a cross, continue leader
+      { symbol: 'A', replacement: `F[&+${branch}][&-${branch}][^+${branch}][^-${branch}]A` },
+    ],
+  };
 }

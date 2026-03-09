@@ -24,6 +24,7 @@ const SPECIES_FIELDS: Array<{
   { key: 'leafCount', type: 'number', label: 'Leaf Count', min: 0, max: 30, step: 1 },
   { key: 'leafWidth', type: 'number', label: 'Leaf Width', min: 0.1, max: 20, step: 0.1 },
   { key: 'leafHeight', type: 'number', label: 'Leaf Height', min: 0.1, max: 20, step: 0.1 },
+  { key: 'variants', type: 'number', label: 'Variants', min: 1, max: 8, step: 1 },
   { key: 'lodDistance', type: 'number', label: 'LOD Distance', min: 10, max: 500, step: 5 },
   { key: 'drawDistance', type: 'number', label: 'Draw Distance', min: 0, max: 2000, step: 10 },
   { key: 'seed', type: 'number', label: 'Seed', min: 0, max: 99999, step: 1 },
@@ -78,6 +79,50 @@ export function registerTreeBuiltins(): void {
   // Add per-species config + texture properties (visible only when species exists)
   for (let i = 0; i < MAX_INSPECTOR_SPECIES; i++) {
     const idx = i;
+
+    // Branch mode selector
+    properties.push({
+      key: `_sp${idx}_branchMode`,
+      type: 'enum',
+      label: 'Branch Mode',
+      options: ['decurrent', 'excurrent'],
+      serialize: false,
+      group: `species_${idx}`,
+      visibleWhen: (c) => (c as TreeSystem).speciesCount > idx,
+      getter: (c) => {
+        const cfg = (c as TreeSystem).getSpeciesConfig(idx);
+        return cfg?.branchMode ?? 'decurrent';
+      },
+      setter: (c, v) => {
+        (c as TreeSystem).updateSpeciesConfig(idx, 'branchMode', v);
+      },
+    });
+
+    // Excurrent-specific fields (only visible in excurrent mode)
+    properties.push(
+      {
+        key: `_sp${idx}_excurrentBranchIterations`,
+        type: 'number',
+        label: 'Branch Iterations',
+        serialize: false,
+        min: 0, max: 5, step: 1,
+        group: `species_${idx}`,
+        visibleWhen: (c) => (c as TreeSystem).speciesCount > idx && (c as TreeSystem).getSpeciesConfig(idx)?.branchMode === 'excurrent',
+        getter: (c) => (c as TreeSystem).getSpeciesConfig(idx)?.excurrentBranchIterations ?? 2,
+        setter: (c, v) => (c as TreeSystem).updateSpeciesConfig(idx, 'excurrentBranchIterations', v),
+      },
+      {
+        key: `_sp${idx}_excurrentBranchScale`,
+        type: 'number',
+        label: 'Branch Scale',
+        serialize: false,
+        min: 0.1, max: 2.0, step: 0.05,
+        group: `species_${idx}`,
+        visibleWhen: (c) => (c as TreeSystem).speciesCount > idx && (c as TreeSystem).getSpeciesConfig(idx)?.branchMode === 'excurrent',
+        getter: (c) => (c as TreeSystem).getSpeciesConfig(idx)?.excurrentBranchScale ?? 0.5,
+        setter: (c, v) => (c as TreeSystem).updateSpeciesConfig(idx, 'excurrentBranchScale', v),
+      },
+    );
 
     // Per-species config fields
     for (const field of SPECIES_FIELDS) {

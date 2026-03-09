@@ -2,6 +2,13 @@
  * Types and constants for procedural tree generation and rendering.
  */
 
+/**
+ * Branch growth mode:
+ * - 'decurrent': Sympodial — branches fork equally at each level (oak, maple).
+ * - 'excurrent': Monopodial — strong central trunk with lateral branches (spruce, fir).
+ */
+export type BranchMode = 'decurrent' | 'excurrent';
+
 /** L-system rule: maps a symbol to a replacement string with optional probability. */
 export interface LSystemRule {
   symbol: string;
@@ -14,6 +21,10 @@ export interface LSystemRule {
 export interface TreeSpeciesConfig {
   name: string;
 
+  // Growth mode
+  /** Branch growth pattern. Default 'decurrent'. */
+  branchMode: BranchMode;
+
   // L-system
   axiom: string;
   rules: LSystemRule[];
@@ -22,6 +33,12 @@ export interface TreeSpeciesConfig {
   branchAngle: number;
   /** Random angle variance in degrees. */
   angleVariance: number;
+
+  // Excurrent-specific
+  /** Lateral branch sub-division depth in excurrent mode (1 = simple, higher = more complex). */
+  excurrentBranchIterations: number;
+  /** Segment length multiplier for lateral branches in excurrent mode (0.1–1.0). */
+  excurrentBranchScale: number;
 
   // Geometry
   trunkRadius: number;
@@ -47,6 +64,10 @@ export interface TreeSpeciesConfig {
   billboardWidth: number;
   billboardHeight: number;
 
+  // Variants
+  /** Number of mesh variants per species (different seeds → different shapes). */
+  variants: number;
+
   // Scale
   scaleMultiplier: number;
   /** Deterministic seed for PRNG. */
@@ -56,6 +77,7 @@ export interface TreeSpeciesConfig {
 /** Default species config. */
 export const DEFAULT_TREE_SPECIES_CONFIG: TreeSpeciesConfig = {
   name: 'default',
+  branchMode: 'decurrent',
   axiom: 'FFA',
   rules: [
     { symbol: 'A', replacement: 'F[+FA][-FA][&FA][^FA]' },
@@ -63,6 +85,8 @@ export const DEFAULT_TREE_SPECIES_CONFIG: TreeSpeciesConfig = {
   iterations: 4,
   branchAngle: 25,
   angleVariance: 5,
+  excurrentBranchIterations: 2,
+  excurrentBranchScale: 0.5,
   trunkRadius: 0.15,
   radiusTaper: 0.65,
   segmentLength: 1.0,
@@ -71,6 +95,7 @@ export const DEFAULT_TREE_SPECIES_CONFIG: TreeSpeciesConfig = {
   leafCount: 3,
   leafWidth: 0.8,
   leafHeight: 0.8,
+  variants: 3,
   lodDistance: 80,
   drawDistance: 0,
   billboardWidth: 6,

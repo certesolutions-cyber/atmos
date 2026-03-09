@@ -116,6 +116,8 @@ export class DetailSystem extends Component implements RendererPlugin {
   }
 
   addType(config: DetailTypeConfig, texture?: GPUTextureHandle): number {
+    // Backfill baseColor for configs deserialized from older scenes
+    if (!config.baseColor) config.baseColor = [0.3, 0.5, 0.15];
     const device = this._device!;
     const tex = texture ?? getWhiteFallbackTexture(device);
 
@@ -177,6 +179,11 @@ export class DetailSystem extends Component implements RendererPlugin {
     // Recreate quad if dimensions changed
     if (key === 'width' || key === 'height') {
       this._recreateQuad(idx);
+    }
+
+    // Invalidate material bind group when base color changes
+    if (key === 'baseColor') {
+      td.materialBindGroup = null;
     }
   }
 
@@ -497,8 +504,8 @@ export class DetailSystem extends Component implements RendererPlugin {
     const pipeline = this._pipeline!;
     const sceneBuffer = this._sceneBuffer!;
 
-    // Material: grass-like defaults
-    const mat = createMaterial({ albedo: [1, 1, 1, 1], roughness: 0.9, metallic: 0.0 });
+    const bc = td.config.baseColor ?? [1, 1, 1];
+    const mat = createMaterial({ albedo: [bc[0], bc[1], bc[2], 1], roughness: 0.9, metallic: 0.0 });
     writeMaterialUniforms(_matData, mat);
     const matBuf = device.createBuffer({
       size: MATERIAL_UNIFORM_SIZE,

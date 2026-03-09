@@ -18,6 +18,8 @@ export interface DetailTypeConfig {
   scaleMax: number;
   /** 0–1 color tint variation per instance. */
   colorVariation: number;
+  /** Base albedo color [r, g, b], each 0–1. Multiplied with texture. */
+  baseColor: [number, number, number];
 }
 
 export const DEFAULT_DETAIL_TYPE_CONFIG: DetailTypeConfig = {
@@ -29,6 +31,7 @@ export const DEFAULT_DETAIL_TYPE_CONFIG: DetailTypeConfig = {
   scaleMin: 0.7,
   scaleMax: 1.3,
   colorVariation: 0.15,
+  baseColor: [0.3, 0.5, 0.15],
 };
 
 /** Per-instance data for a placed detail billboard. */

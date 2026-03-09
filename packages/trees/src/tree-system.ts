@@ -3,6 +3,9 @@
  *
  * Implements RendererPlugin for automatic integration with RenderSystem.
  *
+ * Each species generates N mesh variants (different seeds) so trees of the same
+ * species look visually distinct. Instances are assigned to variants by position hash.
+ *
  * Usage:
  *   const ts = go.addComponent(TreeSystem);
  *   ts.init(device, pipeline);
@@ -22,9 +25,9 @@ import {
 } from '@certe/atmos-renderer';
 import type { Mesh, Material, RendererPlugin, GPUTextureHandle } from '@certe/atmos-renderer';
 import type { TreePipelineResources } from './tree-pipeline.js';
-import type { TreeSpeciesConfig, TreeInstance } from './types.js';
+import type { TreeSpeciesConfig, TreeInstance, TreeMeshData } from './types.js';
 import { TREE_VERTEX_STRIDE, INSTANCE_STRIDE, DEFAULT_TREE_SPECIES_CONFIG } from './types.js';
-import { expandLSystem } from './lsystem.js';
+import { expandLSystem, resolveSpeciesRules } from './lsystem.js';
 import { generateTreeMesh } from './tree-generator.js';
 import { createBillboardMesh } from './billboard.js';
 import { captureTreeBillboard, computeBillboardSizing } from './billboard-capture.js';
@@ -46,33 +49,44 @@ export interface SpeciesTextures {
   billboardTexture?: GPUTextureHandle;
 }
 
-interface SpeciesData {
-  config: TreeSpeciesConfig;
-  meshData: import('./types.js').TreeMeshData; // retained for billboard re-capture
+/** Per-variant mesh data (each variant = different seed → different tree shape). */
+interface VariantData {
+  meshData: TreeMeshData;
   trunkMesh: Mesh;
   leafMesh: Mesh;
   billboardMesh: Mesh;
-  trunkMaterial: Material;
-  leafMaterial: Material;
-  instances: TreeInstance[];
-  instanceBuffer: GPUBuffer | null;
-  dirty: boolean;
-  barkTexture: GPUTextureHandle;
-  leafTexture: GPUTextureHandle;
-  barkNormalTexture: GPUTextureHandle;
-  leafNormalTexture: GPUTextureHandle;
   billboardTexture: GPUTextureHandle;
-  // Bind groups
-  trunkMaterialBindGroup: GPUBindGroup | null;
-  leafMaterialBindGroup: GPUBindGroup | null;
   billboardMaterialBindGroup: GPUBindGroup | null;
   hasBillboardTexture: boolean;
-  // LOD split arrays (reused per frame)
+  // Per-variant LOD split (filled each frame in collect())
   nearInstances: Float32Array | null;
   farInstances: Float32Array | null;
   nearCount: number;
   farCount: number;
-  nearInstanceBuffer: GPUBuffer | null; // cached per frame for shadow/depth reuse
+  nearInstanceBuffer: GPUBuffer | null;
+}
+
+interface SpeciesData {
+  config: TreeSpeciesConfig;
+  variants: VariantData[];
+  trunkMaterial: Material;
+  leafMaterial: Material;
+  instances: TreeInstance[];
+  dirty: boolean;
+  // Textures (shared across variants)
+  barkTexture: GPUTextureHandle;
+  leafTexture: GPUTextureHandle;
+  barkNormalTexture: GPUTextureHandle;
+  leafNormalTexture: GPUTextureHandle;
+  // Shared bind groups (trunk/leaf material — same across variants)
+  trunkMaterialBindGroup: GPUBindGroup | null;
+  leafMaterialBindGroup: GPUBindGroup | null;
+}
+
+/** Deterministic variant assignment from position. */
+function variantForPosition(x: number, z: number, variantCount: number): number {
+  const h = Math.abs(Math.imul(Math.floor(x * 73856093) | 0, 19349663) ^ Math.floor(z * 83492791));
+  return h % variantCount;
 }
 
 export type TextureLoaderFn = (path: string, srgb: boolean) => Promise<GPUTextureHandle | null>;
@@ -170,7 +184,7 @@ export class TreeSystem extends Component implements RendererPlugin {
   removeLastSpecies(): void {
     if (this._species.length === 0) return;
     const sp = this._species.pop()!;
-    sp.instanceBuffer?.destroy();
+    this._destroyVariants(sp.variants);
     this._barkTextureSources.length = this._species.length;
     this._leafTextureSources.length = this._species.length;
     this._barkNormalTextureSources.length = this._species.length;
@@ -194,43 +208,86 @@ export class TreeSystem extends Component implements RendererPlugin {
     this._regenerateSpeciesMesh(idx);
   }
 
+  // ── Variant generation helpers ──────────────────────────────────────
+
+  /** Generate all variant meshes + billboards for a species config. */
+  private _generateVariants(
+    device: GPUDevice,
+    config: TreeSpeciesConfig,
+    trunkMaterial: Material,
+    leafMaterial: Material,
+    leafTexHandle: GPUTextureHandle | null,
+  ): VariantData[] {
+    const variantCount = Math.max(1, config.variants ?? 1);
+    const resolved = resolveSpeciesRules(config);
+    const variants: VariantData[] = [];
+
+    for (let v = 0; v < variantCount; v++) {
+      const variantSeed = config.seed + v;
+      const lsystemStr = expandLSystem(resolved.axiom, resolved.rules, config.iterations, variantSeed);
+      const meshData = generateTreeMesh(lsystemStr, config);
+
+      const trunkMesh = createMesh(device, meshData.trunkVertices, meshData.trunkIndices, TREE_VERTEX_STRIDE);
+      const leafMesh = createMesh(device, meshData.leafVertices, meshData.leafIndices, TREE_VERTEX_STRIDE);
+
+      const bbSizing = computeBillboardSizing(meshData);
+      const bbData = createBillboardMesh(bbSizing.dim, bbSizing.dim, bbSizing.yOffset, bbSizing.centerX);
+      const billboardMesh = createMesh(device, bbData.vertices, bbData.indices, TREE_VERTEX_STRIDE);
+
+      const ta = trunkMaterial.albedo;
+      const la = leafMaterial.albedo;
+      const billboardTexture = captureTreeBillboard(device, meshData, {
+        leafTexture: leafTexHandle,
+        trunkColor: [ta[0]!, ta[1]!, ta[2]!, ta[3]!],
+        leafColor: [la[0]!, la[1]!, la[2]!, la[3]!],
+      });
+
+      variants.push({
+        meshData,
+        trunkMesh,
+        leafMesh,
+        billboardMesh,
+        billboardTexture,
+        billboardMaterialBindGroup: null,
+        hasBillboardTexture: true,
+        nearInstances: null,
+        farInstances: null,
+        nearCount: 0,
+        farCount: 0,
+        nearInstanceBuffer: null,
+      });
+    }
+
+    return variants;
+  }
+
+  /** Destroy GPU resources for variant meshes. */
+  private _destroyVariants(variants: VariantData[]): void {
+    for (const v of variants) {
+      v.trunkMesh.vertexBuffer.destroy();
+      v.trunkMesh.indexBuffer.destroy();
+      v.leafMesh.vertexBuffer.destroy();
+      v.leafMesh.indexBuffer.destroy();
+      v.billboardMesh.vertexBuffer.destroy();
+      v.billboardMesh.indexBuffer.destroy();
+    }
+  }
+
   /**
    * Regenerate mesh for a species after config change.
    */
   private _regenerateSpeciesMesh(idx: number): void {
     const sp = this._species[idx];
     if (!sp || !this._device) return;
-    const device = this._device;
-    const config = sp.config;
 
-    // Regenerate L-system and mesh
-    const lsystemStr = expandLSystem(config.axiom, config.rules, config.iterations, config.seed);
-    const meshData = generateTreeMesh(lsystemStr, config);
-    sp.meshData = meshData;
+    this._destroyVariants(sp.variants);
 
-    // Recreate GPU meshes
-    sp.trunkMesh = createMesh(device, meshData.trunkVertices, meshData.trunkIndices, TREE_VERTEX_STRIDE);
-    sp.leafMesh = createMesh(device, meshData.leafVertices, meshData.leafIndices, TREE_VERTEX_STRIDE);
+    const leafTex = sp.leafTexture.texture ? sp.leafTexture : null;
+    sp.variants = this._generateVariants(this._device, sp.config, sp.trunkMaterial, sp.leafMaterial, leafTex);
 
-    // Recompute billboard — dimensions must match the capture's square ortho projection
-    const bbSizing = computeBillboardSizing(meshData);
-    const bbData = createBillboardMesh(bbSizing.dim, bbSizing.dim, bbSizing.yOffset, bbSizing.centerX);
-    sp.billboardMesh = createMesh(device, bbData.vertices, bbData.indices, TREE_VERTEX_STRIDE);
-
-    // Re-capture billboard
-    const ta = sp.trunkMaterial.albedo;
-    const la = sp.leafMaterial.albedo;
-    sp.billboardTexture = captureTreeBillboard(device, meshData, {
-      leafTexture: sp.leafTexture.texture ? sp.leafTexture : null,
-      trunkColor: [ta[0]!, ta[1]!, ta[2]!, ta[3]!],
-      leafColor: [la[0]!, la[1]!, la[2]!, la[3]!],
-    });
-    sp.hasBillboardTexture = true;
-
-    // Invalidate bind groups & mark instances dirty for re-upload
+    // Invalidate bind groups & mark instances dirty
     sp.trunkMaterialBindGroup = null;
     sp.leafMaterialBindGroup = null;
-    sp.billboardMaterialBindGroup = null;
     sp.dirty = true;
   }
 
@@ -273,18 +330,6 @@ export class TreeSystem extends Component implements RendererPlugin {
   addSpecies(config: TreeSpeciesConfig, textures?: SpeciesTextures): number {
     const device = this._device!;
 
-    // Generate tree mesh from L-system
-    const lsystemStr = expandLSystem(config.axiom, config.rules, config.iterations, config.seed);
-    const meshData = generateTreeMesh(lsystemStr, config);
-
-    const trunkMesh = createMesh(device, meshData.trunkVertices, meshData.trunkIndices, TREE_VERTEX_STRIDE);
-    const leafMesh = createMesh(device, meshData.leafVertices, meshData.leafIndices, TREE_VERTEX_STRIDE);
-
-    // Billboard — dimensions must match the capture's square ortho projection
-    const bbSizing = computeBillboardSizing(meshData);
-    const bbData = createBillboardMesh(bbSizing.dim, bbSizing.dim, bbSizing.yOffset, bbSizing.centerX);
-    const billboardMesh = createMesh(device, bbData.vertices, bbData.indices, TREE_VERTEX_STRIDE);
-
     // Materials
     const trunkMaterial = createMaterial({ albedo: [0.45, 0.3, 0.15, 1], roughness: 0.9, metallic: 0.0 });
     const leafMaterial = createMaterial({ albedo: [0.3, 0.6, 0.2, 1], roughness: 0.8, metallic: 0.0 });
@@ -296,49 +341,23 @@ export class TreeSystem extends Component implements RendererPlugin {
     const barkNormalTex = textures?.barkNormalTexture ?? flatNormal;
     const leafNormalTex = textures?.leafNormalTexture ?? flatNormal;
 
-    // Auto-capture billboard if no explicit billboard texture provided
-    let bbTex: GPUTextureHandle;
-    let hasBillboard: boolean;
-    if (textures?.billboardTexture) {
-      bbTex = textures.billboardTexture;
-      hasBillboard = true;
-    } else {
-      const ta = trunkMaterial.albedo;
-      const la = leafMaterial.albedo;
-      bbTex = captureTreeBillboard(device, meshData, {
-        leafTexture: textures?.leafTexture ?? null,
-        trunkColor: [ta[0]!, ta[1]!, ta[2]!, ta[3]!],
-        leafColor: [la[0]!, la[1]!, la[2]!, la[3]!],
-      });
-      hasBillboard = true;
-    }
+    const leafTexHandle = textures?.leafTexture ?? null;
+    const variants = this._generateVariants(device, config, trunkMaterial, leafMaterial, leafTexHandle);
 
     const idx = this._species.length;
     this._species.push({
       config,
-      meshData,
-      trunkMesh,
-      leafMesh,
-      billboardMesh,
+      variants,
       trunkMaterial,
       leafMaterial,
       instances: [],
-      instanceBuffer: null,
       dirty: true,
       barkTexture: barkTex,
       leafTexture: leafTex,
       barkNormalTexture: barkNormalTex,
       leafNormalTexture: leafNormalTex,
-      billboardTexture: bbTex,
       trunkMaterialBindGroup: null,
       leafMaterialBindGroup: null,
-      billboardMaterialBindGroup: null,
-      hasBillboardTexture: hasBillboard,
-      nearInstances: null,
-      farInstances: null,
-      nearCount: 0,
-      farCount: 0,
-      nearInstanceBuffer: null,
     });
 
     // Create material bind groups lazily (needs sceneBuffer)
@@ -564,16 +583,19 @@ export class TreeSystem extends Component implements RendererPlugin {
       sp.barkTexture = handle;
     } else if (kind === 'leaf') {
       sp.leafTexture = handle;
-      // Re-capture billboard with the actual leaf texture
+      // Re-capture billboards for all variants with the actual leaf texture
       if (this._device) {
         const ta = sp.trunkMaterial.albedo;
         const la = sp.leafMaterial.albedo;
-        sp.billboardTexture = captureTreeBillboard(this._device, sp.meshData, {
-          leafTexture: handle,
-          trunkColor: [ta[0]!, ta[1]!, ta[2]!, ta[3]!],
-          leafColor: [la[0]!, la[1]!, la[2]!, la[3]!],
-        });
-        sp.hasBillboardTexture = true;
+        for (const variant of sp.variants) {
+          variant.billboardTexture = captureTreeBillboard(this._device, variant.meshData, {
+            leafTexture: handle,
+            trunkColor: [ta[0]!, ta[1]!, ta[2]!, ta[3]!],
+            leafColor: [la[0]!, la[1]!, la[2]!, la[3]!],
+          });
+          variant.hasBillboardTexture = true;
+          variant.billboardMaterialBindGroup = null;
+        }
       }
     } else if (kind === 'barkNormal') {
       sp.barkNormalTexture = handle;
@@ -584,7 +606,6 @@ export class TreeSystem extends Component implements RendererPlugin {
     // Invalidate bind groups to rebuild with new texture
     sp.trunkMaterialBindGroup = null;
     sp.leafMaterialBindGroup = null;
-    sp.billboardMaterialBindGroup = null;
   }
 
   // ── RendererPlugin ─────────────────────────────────────────────────
@@ -614,56 +635,62 @@ export class TreeSystem extends Component implements RendererPlugin {
     const camZ = cameraEye[2]!;
 
     for (const sp of this._species) {
-      // Re-create instance buffer if dirty
-      if (sp.dirty && sp.instances.length > 0) {
-        sp.instanceBuffer?.destroy();
-        const data = new Float32Array(sp.instances.length * INSTANCE_STRIDE);
-        for (let i = 0; i < sp.instances.length; i++) {
-          const inst = sp.instances[i]!;
-          const off = i * INSTANCE_STRIDE;
-          data[off] = inst.x;
-          data[off + 1] = inst.y;
-          data[off + 2] = inst.z;
-          data[off + 3] = inst.rotationY;
-          data[off + 4] = inst.scale;
-          data[off + 5] = inst.windPhase;
-          data[off + 6] = 0; // pad
-          data[off + 7] = 0; // pad
-        }
-        sp.instanceBuffer = device.createBuffer({
-          size: data.byteLength,
-          usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-          mappedAtCreation: true,
-        });
-        new Float32Array(sp.instanceBuffer.getMappedRange()).set(data);
-        sp.instanceBuffer.unmap();
-        sp.dirty = false;
-      }
+      const variantCount = sp.variants.length;
 
       // Ensure material bind groups exist
       if (!sp.trunkMaterialBindGroup && sceneBuffer) {
         this._createMaterialBindGroups(sp);
       }
 
-      // LOD split: near vs far instances (skip LOD if no billboard texture)
-      if (!sp.hasBillboardTexture) {
-        // No billboard — all instances render as full mesh
-        sp.nearCount = sp.instances.length;
-        sp.farCount = 0;
-        sp.nearInstances = null; // use instanceBuffer directly
+      // Reset per-variant counts
+      for (const variant of sp.variants) {
+        variant.nearCount = 0;
+        variant.farCount = 0;
+      }
+
+      if (sp.instances.length === 0) continue;
+
+      // Determine if any variant has billboard (they all should, but check first)
+      const hasBillboard = sp.variants[0]?.hasBillboardTexture ?? false;
+
+      if (!hasBillboard) {
+        // No billboard — assign all instances to their variant as near
+        const maxInst = sp.instances.length;
+        for (const variant of sp.variants) {
+          if (!variant.nearInstances || variant.nearInstances.length < maxInst * INSTANCE_STRIDE) {
+            variant.nearInstances = new Float32Array(maxInst * INSTANCE_STRIDE);
+          }
+        }
+
+        for (let i = 0; i < sp.instances.length; i++) {
+          const inst = sp.instances[i]!;
+          const vi = variantForPosition(inst.x, inst.z, variantCount);
+          const variant = sp.variants[vi]!;
+          const off = variant.nearCount * INSTANCE_STRIDE;
+          variant.nearInstances![off] = inst.x;
+          variant.nearInstances![off + 1] = inst.y;
+          variant.nearInstances![off + 2] = inst.z;
+          variant.nearInstances![off + 3] = inst.rotationY;
+          variant.nearInstances![off + 4] = inst.scale;
+          variant.nearInstances![off + 5] = inst.windPhase;
+          variant.nearInstances![off + 6] = 0;
+          variant.nearInstances![off + 7] = 0;
+          variant.nearCount++;
+        }
       } else {
+        // LOD split per variant
         const lodDist2 = sp.config.lodDistance * sp.config.lodDistance;
         const maxDraw = sp.config.drawDistance > 0
           ? sp.config.drawDistance
           : sp.config.lodDistance * 4;
         const maxDraw2 = maxDraw * maxDraw;
-        let nearCount = 0;
-        let farCount = 0;
 
         const maxInst = sp.instances.length;
-        if (!sp.nearInstances || sp.nearInstances.length < maxInst * INSTANCE_STRIDE) {
-          sp.nearInstances = new Float32Array(maxInst * INSTANCE_STRIDE);
-          sp.farInstances = new Float32Array(maxInst * INSTANCE_STRIDE);
+        for (const variant of sp.variants) {
+          if (!variant.nearInstances || variant.nearInstances.length < maxInst * INSTANCE_STRIDE) {
+            variant.nearInstances = new Float32Array(maxInst * INSTANCE_STRIDE);
+            variant.farInstances = new Float32Array(maxInst * INSTANCE_STRIDE);
+          }
         }
 
         for (let i = 0; i < sp.instances.length; i++) {
@@ -676,8 +703,12 @@ export class TreeSystem extends Component implements RendererPlugin {
           // Cull beyond max draw distance
           if (dist2 > maxDraw2) continue;
 
-          const target = dist2 < lodDist2 ? sp.nearInstances! : sp.farInstances!;
-          const count = dist2 < lodDist2 ? nearCount : farCount;
+          const vi = variantForPosition(inst.x, inst.z, variantCount);
+          const variant = sp.variants[vi]!;
+
+          const isNear = dist2 < lodDist2;
+          const target = isNear ? variant.nearInstances! : variant.farInstances!;
+          const count = isNear ? variant.nearCount : variant.farCount;
           const off = count * INSTANCE_STRIDE;
           target[off] = inst.x;
           target[off + 1] = inst.y;
@@ -688,22 +719,17 @@ export class TreeSystem extends Component implements RendererPlugin {
           target[off + 6] = 0;
           target[off + 7] = 0;
 
-          if (dist2 < lodDist2) nearCount++; else farCount++;
+          if (isNear) variant.nearCount++; else variant.farCount++;
         }
-
-        sp.nearCount = nearCount;
-        sp.farCount = farCount;
       }
 
-      // Upload near/far instance buffers so drawShadow/drawDepth (which run
-      // before draw) have the correct data.
-      if (sp.nearInstances && sp.nearCount > 0) {
-        sp.nearInstanceBuffer = this._createTempInstanceBuffer(device, sp.nearInstances, sp.nearCount);
-      } else if (!sp.nearInstances && sp.nearCount > 0) {
-        // No LOD split — use the full instanceBuffer
-        sp.nearInstanceBuffer = sp.instanceBuffer;
-      } else {
-        sp.nearInstanceBuffer = null;
+      // Upload per-variant near instance buffers (needed by drawShadow/drawDepth before draw)
+      for (const variant of sp.variants) {
+        if (variant.nearCount > 0 && variant.nearInstances) {
+          variant.nearInstanceBuffer = this._createTempInstanceBuffer(device, variant.nearInstances, variant.nearCount);
+        } else {
+          variant.nearInstanceBuffer = null;
+        }
       }
     }
   }
@@ -716,45 +742,47 @@ export class TreeSystem extends Component implements RendererPlugin {
     for (const sp of this._species) {
       if (sp.instances.length === 0) continue;
 
-      // Near instances: draw trunk + leaves with full mesh
-      if (sp.nearCount > 0 && sp.nearInstanceBuffer) {
-        const nearBuf = sp.nearInstanceBuffer;
+      for (const variant of sp.variants) {
+        // Near instances: draw trunk + leaves with full mesh
+        if (variant.nearCount > 0 && variant.nearInstanceBuffer) {
+          const nearBuf = variant.nearInstanceBuffer;
 
-        // Trunk draw
-        pass.setPipeline(pipeline.trunkPipeline);
-        pass.setBindGroup(0, this._drawBindGroup);
-        pass.setBindGroup(1, sp.trunkMaterialBindGroup!);
-        pass.setBindGroup(2, shadowBindGroup);
-        pass.setVertexBuffer(0, sp.trunkMesh.vertexBuffer);
-        pass.setVertexBuffer(1, nearBuf);
-        pass.setIndexBuffer(sp.trunkMesh.indexBuffer, sp.trunkMesh.indexFormat);
-        pass.drawIndexed(sp.trunkMesh.indexCount, sp.nearCount);
-
-        // Leaf draw
-        if (sp.leafMesh.indexCount > 0) {
-          pass.setPipeline(pipeline.leafPipeline);
+          // Trunk draw
+          pass.setPipeline(pipeline.trunkPipeline);
           pass.setBindGroup(0, this._drawBindGroup);
-          pass.setBindGroup(1, sp.leafMaterialBindGroup!);
+          pass.setBindGroup(1, sp.trunkMaterialBindGroup!);
           pass.setBindGroup(2, shadowBindGroup);
-          pass.setVertexBuffer(0, sp.leafMesh.vertexBuffer);
+          pass.setVertexBuffer(0, variant.trunkMesh.vertexBuffer);
           pass.setVertexBuffer(1, nearBuf);
-          pass.setIndexBuffer(sp.leafMesh.indexBuffer, sp.leafMesh.indexFormat);
-          pass.drawIndexed(sp.leafMesh.indexCount, sp.nearCount);
+          pass.setIndexBuffer(variant.trunkMesh.indexBuffer, variant.trunkMesh.indexFormat);
+          pass.drawIndexed(variant.trunkMesh.indexCount, variant.nearCount);
+
+          // Leaf draw
+          if (variant.leafMesh.indexCount > 0) {
+            pass.setPipeline(pipeline.leafPipeline);
+            pass.setBindGroup(0, this._drawBindGroup);
+            pass.setBindGroup(1, sp.leafMaterialBindGroup!);
+            pass.setBindGroup(2, shadowBindGroup);
+            pass.setVertexBuffer(0, variant.leafMesh.vertexBuffer);
+            pass.setVertexBuffer(1, nearBuf);
+            pass.setIndexBuffer(variant.leafMesh.indexBuffer, variant.leafMesh.indexFormat);
+            pass.drawIndexed(variant.leafMesh.indexCount, variant.nearCount);
+          }
         }
-      }
 
-      // Far instances: draw billboard
-      if (sp.farCount > 0 && sp.farInstances) {
-        const farBuf = this._createTempInstanceBuffer(device, sp.farInstances, sp.farCount);
+        // Far instances: draw billboard
+        if (variant.farCount > 0 && variant.farInstances) {
+          const farBuf = this._createTempInstanceBuffer(device, variant.farInstances, variant.farCount);
 
-        pass.setPipeline(pipeline.billboardPipeline);
-        pass.setBindGroup(0, this._drawBindGroup);
-        pass.setBindGroup(1, sp.billboardMaterialBindGroup!);
-        pass.setBindGroup(2, shadowBindGroup);
-        pass.setVertexBuffer(0, sp.billboardMesh.vertexBuffer);
-        pass.setVertexBuffer(1, farBuf);
-        pass.setIndexBuffer(sp.billboardMesh.indexBuffer, sp.billboardMesh.indexFormat);
-        pass.drawIndexed(sp.billboardMesh.indexCount, sp.farCount);
+          pass.setPipeline(pipeline.billboardPipeline);
+          pass.setBindGroup(0, this._drawBindGroup);
+          pass.setBindGroup(1, variant.billboardMaterialBindGroup!);
+          pass.setBindGroup(2, shadowBindGroup);
+          pass.setVertexBuffer(0, variant.billboardMesh.vertexBuffer);
+          pass.setVertexBuffer(1, farBuf);
+          pass.setIndexBuffer(variant.billboardMesh.indexBuffer, variant.billboardMesh.indexFormat);
+          pass.drawIndexed(variant.billboardMesh.indexCount, variant.farCount);
+        }
       }
     }
   }
@@ -764,44 +792,44 @@ export class TreeSystem extends Component implements RendererPlugin {
     const pipeline = this._pipeline;
 
     for (const sp of this._species) {
-      // Only cast shadows for near (full-mesh) instances — billboards don't shadow
-      if (sp.nearCount === 0 || !sp.nearInstanceBuffer) continue;
+      for (const variant of sp.variants) {
+        if (variant.nearCount === 0 || !variant.nearInstanceBuffer) continue;
 
-      pass.setPipeline(pipeline.trunkShadowPipeline);
-      pass.setBindGroup(0, this._shadowDrawBindGroup);
-      pass.setVertexBuffer(0, sp.trunkMesh.vertexBuffer);
-      pass.setVertexBuffer(1, sp.nearInstanceBuffer);
-      pass.setIndexBuffer(sp.trunkMesh.indexBuffer, sp.trunkMesh.indexFormat);
-      pass.drawIndexed(sp.trunkMesh.indexCount, sp.nearCount);
-
-      // Leaf shadows
-      if (sp.leafMesh.indexCount > 0) {
-        pass.setPipeline(pipeline.leafShadowPipeline);
+        pass.setPipeline(pipeline.trunkShadowPipeline);
         pass.setBindGroup(0, this._shadowDrawBindGroup);
-        pass.setVertexBuffer(0, sp.leafMesh.vertexBuffer);
-        pass.setVertexBuffer(1, sp.nearInstanceBuffer);
-        pass.setIndexBuffer(sp.leafMesh.indexBuffer, sp.leafMesh.indexFormat);
-        pass.drawIndexed(sp.leafMesh.indexCount, sp.nearCount);
+        pass.setVertexBuffer(0, variant.trunkMesh.vertexBuffer);
+        pass.setVertexBuffer(1, variant.nearInstanceBuffer);
+        pass.setIndexBuffer(variant.trunkMesh.indexBuffer, variant.trunkMesh.indexFormat);
+        pass.drawIndexed(variant.trunkMesh.indexCount, variant.nearCount);
+
+        // Leaf shadows
+        if (variant.leafMesh.indexCount > 0) {
+          pass.setPipeline(pipeline.leafShadowPipeline);
+          pass.setBindGroup(0, this._shadowDrawBindGroup);
+          pass.setVertexBuffer(0, variant.leafMesh.vertexBuffer);
+          pass.setVertexBuffer(1, variant.nearInstanceBuffer);
+          pass.setIndexBuffer(variant.leafMesh.indexBuffer, variant.leafMesh.indexFormat);
+          pass.drawIndexed(variant.leafMesh.indexCount, variant.nearCount);
+        }
       }
     }
   }
 
   drawDepth(pass: GPURenderPassEncoder): void {
-    // Only draw trunks in depth prepass — leaves are alpha-tested and
-    // would cause SSAO artifacts around quad edges.
-    // Only near instances — billboards skip depth/SSAO.
     if (!this.enabled || !this._pipeline || !this._shadowDrawBindGroup) return;
     const pipeline = this._pipeline;
 
     for (const sp of this._species) {
-      if (sp.nearCount === 0 || !sp.nearInstanceBuffer) continue;
+      for (const variant of sp.variants) {
+        if (variant.nearCount === 0 || !variant.nearInstanceBuffer) continue;
 
-      pass.setPipeline(pipeline.trunkShadowPipeline);
-      pass.setBindGroup(0, this._shadowDrawBindGroup);
-      pass.setVertexBuffer(0, sp.trunkMesh.vertexBuffer);
-      pass.setVertexBuffer(1, sp.nearInstanceBuffer);
-      pass.setIndexBuffer(sp.trunkMesh.indexBuffer, sp.trunkMesh.indexFormat);
-      pass.drawIndexed(sp.trunkMesh.indexCount, sp.nearCount);
+        pass.setPipeline(pipeline.trunkShadowPipeline);
+        pass.setBindGroup(0, this._shadowDrawBindGroup);
+        pass.setVertexBuffer(0, variant.trunkMesh.vertexBuffer);
+        pass.setVertexBuffer(1, variant.nearInstanceBuffer);
+        pass.setIndexBuffer(variant.trunkMesh.indexBuffer, variant.trunkMesh.indexFormat);
+        pass.drawIndexed(variant.trunkMesh.indexCount, variant.nearCount);
+      }
     }
   }
 
@@ -842,19 +870,21 @@ export class TreeSystem extends Component implements RendererPlugin {
       ],
     });
 
-    // Billboard uses white albedo + flat normal — the captured texture already has baked colors
+    // Billboard bind group per variant (each has its own captured billboard texture)
     const bbMatBuf = this._createMaterialBuffer(device, createMaterial({ albedo: [1, 1, 1, 1], roughness: 0.8, metallic: 0.0 }));
-    sp.billboardMaterialBindGroup = device.createBindGroup({
-      layout: pipeline.materialBindGroupLayout,
-      entries: [
-        { binding: 0, resource: { buffer: bbMatBuf } },
-        { binding: 1, resource: { buffer: sceneBuffer } },
-        { binding: 2, resource: sp.billboardTexture.view },
-        { binding: 3, resource: this._sampler! },
-        { binding: 4, resource: flatNormal.view },
-        { binding: 5, resource: this._sampler! },
-      ],
-    });
+    for (const variant of sp.variants) {
+      variant.billboardMaterialBindGroup = device.createBindGroup({
+        layout: pipeline.materialBindGroupLayout,
+        entries: [
+          { binding: 0, resource: { buffer: bbMatBuf } },
+          { binding: 1, resource: { buffer: sceneBuffer } },
+          { binding: 2, resource: variant.billboardTexture.view },
+          { binding: 3, resource: this._sampler! },
+          { binding: 4, resource: flatNormal.view },
+          { binding: 5, resource: this._sampler! },
+        ],
+      });
+    }
   }
 
   private _createMaterialBuffer(device: GPUDevice, mat: Material): GPUBuffer {
@@ -886,13 +916,7 @@ export class TreeSystem extends Component implements RendererPlugin {
     }
     this._drawBuffer?.destroy();
     for (const sp of this._species) {
-      sp.instanceBuffer?.destroy();
-      sp.trunkMesh.vertexBuffer.destroy();
-      sp.trunkMesh.indexBuffer.destroy();
-      sp.leafMesh.vertexBuffer.destroy();
-      sp.leafMesh.indexBuffer.destroy();
-      sp.billboardMesh.vertexBuffer.destroy();
-      sp.billboardMesh.indexBuffer.destroy();
+      this._destroyVariants(sp.variants);
     }
     this._species.length = 0;
   }

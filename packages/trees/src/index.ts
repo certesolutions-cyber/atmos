@@ -1,4 +1,5 @@
 export type {
+  BranchMode,
   TreeSpeciesConfig,
   TreeInstance,
   TreeMeshData,
@@ -13,7 +14,7 @@ export {
   INSTANCE_STRIDE,
   INSTANCE_STRIDE_BYTES,
 } from './types.js';
-export { expandLSystem, mulberry32 } from './lsystem.js';
+export { expandLSystem, mulberry32, resolveSpeciesRules } from './lsystem.js';
 export { generateTreeMesh } from './tree-generator.js';
 export { createBillboardMesh } from './billboard.js';
 export type { BillboardMeshData } from './billboard.js';

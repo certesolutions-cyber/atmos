@@ -198,29 +198,36 @@ export function generateTreeMesh(
   }
   if (maxDepth === 0) maxDepth = 1;
 
-  // First pass for maxY: simulate turtle movement
+  // First pass for maxY and crownBaseY: simulate turtle movement
+  let crownBaseY = Infinity;
   {
     let py = 0;
+    let depth = 0;
     const yStack: number[] = [];
     let hy = 1;
     const hyStack: number[] = [];
     for (let i = 0; i < lsystemOutput.length; i++) {
       const ch = lsystemOutput[i];
-      if (ch === 'F') {
-        py += hy * config.segmentLength;
+      if (ch === 'F' || ch === 'G') {
+        const step = ch === 'G' ? config.segmentLength * (config.excurrentBranchScale ?? 0.5) : config.segmentLength;
+        py += hy * step;
         maxY = Math.max(maxY, py);
       } else if (ch === '[') {
+        if (depth === 0) crownBaseY = Math.min(crownBaseY, py);
         yStack.push(py);
         hyStack.push(hy);
+        depth++;
       } else if (ch === ']') {
         py = yStack.pop() ?? 0;
         hy = hyStack.pop() ?? 1;
+        depth--;
       } else if (ch === '+' || ch === '-' || ch === '&' || ch === '^') {
         // Rough: branch angle changes heading Y component
         hy *= Math.cos(baseAngle);
       }
     }
   }
+  if (!Number.isFinite(crownBaseY)) crownBaseY = 0;
 
   // Scale leaves by tree height — taller trees get proportionally bigger leaves
   const leafScale = Math.sqrt(maxY);
@@ -235,19 +242,49 @@ export function generateTreeMesh(
   let anchorWindW = 0;
   let anchorBranchL = 0;
 
+  // Excurrent cone taper: track the Y where the current branch originated from trunk
+  let branchOriginY = 0;
+  const branchOriginYStack: number[] = [];
+
   // Per-segment radius taper — smooth gradual narrowing within each branch
   // Derived from radiusTaper so thinner branches taper faster visually
   const segmentTaper = Math.pow(config.radiusTaper, 0.3);
 
+  const isExcurrent = config.branchMode === 'excurrent';
+
   function angle(): number {
-    return baseAngle + (rand() - 0.5) * 2 * variance;
+    let a = baseAngle + (rand() - 0.5) * 2 * variance;
+    // Excurrent: lower trunk branches droop more (larger angle)
+    if (isExcurrent && state.depth === 1) {
+      const crownSpan = maxY - crownBaseY;
+      const crownFrac = crownSpan > 0
+        ? Math.max(0, Math.min(1, (state.posY - crownBaseY) / crownSpan))
+        : 0;
+      a += (1 - crownFrac) * 10 * DEG2RAD;
+    }
+    return a;
   }
 
   for (let i = 0; i < lsystemOutput.length; i++) {
     const ch = lsystemOutput[i];
 
     switch (ch) {
+      case 'G': // Short forward step (excurrent lateral branches)
       case 'F': {
+        let stepLength: number;
+        if (ch === 'G') {
+          // Lateral branch step: taper relative to crown span (not whole trunk)
+          // Bottom of crown → coneTaper=1.0 (full length), top → coneTaper≈0.1
+          const crownSpan = maxY - crownBaseY;
+          const crownFraction = crownSpan > 0
+            ? Math.max(0, Math.min(1, (branchOriginY - crownBaseY) / crownSpan))
+            : 0;
+          const coneTaper = Math.max(0.1, 1 - crownFraction * 0.7);
+          stepLength = config.segmentLength * (config.excurrentBranchScale ?? 0.5) * coneTaper;
+        } else {
+          stepLength = config.segmentLength;
+        }
+
         // Apply curvature
         if (config.curvature > 0) {
           pitch(state, (rand() - 0.5) * config.curvature);
@@ -261,9 +298,9 @@ export function generateTreeMesh(
         }
 
         // Move forward
-        state.posX += state.hx * config.segmentLength;
-        state.posY += state.hy * config.segmentLength;
-        state.posZ += state.hz * config.segmentLength;
+        state.posX += state.hx * stepLength;
+        state.posY += state.hy * stepLength;
+        state.posZ += state.hz * stepLength;
         segmentCount++;
 
         // Taper radius smoothly per segment
@@ -288,9 +325,12 @@ export function generateTreeMesh(
 
       case '[': {
         stack.push(cloneState(state));
+        branchOriginYStack.push(branchOriginY);
         // Save parent's wind params as anchor for child branch's first ring
         anchorWindW = Math.max(0, Math.min(1, state.posY / maxY));
         anchorBranchL = Math.min(1, state.depth / maxDepth);
+        // Record trunk Y where this branch originates (for excurrent cone taper)
+        if (state.depth === 0) branchOriginY = state.posY;
         state.depth++;
         // Don't taper radius here — the branch starts at the parent's current
         // radius so there's no step at the junction. The per-segment taper
@@ -304,6 +344,7 @@ export function generateTreeMesh(
         if (stack.length > 0) {
           const restored = stack.pop()!;
           Object.assign(state, restored);
+          branchOriginY = branchOriginYStack.pop() ?? 0;
           // Restore anchor to parent's wind params
           anchorWindW = Math.max(0, Math.min(1, state.posY / maxY));
           anchorBranchL = Math.min(1, state.depth / maxDepth);

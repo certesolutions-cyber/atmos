@@ -87,6 +87,26 @@ export function registerDetailBuiltins(): void {
       });
     }
 
+    // Base color (color picker)
+    properties.push({
+      key: `_dt${idx}_baseColor`,
+      type: 'color',
+      label: 'Base Color',
+      serialize: false,
+      group: `detail_${idx}`,
+      visibleWhen: (c) => (c as DetailSystem).typeCount > idx,
+      getter: (c) => {
+        const cfg = (c as DetailSystem).getTypeConfig(idx);
+        if (!cfg) return [1, 1, 1, 1];
+        const bc = cfg.baseColor ?? [1, 1, 1];
+        return [bc[0], bc[1], bc[2], 1];
+      },
+      setter: (c, v) => {
+        const arr = v as number[];
+        (c as DetailSystem).updateTypeConfig(idx, 'baseColor', [arr[0], arr[1], arr[2]] as [number, number, number]);
+      },
+    });
+
     // Texture property
     properties.push({
       key: `_detailTex${idx}`,
