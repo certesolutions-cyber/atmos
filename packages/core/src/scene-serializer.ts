@@ -106,7 +106,11 @@ export function serializeScene(scene: Scene): SceneData {
 
         const data: Record<string, unknown> = {};
         for (const prop of def.properties) {
-          data[prop.key] = toSerializableValue(resolvePropertyPath(comp, prop.key));
+          if (prop.serialize === false) continue;
+          const val = prop.getter
+            ? prop.getter(comp)
+            : resolvePropertyPath(comp, prop.key);
+          data[prop.key] = toSerializableValue(val);
         }
         components.push({ type: def.name, data });
       }
@@ -153,8 +157,22 @@ function setPropertyPath(obj: unknown, path: string, value: unknown): void {
 }
 
 export function applyComponentData(target: unknown, data: Record<string, unknown>): void {
+  // Look up PropertyDefs for custom setters
+  const def = target != null && typeof target === 'object' && 'constructor' in target
+    ? getComponentDef(target.constructor as ComponentConstructor)
+    : undefined;
+  const propMap = new Map<string, import('./component-registry.js').PropertyDef>();
+  if (def) {
+    for (const p of def.properties) propMap.set(p.key, p);
+  }
+
   for (const [key, value] of Object.entries(data)) {
-    setPropertyPath(target, key, value);
+    const propDef = propMap.get(key);
+    if (propDef?.setter) {
+      propDef.setter(target, value);
+    } else {
+      setPropertyPath(target, key, value);
+    }
   }
 }
 

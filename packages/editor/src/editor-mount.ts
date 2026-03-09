@@ -13,6 +13,7 @@ import { GizmoState } from './gizmo-state.js';
 import { OverlayRenderer } from './overlay-renderer.js';
 import { computeSelectionCenter } from './selection-utils.js';
 import type { GameObject } from '@certe/atmos-core';
+import { Ray, Mat4 } from '@certe/atmos-math';
 import type { ScriptAsset, AssetEntry } from './asset-types.js';
 import type { ProjectFileSystem } from './project-fs.js';
 import type { EditorPhysicsPlugin } from './bootstrap/types.js';
@@ -47,6 +48,18 @@ export interface MountEditorOptions {
   onDropPrefab?: (path: string, parent: GameObject | null) => void;
   onLoadPrefab?: (entry: AssetEntry) => void;
   physics?: EditorPhysicsPlugin;
+  /** Called when tree brush strokes. Args: worldX, worldZ. */
+  onTreeBrushStroke?: (worldX: number, worldZ: number) => void;
+  /** Called when detail brush strokes. Args: worldX, worldZ. */
+  onDetailBrushStroke?: (worldX: number, worldZ: number) => void;
+  /** Called when texture brush strokes. Args: worldX, worldZ. */
+  onTextureBrushStroke?: (worldX: number, worldZ: number) => void;
+  /** Called when tree brush config changes in UI. */
+  onBrushConfigChange?: (config: { radius: number; density: number; speciesIndex: number; scaleMin: number; scaleMax: number; eraseMode: boolean }) => void;
+  /** Called when detail brush config changes in UI. */
+  onDetailBrushConfigChange?: (config: { radius: number; density: number; typeIndex: number; scaleMin: number; scaleMax: number; eraseMode: boolean }) => void;
+  /** Called when texture brush config changes in UI. */
+  onTextureBrushConfigChange?: (config: { radius: number; strength: number; layerIndex: number }) => void;
 }
 
 export interface MountEditorResult {
@@ -85,6 +98,38 @@ export function mountEditor(
     const overlay = new OverlayRenderer(options.renderSystem, editorState, gizmoState, options.physics);
     cleanups.push(() => overlay.destroy());
 
+    // Tree/detail brush raycast: use GPU depth readback for accurate surface hit
+    const _brushRay = Ray.create();
+    const _invVP = Mat4.create();
+    const _planeN = Vec3.create();
+    Vec3.set(_planeN, 0, 1, 0);
+    const _stepPt = Vec3.create();
+    let _brushDragging = false;
+
+    const renderSystem = options.renderSystem;
+
+    /** Sync fallback: intersect Y=0 plane. */
+    function brushRaycastFlat(sx: number, sy: number): { x: number; z: number } | null {
+      const rs = renderSystem;
+      if (!rs) return null;
+      Mat4.invert(_invVP, rs.viewProjectionMatrix);
+      Ray.fromScreenCoords(_brushRay, sx, sy, canvas.width, canvas.height, _invVP);
+      const t = Ray.intersectPlane(_brushRay, _planeN, 0);
+      if (t < 0) return null;
+      const pt = Ray.pointOnRay(_stepPt, _brushRay, t);
+      return { x: pt[0]!, z: pt[2]! };
+    }
+
+    /** Async depth-buffer raycast — resolves next frame. */
+    async function brushRaycastDepth(sx: number, sy: number): Promise<{ x: number; z: number } | null> {
+      const rs = renderSystem;
+      if (!rs) return null;
+      const wp = await rs.screenToWorldPoint(sx, sy);
+      if (wp) return { x: wp[0]!, z: wp[2]! };
+      // Depth miss (sky) — fall back to plane
+      return brushRaycastFlat(sx, sy);
+    }
+
     // Canvas click -> pick object
     const onMouseDown = (e: MouseEvent) => {
       // In play mode: just ensure canvas has focus so keyboard events work
@@ -98,6 +143,21 @@ export function mountEditor(
       const rect = canvas.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
+
+      // Brush tool mode (tree, detail, or texture)
+      if (editorState.tool === 'treeBrush') {
+        let strokeFn: ((wx: number, wz: number) => void) | undefined;
+        if (editorState.brushMode === 'detail') strokeFn = options.onDetailBrushStroke;
+        else if (editorState.brushMode === 'texture') strokeFn = options.onTextureBrushStroke;
+        else strokeFn = options.onTreeBrushStroke;
+        if (strokeFn) {
+          _brushDragging = true;
+          void brushRaycastDepth(sx, sy).then(hit => {
+            if (hit) strokeFn!(hit.x, hit.z);
+          });
+        }
+        return;
+      }
 
       const selection = editorState.selection;
 
@@ -129,6 +189,24 @@ export function mountEditor(
     // Mouse move for gizmo drag
     const onMouseMove = (e: MouseEvent) => {
       if (!editorState.paused) return;
+
+      // Brush drag (tree, detail, or texture)
+      if (_brushDragging && editorState.tool === 'treeBrush') {
+        let strokeFn: ((wx: number, wz: number) => void) | undefined;
+        if (editorState.brushMode === 'detail') strokeFn = options.onDetailBrushStroke;
+        else if (editorState.brushMode === 'texture') strokeFn = options.onTextureBrushStroke;
+        else strokeFn = options.onTreeBrushStroke;
+        if (strokeFn) {
+          const rect = canvas.getBoundingClientRect();
+          const sx = e.clientX - rect.left;
+          const sy = e.clientY - rect.top;
+          void brushRaycastDepth(sx, sy).then(hit => {
+            if (hit) strokeFn(hit.x, hit.z);
+          });
+        }
+        return;
+      }
+
       if (!gizmoState?.dragging) return;
 
       const rect = canvas.getBoundingClientRect();
@@ -144,6 +222,7 @@ export function mountEditor(
 
     // Mouse up ends gizmo drag
     const onMouseUp = () => {
+      _brushDragging = false;
       gizmoState?.endDrag();
     };
 
@@ -210,6 +289,9 @@ export function mountEditor(
       onDropPrefab: options?.onDropPrefab,
       onLoadPrefab: options?.onLoadPrefab,
       renderSystem: options?.renderSystem,
+      onBrushConfigChange: options?.onBrushConfigChange,
+      onDetailBrushConfigChange: options?.onDetailBrushConfigChange,
+      onTextureBrushConfigChange: options?.onTextureBrushConfigChange,
     }),
   );
 

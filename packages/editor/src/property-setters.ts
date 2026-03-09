@@ -12,6 +12,9 @@ function navigatePath(obj: unknown, parts: string[]): { target: Record<string, u
 }
 
 export function getProperty(component: unknown, def: PropertyDef): unknown {
+  // Use custom getter if provided
+  if (def.getter) return def.getter(component);
+
   const parts = def.key.split('.');
   const nav = navigatePath(component, parts);
   if (!nav) return undefined;
@@ -24,6 +27,12 @@ export function getProperty(component: unknown, def: PropertyDef): unknown {
 }
 
 export function setProperty(component: unknown, def: PropertyDef, value: unknown): void {
+  // Use custom setter if provided
+  if (def.setter) {
+    def.setter(component, value);
+    return;
+  }
+
   const parts = def.key.split('.');
   const nav = navigatePath(component, parts);
   if (!nav) return;

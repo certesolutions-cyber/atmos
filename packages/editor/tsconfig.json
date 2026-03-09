@@ -24,6 +24,12 @@
     },
     {
       "path": "../assets"
+    },
+    {
+      "path": "../trees"
+    },
+    {
+      "path": "../terrain-detail"
     }
   ],
   "exclude": [

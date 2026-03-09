@@ -1,0 +1,43 @@
+{
+  "name": "@certe/atmos-terrain-detail",
+  "description": "Billboard detail instances (grass, flowers, rocks) with distance fade for the Atmos Engine",
+  "version": "0.8.10",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/certesolutions-cyber/atmos.git",
+    "directory": "packages/terrain-detail"
+  },
+  "homepage": "https://github.com/certesolutions-cyber/atmos",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "terrain",
+    "detail",
+    "grass",
+    "billboard",
+    "instancing",
+    "game-engine",
+    "atmos"
+  ],
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "publishConfig": {
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts"
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "package.json",
+    "README.md",
+    "LICENCE"
+  ],
+  "dependencies": {
+    "@certe/atmos-core": "^0.8.10",
+    "@certe/atmos-math": "^0.8.10",
+    "@certe/atmos-renderer": "^0.8.10"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}

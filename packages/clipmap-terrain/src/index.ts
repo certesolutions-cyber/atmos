@@ -18,3 +18,5 @@ export { ClipmapMeshRenderer } from './clipmap-mesh-renderer.js';
 export { ClipmapTerrain } from './clipmap-terrain.js';
 export type { ClipmapTerrainOptions } from './clipmap-terrain.js';
 export { registerClipmapTerrainBuiltins } from './register-builtins.js';
+export { TerrainSplatmap, SPLATMAP_UNIFORM_SIZE, LAYER_ARRAY_SIZE } from './terrain-splatmap.js';
+export type { SplatmapLayer } from './terrain-splatmap.js';

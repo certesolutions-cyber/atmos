@@ -11,7 +11,7 @@ import type { HeightFn } from "@certe/atmos-clipmap-terrain";
 import { terrainHeight } from "./ProceduralTerrain.js";
 
 export class FPSWalker extends Component {
-  moveSpeed = 30.0;
+  moveSpeed = 20.0;
   lookSpeed = 0.002;
   gravity = 20.0;
   jumpSpeed = 8.0;
@@ -36,9 +36,11 @@ export class FPSWalker extends Component {
   private readonly _xAxis: Vec3Type = Vec3.fromValues(1, 0, 0);
 
   private _onClick = () => {
+    console.log("click");
     const canvas = document.querySelector("canvas");
     if (canvas && !document.pointerLockElement) {
       canvas.requestPointerLock();
+      console.log("request pointer lock");
     }
   };
 
@@ -47,7 +49,6 @@ export class FPSWalker extends Component {
     this.pitch = 0;
     this._velY = 0;
     this._grounded = false;
-    window.addEventListener("click", this._onClick);
 
     // Snap to terrain on spawn
     const pos = this.gameObject.transform.position;
@@ -135,7 +136,12 @@ export class FPSWalker extends Component {
     t.setRotationFrom(this._rot);
   }
 
-  onDestroy(): void {
+  onPlayStop(): void {
     window.removeEventListener("click", this._onClick);
+  }
+
+  onPlayStart(): void {
+    window.addEventListener("click", this._onClick);
+    console.log("register click");
   }
 }

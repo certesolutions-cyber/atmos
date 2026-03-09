@@ -1,0 +1,705 @@
+{
+  "gameObjects": [
+    {
+      "name": "Directional Light",
+      "id": 1,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              10,
+              0
+            ],
+            "rotation": [
+              -0.30000001192092896,
+              -0.20000000298023224,
+              0,
+              0.9300000071525574
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "DirectionalLight",
+          "data": {
+            "color": [
+              1,
+              1,
+              1
+            ],
+            "intensity": 1.2,
+            "castShadows": true,
+            "shadowIntensity": 1,
+            "shadowResolution": 2048,
+            "shadowSize": 40,
+            "shadowDistance": 80,
+            "shadowFarSize": 80,
+            "shadowFarDistance": 200
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ground",
+      "id": 2,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              -0.030611231923103333,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              50,
+              1,
+              50
+            ]
+          }
+        },
+        {
+          "type": "MeshRenderer",
+          "data": {
+            "meshSource": "primitive:planeHd",
+            "materialSource": "materials/default.mat.json",
+            "material.albedo": [
+              0.699999988079071,
+              0.699999988079071,
+              0.699999988079071,
+              1
+            ],
+            "material.metallic": 0,
+            "material.roughness": 0.5,
+            "material.emissive": [
+              0,
+              0,
+              0
+            ],
+            "material.emissiveIntensity": 0,
+            "material.texTilingX": 1,
+            "material.texTilingY": 1,
+            "castShadow": false,
+            "receiveSSAO": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Forest",
+      "id": 3,
+      "parentId": null,
+      "components": [
+        {
+          "type": "Transform",
+          "data": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        {
+          "type": "ForestSetup",
+          "data": {
+            "treeCount": 50,
+            "spreadRadius": 40
+          }
+        },
+        {
+          "type": "TreeSystem",
+          "data": {
+            "windStrength": 0.5,
+            "castShadow": true,
+            "_speciesConfigs": [
+              {
+                "name": "oak-wide",
+                "axiom": "FFA",
+                "rules": [
+                  {
+                    "symbol": "A",
+                    "replacement": "F[+FA][-FA][&FA][^FA]L"
+                  }
+                ],
+                "iterations": 3,
+                "branchAngle": 35,
+                "angleVariance": 12,
+                "trunkRadius": 0.18,
+                "radiusTaper": 0.55,
+                "segmentLength": 0.7,
+                "radialSegments": 6,
+                "curvature": 0.08,
+                "leafCount": 6,
+                "leafWidth": 1.6,
+                "leafHeight": 1.4,
+                "lodDistance": 80,
+                "billboardWidth": 6,
+                "billboardHeight": 8,
+                "scaleMultiplier": 1,
+                "seed": 101
+              },
+              {
+                "name": "pine-tall",
+                "axiom": "FFFA",
+                "rules": [
+                  {
+                    "symbol": "A",
+                    "replacement": "F[+FA][-FA]L"
+                  }
+                ],
+                "iterations": 4,
+                "branchAngle": 22,
+                "angleVariance": 5,
+                "trunkRadius": 0.1,
+                "radiusTaper": 0.7,
+                "segmentLength": 0.9,
+                "radialSegments": 6,
+                "curvature": 0.03,
+                "leafCount": 4,
+                "leafWidth": 1.2,
+                "leafHeight": 1,
+                "lodDistance": 80,
+                "billboardWidth": 6,
+                "billboardHeight": 8,
+                "scaleMultiplier": 1,
+                "seed": 202
+              },
+              {
+                "name": "birch-slim",
+                "axiom": "FFA",
+                "rules": [
+                  {
+                    "symbol": "A",
+                    "replacement": "FF[+FA][-FA]L",
+                    "probability": 0.7
+                  },
+                  {
+                    "symbol": "A",
+                    "replacement": "F[&FA][^FA]L",
+                    "probability": 0.3
+                  }
+                ],
+                "iterations": 3,
+                "branchAngle": 28,
+                "angleVariance": 10,
+                "trunkRadius": 0.08,
+                "radiusTaper": 0.6,
+                "segmentLength": 1,
+                "radialSegments": 6,
+                "curvature": 0.06,
+                "leafCount": 5,
+                "leafWidth": 1,
+                "leafHeight": 1.2,
+                "lodDistance": 80,
+                "billboardWidth": 6,
+                "billboardHeight": 8,
+                "scaleMultiplier": 1,
+                "seed": 303
+              },
+              {
+                "name": "bush-low",
+                "axiom": "FA",
+                "rules": [
+                  {
+                    "symbol": "A",
+                    "replacement": "[+FA][-FA][&FA][^FA]L"
+                  }
+                ],
+                "iterations": 3,
+                "branchAngle": 40,
+                "angleVariance": 15,
+                "trunkRadius": 0.06,
+                "radiusTaper": 0.5,
+                "segmentLength": 0.5,
+                "radialSegments": 6,
+                "curvature": 0.1,
+                "leafCount": 7,
+                "leafWidth": 1.8,
+                "leafHeight": 1.6,
+                "lodDistance": 80,
+                "billboardWidth": 6,
+                "billboardHeight": 8,
+                "scaleMultiplier": 1,
+                "seed": 404
+              }
+            ],
+            "_instancesData": [
+              [
+                {
+                  "x": 0.6429529592477832,
+                  "y": 0,
+                  "z": -33.20662796420952,
+                  "rotationY": 2.232749429398637,
+                  "scale": 1.0126696826483448,
+                  "windPhase": 2.6269665533927737
+                },
+                {
+                  "x": -20.221741074972535,
+                  "y": 0,
+                  "z": 6.400601601616132,
+                  "rotationY": 0.1260033475623344,
+                  "scale": 1.204947161909634,
+                  "windPhase": 4.114731456521309
+                },
+                {
+                  "x": 3.9648882784687394,
+                  "y": 0,
+                  "z": -39.05586895013158,
+                  "rotationY": 5.211301798494724,
+                  "scale": 1.1830076219900545,
+                  "windPhase": 0.7949168915021096
+                },
+                {
+                  "x": -10.974323756064782,
+                  "y": 0,
+                  "z": -35.28953048564303,
+                  "rotationY": 0.7882588324072236,
+                  "scale": 1.1876693727856824,
+                  "windPhase": 5.725156857477639
+                },
+                {
+                  "x": 13.451641939354312,
+                  "y": 0,
+                  "z": -22.443918993868973,
+                  "rotationY": 0.5595993560050709,
+                  "scale": 1.2506804707230443,
+                  "windPhase": 2.9330147092526277
+                },
+                {
+                  "x": 15.498156151106434,
+                  "y": 0,
+                  "z": 2.521572913110171,
+                  "rotationY": 4.784465107947566,
+                  "scale": 1.262250376009499,
+                  "windPhase": 4.406493999362325
+                },
+                {
+                  "x": 10.916042831317116,
+                  "y": 0,
+                  "z": -29.214400409790585,
+                  "rotationY": 1.7045774392466435,
+                  "scale": 1.0720071555916253,
+                  "windPhase": 5.595889966432763
+                },
+                {
+                  "x": -19.443775278218347,
+                  "y": 0,
+                  "z": 25.08832476341232,
+                  "rotationY": 1.452956838924373,
+                  "scale": 0.9493867875306805,
+                  "windPhase": 2.7456521199344412
+                },
+                {
+                  "x": 1.1704966477011907,
+                  "y": 0,
+                  "z": -26.269643532376794,
+                  "rotationY": 1.662009617211707,
+                  "scale": 1.1977836611204704,
+                  "windPhase": 5.960226873087339
+                },
+                {
+                  "x": -25.75084042662702,
+                  "y": 0,
+                  "z": 2.227031703673598,
+                  "rotationY": 1.9519191841259813,
+                  "scale": 0.8406626940428571,
+                  "windPhase": 0.12059431036850962
+                },
+                {
+                  "x": -26.574090638190405,
+                  "y": 0,
+                  "z": -15.6966252673071,
+                  "rotationY": 4.70251099032104,
+                  "scale": 0.7747633219113402,
+                  "windPhase": 2.455002654406134
+                },
+                {
+                  "x": -23.100108953111928,
+                  "y": 0,
+                  "z": -29.21500414589106,
+                  "rotationY": 1.4895264847111929,
+                  "scale": 0.9021773339259332,
+                  "windPhase": 5.626264339944482
+                },
+                {
+                  "x": -7.427724690648295,
+                  "y": 0,
+                  "z": -27.52521599020099,
+                  "rotationY": 3.6577321615577496,
+                  "scale": 0.7406695842932302,
+                  "windPhase": 2.7956118519749573
+                },
+                {
+                  "x": -26.000819979929457,
+                  "y": 0,
+                  "z": -6.4064519680163965,
+                  "rotationY": 4.186056327374185,
+                  "scale": 1.2703363421234937,
+                  "windPhase": 5.993716385819968
+                },
+                {
+                  "x": -26.85017967860267,
+                  "y": 0,
+                  "z": -4.016397664921458,
+                  "rotationY": 3.5083344190906787,
+                  "scale": 1.0097045899879673,
+                  "windPhase": 0.20877334191625876
+                },
+                {
+                  "x": -9.969059733049017,
+                  "y": 0,
+                  "z": -36.288080422726196,
+                  "rotationY": 1.2830211515066006,
+                  "scale": 0.8543441057923921,
+                  "windPhase": 4.0232549315511505
+                },
+                {
+                  "x": -33.5775528487525,
+                  "y": 0,
+                  "z": -10.027410812364913,
+                  "rotationY": 5.945540029915655,
+                  "scale": 1.0849504949454918,
+                  "windPhase": 4.078655647990507
+                },
+                {
+                  "x": 3.3613243066230356,
+                  "y": 0,
+                  "z": -38.62207849373694,
+                  "rotationY": 1.960368713682803,
+                  "scale": 0.8020547628877939,
+                  "windPhase": 1.994047451943149
+                },
+                {
+                  "x": 0.7262685241047157,
+                  "y": 0,
+                  "z": 16.979438632480047,
+                  "rotationY": 1.399797434404655,
+                  "scale": 0.9707946778604735,
+                  "windPhase": 0.03515189676616814
+                },
+                {
+                  "x": 2.5119883057891723,
+                  "y": 0,
+                  "z": -20.31452805603805,
+                  "rotationY": 0.8970997005119714,
+                  "scale": 0.7337325334706029,
+                  "windPhase": 5.568179385341547
+                },
+                {
+                  "x": -4.607012834277497,
+                  "y": 0,
+                  "z": 7.051655516833293,
+                  "rotationY": 1.5493728585128794,
+                  "scale": 1.1908547463318588,
+                  "windPhase": 5.534572011150943
+                },
+                {
+                  "x": 7.525021791327302,
+                  "y": 0,
+                  "z": -7.626158129501122,
+                  "rotationY": 6.250984620886038,
+                  "scale": 1.1212038220936449,
+                  "windPhase": 5.366295862391046
+                },
+                {
+                  "x": 21.54852774216669,
+                  "y": 0,
+                  "z": -12.779917113066276,
+                  "rotationY": 4.562698973217906,
+                  "scale": 0.7325571537169427,
+                  "windPhase": 3.884915012338232
+                },
+                {
+                  "x": 16.296108337807723,
+                  "y": 0,
+                  "z": -32.707188619697604,
+                  "rotationY": 2.444478628015335,
+                  "scale": 1.219967746976748,
+                  "windPhase": 0.032518282882721676
+                }
+              ],
+              [
+                {
+                  "x": -8.070399168288485,
+                  "y": 0,
+                  "z": -31.766010087835223,
+                  "rotationY": 3.033752143496829,
+                  "scale": 0.9171320439396109,
+                  "windPhase": 3.1772827374364705
+                },
+                {
+                  "x": -16.761680281750085,
+                  "y": 0,
+                  "z": 27.537937988471032,
+                  "rotationY": 3.9694407863417123,
+                  "scale": 0.7335889101184853,
+                  "windPhase": 6.173898158359741
+                },
+                {
+                  "x": 12.268334759210186,
+                  "y": 0,
+                  "z": -17.70144162411838,
+                  "rotationY": 2.889190931084934,
+                  "scale": 0.7105593204547461,
+                  "windPhase": 3.501890671642733
+                },
+                {
+                  "x": 2.457629106911549,
+                  "y": 0,
+                  "z": 36.00870146022834,
+                  "rotationY": 6.267786252581438,
+                  "scale": 0.8329385042809594,
+                  "windPhase": 0.27492378521060074
+                },
+                {
+                  "x": 5.79846415678591,
+                  "y": 0,
+                  "z": 2.809146510718188,
+                  "rotationY": 3.0214654953886178,
+                  "scale": 0.7881668188088419,
+                  "windPhase": 1.3771193178386436
+                },
+                {
+                  "x": -38.450227856065226,
+                  "y": 0,
+                  "z": -10.599912200232811,
+                  "rotationY": 1.1755805432368667,
+                  "scale": 0.9542985917321865,
+                  "windPhase": 3.564533037382992
+                },
+                {
+                  "x": -10.030032520200956,
+                  "y": 0,
+                  "z": 2.7708619425337493,
+                  "rotationY": 3.2998319379197145,
+                  "scale": 1.2426527443074866,
+                  "windPhase": 5.874467793311723
+                },
+                {
+                  "x": -12.77316751010208,
+                  "y": 0,
+                  "z": -14.37874231305855,
+                  "rotationY": 4.1217216828694365,
+                  "scale": 1.121214121776267,
+                  "windPhase": 3.0323397297384123
+                },
+                {
+                  "x": -19.913619701672026,
+                  "y": 0,
+                  "z": 15.616618498235994,
+                  "rotationY": 3.9592430886981016,
+                  "scale": 0.7219940424067871,
+                  "windPhase": 1.4267096001586674
+                }
+              ],
+              [
+                {
+                  "x": -25.068050684107146,
+                  "y": 0,
+                  "z": -14.258425475546076,
+                  "rotationY": 0.2935360428172665,
+                  "scale": 1.2489638569527137,
+                  "windPhase": 6.231780409570695
+                },
+                {
+                  "x": -35.04580065092,
+                  "y": 0,
+                  "z": -1.0921875039623807,
+                  "rotationY": 0.7905774653990231,
+                  "scale": 0.8628295422358575,
+                  "windPhase": 4.859792578256205
+                },
+                {
+                  "x": 30.387175705937995,
+                  "y": 0,
+                  "z": 0.5265012318115857,
+                  "rotationY": 0.7067655193464852,
+                  "scale": 1.0330871583582306,
+                  "windPhase": 3.585163684526541
+                },
+                {
+                  "x": -14.316052006167476,
+                  "y": 0,
+                  "z": 27.890529874782104,
+                  "rotationY": 2.2110481515104494,
+                  "scale": 1.139883208479678,
+                  "windPhase": 1.6116927707759428
+                },
+                {
+                  "x": -12.047403526932131,
+                  "y": 0,
+                  "z": -26.50690613759981,
+                  "rotationY": 3.5374608005956647,
+                  "scale": 1.158365559791385,
+                  "windPhase": 1.8323984683741397
+                },
+                {
+                  "x": 36.692981190488375,
+                  "y": 0,
+                  "z": -12.267476381801647,
+                  "rotationY": 0.8369399257701634,
+                  "scale": 1.0658401490961387,
+                  "windPhase": 5.465553903172571
+                },
+                {
+                  "x": 4.056307674114141,
+                  "y": 0,
+                  "z": -22.19491575023643,
+                  "rotationY": 3.887526372311857,
+                  "scale": 0.9274660588370012,
+                  "windPhase": 0.50821646214701
+                },
+                {
+                  "x": -29.821617648727173,
+                  "y": 0,
+                  "z": 14.79660358502734,
+                  "rotationY": 0.7242542719603727,
+                  "scale": 1.1326746465790434,
+                  "windPhase": 1.4627919040457409
+                }
+              ],
+              [
+                {
+                  "x": 18.132049366578812,
+                  "y": 0,
+                  "z": 5.773499562445063,
+                  "rotationY": 0.4779983546186816,
+                  "scale": 0.8724181712476621,
+                  "windPhase": 1.101341118249683
+                },
+                {
+                  "x": 30.037666155400196,
+                  "y": 0,
+                  "z": 23.17050916854132,
+                  "rotationY": 3.656738230145088,
+                  "scale": 1.2098944427957266,
+                  "windPhase": 0.7995981927828126
+                },
+                {
+                  "x": -1.3757597148074527,
+                  "y": 0,
+                  "z": 11.217066763653362,
+                  "rotationY": 2.045503594109439,
+                  "scale": 1.240044135106748,
+                  "windPhase": 4.388613633819045
+                },
+                {
+                  "x": -14.050549838854966,
+                  "y": 0,
+                  "z": 25.827662917108043,
+                  "rotationY": 3.555449419150975,
+                  "scale": 0.8735811949584545,
+                  "windPhase": 2.4003462794630175
+                },
+                {
+                  "x": 13.831950746097725,
+                  "y": 0,
+                  "z": -27.602808807084745,
+                  "rotationY": 2.592975626951394,
+                  "scale": 0.7591110229767444,
+                  "windPhase": 3.6045335362043267
+                },
+                {
+                  "x": 16.006835396129233,
+                  "y": 0,
+                  "z": -28.54854053461751,
+                  "rotationY": 4.951558385036111,
+                  "scale": 0.9790907861101863,
+                  "windPhase": 1.449897941589021
+                },
+                {
+                  "x": 2.333384406505351,
+                  "y": 0,
+                  "z": 12.002629960404526,
+                  "rotationY": 1.9683033823878893,
+                  "scale": 0.8990440667602438,
+                  "windPhase": 3.664161506577205
+                },
+                {
+                  "x": -18.902625594196056,
+                  "y": 0,
+                  "z": 11.918643920536661,
+                  "rotationY": 2.25599540541256,
+                  "scale": 1.0628221990367501,
+                  "windPhase": 5.43910244835759
+                },
+                {
+                  "x": 23.063707080877606,
+                  "y": 0,
+                  "z": -18.957705800485673,
+                  "rotationY": 3.7623689307963333,
+                  "scale": 1.043582248847737,
+                  "windPhase": 3.218316016922979
+                }
+              ]
+            ],
+            "_barkTex0": "textures/relief-texture-brown-bark-tree-close-up.jpg",
+            "_leafTex0": "textures/pineBranch.png",
+            "_barkTex1": "textures/relief-texture-brown-bark-tree-close-up.jpg",
+            "_leafTex1": "textures/pineBranch.png",
+            "_barkTex2": "textures/relief-texture-brown-bark-tree-close-up.jpg",
+            "_leafTex2": "textures/pineBranch2.png",
+            "_barkTex3": "textures/relief-texture-brown-bark-tree-close-up.jpg",
+            "_leafTex3": "textures/pineBranch2.png",
+            "_barkTex4": "",
+            "_leafTex4": "",
+            "_barkTex5": "",
+            "_leafTex5": "",
+            "_barkTex6": "",
+            "_leafTex6": "",
+            "_barkTex7": "",
+            "_leafTex7": ""
+          }
+        }
+      ]
+    }
+  ],
+  "postProcess": {
+    "bloomIntensity": 0.5,
+    "bloomThreshold": 1,
+    "bloomRadius": 0.5,
+    "ssaoEnabled": true,
+    "ssaoRadius": 0.5,
+    "ssaoBias": 0.025,
+    "ssaoIntensity": 1.5,
+    "exposure": 1,
+    "vignetteIntensity": 0.3,
+    "vignetteRadius": 0.75,
+    "fogEnabled": false,
+    "fogMode": "linear",
+    "fogDensity": 0.02,
+    "fogStart": 10,
+    "fogEnd": 100,
+    "fogColor": [
+      0.699999988079071,
+      0.75,
+      0.800000011920929
+    ]
+  }
+}

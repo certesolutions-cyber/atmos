@@ -1,7 +1,17 @@
-export type PropertyType = 'number' | 'string' | 'boolean' | 'vec3' | 'quat' | 'color' | 'enum' | 'gameObjectRef' | 'materialAsset' | 'texture';
+export type PropertyType = 'number' | 'string' | 'boolean' | 'vec3' | 'quat' | 'color' | 'enum' | 'gameObjectRef' | 'materialAsset' | 'texture' | 'button';
 
 export interface PropertyDefBase {
   visibleWhen?: (target: unknown) => boolean;
+  /** Override display label (defaults to humanized key). */
+  label?: string;
+  /** Group key for collapsible sections in the inspector. */
+  group?: string;
+  /** Custom getter — used instead of reading `target[key]`. */
+  getter?: (target: unknown) => unknown;
+  /** Custom setter — used instead of writing `target[key]`. */
+  setter?: (target: unknown, value: unknown) => void;
+  /** If false, skip this property during scene serialization. Default true. */
+  serialize?: boolean;
 }
 
 export interface NumberPropertyDef extends PropertyDefBase {
@@ -60,6 +70,13 @@ export interface TexturePropertyDef extends PropertyDefBase {
   type: 'texture';
 }
 
+export interface ButtonPropertyDef extends PropertyDefBase {
+  key: string;
+  type: 'button';
+  /** Button label text (defaults to humanized key). */
+  buttonLabel?: string;
+}
+
 export type PropertyDef =
   | NumberPropertyDef
   | Vec3PropertyDef
@@ -70,7 +87,8 @@ export type PropertyDef =
   | BooleanPropertyDef
   | GameObjectRefPropertyDef
   | MaterialAssetPropertyDef
-  | TexturePropertyDef;
+  | TexturePropertyDef
+  | ButtonPropertyDef;
 
 export interface ComponentDef {
   name: string;

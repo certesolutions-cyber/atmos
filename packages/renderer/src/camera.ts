@@ -10,9 +10,16 @@ export interface ScreenToWorldProvider {
 export class Camera extends Component {
   fovY = Math.PI / 4;
   near = 0.1;
-  far = 100;
+  far = 1000;
   isMainCamera = false;
   clearColor = new Float32Array([0.05, 0.05, 0.1, 1.0]);
+
+  skyMode: 'none' | 'procedural' = 'none';
+  skyZenithColor = new Float32Array([0.10, 0.22, 0.55]);
+  skyHorizonColor = new Float32Array([0.62, 0.74, 0.88]);
+  skyGroundColor = new Float32Array([0.18, 0.12, 0.08]);
+  skyGroundFalloff = 5.0;
+  skySunIntensity = 1.5;
 
   /** Set by RenderSystem when it activates a camera. */
   static _renderSystem: ScreenToWorldProvider | null = null;

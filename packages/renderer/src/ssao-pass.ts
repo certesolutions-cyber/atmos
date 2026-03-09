@@ -162,7 +162,9 @@ export class SSAOPass {
     this._blurView = this._blurTexture.createView();
   }
 
-  /** Execute SSAO. Returns AO texture view (white if disabled or no depth). */
+  /** Execute SSAO. Returns AO texture view (white if disabled or no depth).
+   *  Optional eraseDraw renders non-SSAO geometry to the AO texture writing 1.0,
+   *  effectively removing SSAO from those pixels while keeping their depth for occlusion. */
   execute(
     encoder: GPUCommandEncoder,
     depthView: GPUTextureView | null,
@@ -170,6 +172,7 @@ export class SSAOPass {
     invProjMatrix: Mat4Type,
     screenW: number,
     screenH: number,
+    eraseDraw?: (pass: GPURenderPassEncoder) => void,
   ): GPUTextureView {
     if (!this.enabled || !depthView) return this._whiteView;
 
@@ -229,6 +232,23 @@ export class SSAOPass {
     blurPass.setBindGroup(0, blurBG);
     drawFullscreenTriangle(blurPass);
     blurPass.end();
+
+    // Erase pass: overwrite AO to 1.0 for non-SSAO objects (e.g. terrain)
+    if (eraseDraw) {
+      const erasePass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: this._blurView!,
+          loadOp: 'load',
+          storeOp: 'store',
+        }],
+        depthStencilAttachment: {
+          view: depthView,
+          depthReadOnly: true,
+        },
+      });
+      eraseDraw(erasePass);
+      erasePass.end();
+    }
 
     return this._blurView!;
   }

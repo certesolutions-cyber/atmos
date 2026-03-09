@@ -254,7 +254,7 @@ export class MaterialManager {
     for (const [name, texPath] of Object.entries(data.customTextures)) {
       if (!texPath) continue;
       try {
-        const handle = await this._loadTexture(texPath);
+        const handle = await this.loadTexture(texPath);
         if (handle) mat.customTextures.set(name, handle);
       } catch (err) {
         console.warn(`[MaterialManager] Failed to load custom texture "${name}": ${texPath}`, err);
@@ -264,7 +264,7 @@ export class MaterialManager {
   }
 
   /** Load a texture handle (with caching). */
-  private async _loadTexture(texturePath: string, srgb = true): Promise<GPUTextureHandle | null> {
+  async loadTexture(texturePath: string, srgb = true): Promise<GPUTextureHandle | null> {
     const cacheKey = srgb ? texturePath : `${texturePath}:linear`;
     const cached = this._textureCache.get(cacheKey);
     if (cached) return cached;
@@ -295,7 +295,7 @@ export class MaterialManager {
     }
 
     const srgb = prop === 'albedoTexture';
-    const handle = await this._loadTexture(texturePath, srgb);
+    const handle = await this.loadTexture(texturePath, srgb);
     mat[prop] = handle;
     mat.textureVersion++;
   }

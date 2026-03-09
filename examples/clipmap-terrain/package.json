@@ -11,8 +11,7 @@
     "@certe/atmos-core": "*",
     "@certe/atmos-math": "*",
     "@certe/atmos-renderer": "*",
-    "@certe/atmos-editor": "*",
-    "@certe/atmos-clipmap-terrain": "*"
+    "@certe/atmos-editor": "*"
   },
   "devDependencies": {
     "vite": "^6.0.0",

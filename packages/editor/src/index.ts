@@ -1,5 +1,5 @@
 export { EditorState } from './editor-state.js';
-export type { EditorEvent } from './editor-state.js';
+export type { EditorEvent, EditorTool, BrushMode } from './editor-state.js';
 export { mountEditor } from './editor-mount.js';
 export type { MountEditorOptions, MountEditorResult, PrimitiveType } from './editor-mount.js';
 export { getProperty, setProperty } from './property-setters.js';

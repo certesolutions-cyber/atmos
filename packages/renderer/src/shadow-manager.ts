@@ -198,7 +198,7 @@ export class ShadowManager {
       f32.set(this._dirVP0[i]! as Float32Array, b);
       f32.set(this._dirVP1[i]! as Float32Array, b + 16);
       f32[b + 32] = 0.002; u32[b + 33] = 1; f32[b + 34] = dl.shadowIntensity;
-      f32[b + 35] = dl.shadowSize * 0.9; f32[b + 36] = dl.shadowSize * 0.3;
+      f32[b + 35] = dl.shadowSize * 0.85; f32[b + 36] = dl.shadowSize * 0.5;
       f32[b + 37] = dl.shadowSize * 2.0;       // orthoSize0 (cascade 0 world width)
       f32[b + 38] = dl.shadowFarSize * 2.0;    // orthoSize1 (cascade 1 world width)
       dl.getWorldDirection(_dirLightDirScratch);

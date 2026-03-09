@@ -122,7 +122,7 @@ export const LIGHT_LOOP_WGSL = /* wgsl */`
     var contribution = computePBR(N, V, L, albedo, metallic, roughness, F0, radiance);
     let dirSlot = shadow.dirLightToSlot[i];
     if (dirSlot != 0xFFFFFFFFu) {
-      contribution = contribution * sampleDirShadow(dirSlot, worldPosition, N);
+      contribution = contribution * sampleDirShadow(dirSlot, worldPosition, N, length(worldPosition - scene.cameraPos.xyz));
     }
     Lo = Lo + contribution;
   }

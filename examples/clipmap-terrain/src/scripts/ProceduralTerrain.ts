@@ -66,34 +66,28 @@ export class ProceduralTerrain extends Component {
   private _initialized = false;
   private _pipeline: ClipmapPipelineResources | null = null;
 
-  onPlayStop(): void {
-    this._initialized = false;
-  }
-
   onRender(): void {
     if (this._initialized) return;
     const rs = RenderSystem.current;
     if (!rs) return;
+
+    // If terrain already exists (deserialized from scene), just provide the height function
+    const existing = this.gameObject.getComponent(ClipmapTerrain);
+    if (existing?.initialized) {
+      this._initialized = true;
+      existing.updateHeightmap(terrainHeight);
+      return;
+    }
+
     this._initialized = true;
 
     const device = rs.device;
     this._pipeline = createClipmapPipeline(device);
 
-    const material = createMaterial({
-      albedo: [0.45, 0.55, 0.35, 1],
-      roughness: 0.9,
-      metallic: 0.0,
-      texTilingX: 0.05,
-      texTilingY: 0.05,
-    });
-
-    // Use existing deserialized ClipmapTerrain, or create a new one
-    const terrain = this.gameObject.getComponent(ClipmapTerrain)
-      ?? this.gameObject.addComponent(ClipmapTerrain);
+    const terrain = existing ?? this.gameObject.addComponent(ClipmapTerrain);
 
     terrain.init(device, this._pipeline, {
       heightFn: terrainHeight,
-      material,
       config: {
         gridSize: 65,
         cellSize: 1,

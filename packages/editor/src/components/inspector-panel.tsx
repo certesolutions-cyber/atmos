@@ -132,7 +132,7 @@ function renderField(
   editorState?: EditorState,
 ) {
   const value = getProperty(component, def);
-  const label = def.key.split('.').pop()!;
+  const label = def.label ?? def.key.split('.').pop()!;
 
   switch (def.type) {
     case 'number':
@@ -272,6 +272,29 @@ function renderField(
             });
           }}
         />
+      );
+    case 'button':
+      return (
+        <div key={def.key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <button
+            style={{
+              flex: 1,
+              padding: '4px 8px',
+              background: '#4a4a4a',
+              color: '#ddd',
+              border: '1px solid #666',
+              borderRadius: 3,
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+            onClick={() => {
+              if (def.setter) def.setter(component, undefined);
+              refresh();
+            }}
+          >
+            {(def as import('@certe/atmos-core').ButtonPropertyDef).buttonLabel ?? label}
+          </button>
+        </div>
       );
     default:
       return null;
@@ -499,9 +522,31 @@ export function InspectorPanel({ editorState, materialManager, componentFactory,
                 </button>
               )}
             </div>
-            {entry.properties
-              .filter((prop) => !prop.visibleWhen || prop.visibleWhen(entry.target))
-              .map((prop) => renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager, entry.component, editorState))}
+            {(() => {
+              const visibleProps = entry.properties.filter((prop) => !prop.visibleWhen || prop.visibleWhen(entry.target));
+              let lastGroup: string | undefined;
+              return visibleProps.map((prop) => {
+                const elements: React.ReactNode[] = [];
+                if (prop.group && prop.group !== lastGroup) {
+                  // Resolve group label — for species groups, show species name
+                  let groupLabel = prop.group;
+                  const speciesMatch = prop.group.match(/^species_(\d+)$/);
+                  if (speciesMatch) {
+                    const ts = entry.target as unknown as { getSpeciesName?: (idx: number) => string };
+                    const idx = parseInt(speciesMatch[1]!, 10);
+                    groupLabel = ts.getSpeciesName ? ts.getSpeciesName(idx) : `Species ${idx}`;
+                  }
+                  elements.push(
+                    <div key={`group-${prop.group}`} style={{ fontSize: '10px', color: '#7ab', marginTop: '8px', marginBottom: '4px', borderTop: '1px solid #333', paddingTop: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {groupLabel}
+                    </div>,
+                  );
+                  lastGroup = prop.group;
+                }
+                elements.push(renderField(entry.target, prop, refresh, editorState.scene, selected.id, materialManager, entry.component, editorState));
+                return elements;
+              });
+            })()}
           </div>
         ))}
 

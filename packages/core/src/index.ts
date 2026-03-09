@@ -28,6 +28,7 @@ export type {
   GameObjectRefPropertyDef,
   MaterialAssetPropertyDef,
   TexturePropertyDef,
+  ButtonPropertyDef,
 } from './component-registry.js';
 export { registerCoreBuiltins } from './register-builtins.js';
 export { serializeScene, deserializeScene, applyComponentData, serializePostProcess, applyPostProcess } from './scene-serializer.js';

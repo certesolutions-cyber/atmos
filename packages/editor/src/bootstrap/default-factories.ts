@@ -10,6 +10,9 @@ import {
 } from '@certe/atmos-animation';
 import type { Joint, KeyframeTrack, AnimationChannel } from '@certe/atmos-animation';
 import type { ModelAsset } from '@certe/atmos-assets';
+import { TreeSystem, createTreePipeline } from '@certe/atmos-trees';
+import { DetailSystem, createDetailPipeline } from '@certe/atmos-terrain-detail';
+import { ClipmapTerrain, createClipmapPipeline } from '@certe/atmos-clipmap-terrain';
 import type { PrimitiveType } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import type { MaterialManager } from '../material-manager.js';
@@ -93,6 +96,39 @@ export function createDefaultComponentFactory(deps: FactoryDeps) {
       const cam = go.addComponent(Camera);
       const scene = deps.editorState.current?.scene;
       if (scene && !Camera.getMain(scene)) cam.isMainCamera = true;
+    } else if (ctor === (DetailSystem as unknown)) {
+      const ds = go.addComponent(DetailSystem);
+      const rs = deps.rendererCtx;
+      if (rs.device) {
+        const pipeline = createDetailPipeline(rs.device);
+        ds.init(rs.device, pipeline);
+      }
+      const mm = deps.materialManager.current;
+      if (mm) {
+        ds.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+      }
+    } else if (ctor === (TreeSystem as unknown)) {
+      const ts = go.addComponent(TreeSystem);
+      const rs = deps.rendererCtx;
+      if (rs.device) {
+        const pipeline = createTreePipeline(rs.device);
+        ts.init(rs.device, pipeline);
+      }
+      const mm = deps.materialManager.current;
+      if (mm) {
+        ts.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+      }
+    } else if (ctor === (ClipmapTerrain as unknown)) {
+      const ct = go.addComponent(ClipmapTerrain);
+      const rs = deps.rendererCtx;
+      if (rs.device) {
+        const pipeline = createClipmapPipeline(rs.device);
+        ct.init(rs.device, pipeline);
+      }
+      const mm = deps.materialManager.current;
+      if (mm) {
+        ct.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+      }
     } else {
       go.addComponent(ctor);
     }
@@ -241,6 +277,50 @@ export function createDefaultDeserializeContext(deps: FactoryDeps): DeserializeC
         case 'SpotLight': {
           const sl = go.addComponent(SpotLight);
           applyComponentData(sl, data);
+          break;
+        }
+        case 'TreeSystem': {
+          const ts = go.addComponent(TreeSystem);
+          applyComponentData(ts, data); // restores pending configs, instances, texture paths
+          const rs = deps.rendererCtx;
+          if (rs.device) {
+            const pipeline = createTreePipeline(rs.device);
+            ts.initFromPendingData(rs.device, pipeline);
+          }
+          // Wire texture loader if MaterialManager is available
+          const mm = deps.materialManager.current;
+          if (mm) {
+            ts.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+          }
+          break;
+        }
+        case 'DetailSystem': {
+          const ds = go.addComponent(DetailSystem);
+          applyComponentData(ds, data);
+          const rs = deps.rendererCtx;
+          if (rs.device) {
+            const pipeline = createDetailPipeline(rs.device);
+            ds.initFromPendingData(rs.device, pipeline);
+          }
+          const mm = deps.materialManager.current;
+          if (mm) {
+            ds.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+          }
+          break;
+        }
+        case 'ClipmapTerrain': {
+          const ct = go.addComponent(ClipmapTerrain);
+          applyComponentData(ct, data); // config.* before init
+          const rs = deps.rendererCtx;
+          if (rs.device) {
+            const pipeline = createClipmapPipeline(rs.device);
+            ct.init(rs.device, pipeline);
+          }
+          applyComponentData(ct, data); // albedo/textures after init (needs _material)
+          const mm = deps.materialManager.current;
+          if (mm) {
+            ct.setTextureLoader((path: string, srgb: boolean) => mm.loadTexture(path, srgb));
+          }
           break;
         }
         default: {

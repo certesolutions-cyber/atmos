@@ -58,6 +58,12 @@ export function registerRendererBuiltins(): void {
       { key: 'far', type: 'number', min: 1, max: 10000, step: 1 },
       { key: 'isMainCamera', type: 'boolean' },
       { key: 'clearColor', type: 'color' },
+      { key: 'skyMode', type: 'enum', options: ['none', 'procedural'] },
+      { key: 'skyZenithColor', type: 'color' },
+      { key: 'skyHorizonColor', type: 'color' },
+      { key: 'skyGroundColor', type: 'color' },
+      { key: 'skyGroundFalloff', type: 'number', min: 1, max: 20, step: 0.5 },
+      { key: 'skySunIntensity', type: 'number', min: 0, max: 10, step: 0.1 },
     ],
   });
 

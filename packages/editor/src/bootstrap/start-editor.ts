@@ -23,6 +23,9 @@ import { Vec3 } from '@certe/atmos-math';
 import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
 import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@certe/atmos-animation';
 import { registerClipmapTerrainBuiltins } from '@certe/atmos-clipmap-terrain';
+import { registerTreeBuiltins, TreeSystem, TreeBrush } from '@certe/atmos-trees';
+import { registerDetailBuiltins, DetailSystem, DetailBrush } from '@certe/atmos-terrain-detail';
+import { ClipmapTerrain, ClipmapMeshRenderer } from '@certe/atmos-clipmap-terrain';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -53,6 +56,8 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   registerRendererBuiltins();
   registerAnimationBuiltins();
   registerClipmapTerrainBuiltins();
+  registerTreeBuiltins();
+  registerDetailBuiltins();
 
   // 2. DOM setup + WebGPU
   injectBaseStyles();
@@ -354,7 +359,91 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
     }
   }
 
-  // 8c. Mount editor UI
+  // 8c. Tree brush + Detail brush
+  const treeBrush = new TreeBrush();
+  const detailBrush = new DetailBrush();
+
+  const onTreeBrushStroke = (worldX: number, worldZ: number) => {
+    const edState = lazyState.current;
+    if (!edState) return;
+    const s = edState.scene;
+
+    // Find TreeSystem and ClipmapTerrain in scene
+    let treeSystem: TreeSystem | null = null;
+    let terrain: ClipmapTerrain | null = null;
+    for (const go of s.getAllObjects()) {
+      if (!treeSystem) treeSystem = go.getComponent(TreeSystem);
+      if (!terrain) terrain = go.getComponent(ClipmapTerrain);
+      if (treeSystem && terrain) break;
+    }
+    if (!treeSystem) {
+      console.warn('[TreeBrush] No TreeSystem found in scene');
+      return;
+    }
+    if (treeSystem.speciesCount === 0) {
+      console.warn('[TreeBrush] TreeSystem has no species configured. Add species first (e.g. via a script or scene data).');
+      return;
+    }
+
+    const heightFn = terrain
+      ? (x: number, z: number) => {
+          const terrainY = terrain!.gameObject?.transform.position[1] ?? 0;
+          return terrainY + terrain!.getHeightAt(x, z);
+        }
+      : () => 0;
+
+    treeBrush.stroke(treeSystem, worldX, worldZ, heightFn);
+  };
+
+  const onDetailBrushStroke = (worldX: number, worldZ: number) => {
+    const edState = lazyState.current;
+    if (!edState) return;
+    const s = edState.scene;
+
+    let detailSystem: DetailSystem | null = null;
+    let terrain: ClipmapTerrain | null = null;
+    for (const go of s.getAllObjects()) {
+      if (!detailSystem) detailSystem = go.getComponent(DetailSystem);
+      if (!terrain) terrain = go.getComponent(ClipmapTerrain);
+      if (detailSystem && terrain) break;
+    }
+    if (!detailSystem) {
+      console.warn('[DetailBrush] No DetailSystem found in scene');
+      return;
+    }
+    if (detailSystem.typeCount === 0) {
+      console.warn('[DetailBrush] DetailSystem has no types configured. Add types first.');
+      return;
+    }
+
+    const heightFn = terrain
+      ? (x: number, z: number) => {
+          const terrainY = terrain!.gameObject?.transform.position[1] ?? 0;
+          return terrainY + terrain!.getHeightAt(x, z);
+        }
+      : () => 0;
+
+    detailBrush.stroke(detailSystem, worldX, worldZ, heightFn);
+  };
+
+  // 8c2. Texture brush
+  const textureBrushConfig = { radius: 10, strength: 0.3, layerIndex: 0 };
+
+  const onTextureBrushStroke = (worldX: number, worldZ: number) => {
+    const edState = lazyState.current;
+    if (!edState) return;
+    const s = edState.scene;
+    let terrain: ClipmapTerrain | null = null;
+    for (const go of s.getAllObjects()) {
+      terrain = go.getComponent(ClipmapTerrain);
+      if (terrain) break;
+    }
+    if (!terrain) return;
+    const { radius, layerIndex, strength } = textureBrushConfig;
+    terrain.paint(worldX, worldZ, radius, layerIndex, strength);
+  };
+
+  // 8d. Mount editor UI
   const { editorState, gizmoState, orbitCamera, unmount } = mountEditor(
     container, scene, {
       canvas, camera, renderSystem,
@@ -388,6 +477,30 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       onDropModel,
       onDropPrefab,
       onLoadPrefab,
+      onTreeBrushStroke,
+      onDetailBrushStroke,
+      onBrushConfigChange: (cfg) => {
+        treeBrush.config.radius = cfg.radius;
+        treeBrush.config.density = cfg.density;
+        treeBrush.config.speciesIndex = cfg.speciesIndex;
+        treeBrush.config.scaleMin = cfg.scaleMin;
+        treeBrush.config.scaleMax = cfg.scaleMax;
+        treeBrush.config.eraseMode = cfg.eraseMode;
+      },
+      onDetailBrushConfigChange: (cfg) => {
+        detailBrush.config.radius = cfg.radius;
+        detailBrush.config.density = cfg.density;
+        detailBrush.config.typeIndex = cfg.typeIndex;
+        detailBrush.config.scaleMin = cfg.scaleMin;
+        detailBrush.config.scaleMax = cfg.scaleMax;
+        detailBrush.config.eraseMode = cfg.eraseMode;
+      },
+      onTextureBrushStroke,
+      onTextureBrushConfigChange: (cfg) => {
+        textureBrushConfig.radius = cfg.radius;
+        textureBrushConfig.strength = cfg.strength;
+        textureBrushConfig.layerIndex = cfg.layerIndex;
+      },
       primitiveFactory,
       componentFactory,
       componentFilter,
@@ -492,14 +605,41 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   cleanups.push(installKeyboardShortcuts(editorState, gizmoState));
 
   // 13. Event wiring
+  // Wire texture loaders for any TreeSystem in the scene
+  const wireTreeTextureLoaders = (s: Scene) => {
+    const mm = lazyMM.current;
+    if (!mm) return;
+    for (const go of s.getAllObjects()) {
+      const ts = go.getComponent(TreeSystem);
+      if (ts) ts.setTextureLoader((path, srgb) => mm.loadTexture(path, srgb));
+      const ds = go.getComponent(DetailSystem);
+      if (ds) ds.setTextureLoader((path, srgb) => mm.loadTexture(path, srgb));
+      const ct = go.getComponent(ClipmapTerrain);
+      if (ct) ct.setTextureLoader((path, srgb) => mm.loadTexture(path, srgb));
+    }
+  };
+
+  let prevScene: Scene = scene;
   const unsubScene = editorState.on('sceneChanged', () => {
     const s = editorState.scene;
+    // Clean up old ClipmapTerrain RendererPlugins (they self-register and must be explicitly destroyed)
+    if (prevScene !== s) {
+      for (const go of prevScene.getAllObjects()) {
+        const ct = go.getComponent(ClipmapTerrain);
+        if (ct) ct.onDestroy();
+      }
+    }
+    prevScene = s;
     renderSystem.scene = s;
     engine.scene = s;
     if (physicsSystem) physicsSystem.scene = s;
     config.physics?.onSceneChanged(s);
+    wireTreeTextureLoaders(s);
+    // Always awake components on scene change — onAwake is for initialization
+    // (e.g. TreeSystem species setup) and must run even in edit mode.
+    // startAll is gated by pause: onStart only fires in play mode.
+    s.awakeAll();
     if (!editorState.paused) {
-      s.awakeAll();
       s.startAll();
     }
   });
@@ -507,13 +647,26 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
 
   engine.paused = true;
 
-  // Skip GPU-owning and physics components when cycling play/pause lifecycle
+  // Skip GPU-owning and physics components when cycling play/pause lifecycle.
+  // Name fallbacks handle Vite HMR module duplication where instanceof may fail.
+  const ENGINE_COMPONENT_NAMES = new Set([
+    'MeshRenderer', 'SkinnedMeshRenderer', 'Camera',
+    'DirectionalLight', 'PointLight', 'SpotLight',
+    'AnimationMixer', 'AnimationHandler',
+    'TreeSystem', 'DetailSystem',
+    'ClipmapTerrain', 'ClipmapMeshRenderer',
+  ]);
   const isEngineComponent = (c: import('@certe/atmos-core').Component) =>
-    c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
+    ENGINE_COMPONENT_NAMES.has(c.constructor.name)
+    || c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
     || c instanceof Camera || c instanceof DirectionalLight
     || c instanceof PointLight || c instanceof SpotLight
     || c instanceof AnimationMixer
     || c instanceof AnimationHandler
+    || c instanceof TreeSystem
+    || c instanceof DetailSystem
+    || c instanceof ClipmapTerrain
+    || c instanceof ClipmapMeshRenderer
     || (config.physics?.isPhysicsComponent(c) ?? false)
     || (config.isEngineComponent?.(c) ?? false);
 
@@ -525,6 +678,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
       config.physics?.syncAllJoints?.(editorState.scene);
       // Awake + start + playStart all components
       editorState.scene.awakeAll();
+      wireTreeTextureLoaders(editorState.scene);
       editorState.scene.startAll();
       editorState.scene.playStartAll();
       // Focus canvas so keyboard events work even if UI elements had focus
@@ -536,14 +690,15 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   }));
 
   cleanups.push(editorState.on('sceneRestored', () => {
-    // Destroy user script components (not GPU-owning ones) so they reset state
-    editorState.scene.destroyAllComponents((c) => !isEngineComponent(c));
+    // Note: user scripts survive pause/play — playStopAll() already cleaned up
+    // listeners and restoreSnapshot() reset properties. No need to destroy them.
     // Reset all skinned meshes to rest pose
     for (const obj of editorState.scene.getAllObjects()) {
       const mixer = obj.getComponent(AnimationMixer);
       if (mixer) mixer.resetToRestPose();
     }
     config.physics?.onSceneRestored(editorState.scene);
+    wireTreeTextureLoaders(editorState.scene);
   }));
 
   // 14. Setup scene (optional user callback)

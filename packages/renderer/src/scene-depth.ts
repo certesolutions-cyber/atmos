@@ -139,7 +139,10 @@ export class SceneDepthPass {
       }
     }
 
-    extraDraw?.(pass);
+    if (extraDraw) {
+      pass.setBindGroup(1, this._vpBindGroup);
+      extraDraw(pass);
+    }
 
     pass.end();
   }

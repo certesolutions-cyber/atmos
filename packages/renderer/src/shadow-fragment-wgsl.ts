@@ -45,20 +45,24 @@ function genDirPcf(slot: number, cascade: 0 | 1): string {
 }
 
 function genDirSlot(slot: number): string {
-  return `fn _sampleDirSlot${slot}(worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
+  return `fn _sampleDirSlot${slot}(worldPos: vec3<f32>, N: vec3<f32>, camDist: f32) -> f32 {
   let s = shadow.dirSlots[${slot}];
   let vis0 = _pcfDir0S${slot}(worldPos, N);
   let vis1 = _pcfDir1S${slot}(worldPos, N);
+  // Camera-distance cascade selection using cascadeSplit / blendWidth
+  let splitNear = s.cascadeSplit - s.blendWidth * 0.5;
+  let splitFar = s.cascadeSplit + s.blendWidth * 0.5;
+  let cascadeBlend = smoothstep(splitNear, splitFar, camDist);
+  // UV coverage for outer-edge fade (where no cascade covers the point)
   let uv0 = _cascadeUV(worldPos, s.cascade0VP);
-  let c0xy = _cascadeCoverageXY(uv0.xy, 0.05);
-  let c0z = smoothstep(0.0, 0.02, uv0.z) * smoothstep(0.0, 0.02, 1.0 - uv0.z);
-  let c0 = c0xy * c0z;
+  let c0 = _cascadeCoverageXY(uv0.xy, 0.05) * smoothstep(0.0, 0.02, uv0.z) * smoothstep(0.0, 0.05, 1.0 - uv0.z);
   let uv1 = _cascadeUV(worldPos, s.cascade1VP);
-  let c1xy = _cascadeCoverageXY(uv1.xy, 0.15);
-  let c1z = smoothstep(0.0, 0.15, 1.0 - uv1.z);
-  let c1 = c1xy * c1z;
-  let vis1Faded = mix(1.0, vis1, c1);
-  let visibility = mix(vis1Faded, vis0, c0);
+  let c1 = _cascadeCoverageXY(uv1.xy, 0.25) * smoothstep(0.0, 0.05, uv1.z) * smoothstep(0.0, 0.1, 1.0 - uv1.z);
+  // Fade each cascade at its frustum boundaries
+  let vis0Valid = mix(1.0, vis0, c0);
+  let vis1Valid = mix(1.0, vis1, c1);
+  // Blend by camera distance: near → cascade 0, far → cascade 1
+  let visibility = mix(vis0Valid, vis1Valid, cascadeBlend);
   let result = mix(1.0, visibility, s.intensity);
   return select(1.0, result, s.enabled != 0u);
 }`;
@@ -219,10 +223,10 @@ for (let s = 0; s < MAX_SPOT_SHADOW_SLOTS; s++) {
 
 // Dispatch functions
 parts.push(`
-fn sampleDirShadow(slot: u32, worldPos: vec3<f32>, N: vec3<f32>) -> f32 {
+fn sampleDirShadow(slot: u32, worldPos: vec3<f32>, N: vec3<f32>, camDist: f32) -> f32 {
   switch(slot) {
-    case 0u: { return _sampleDirSlot0(worldPos, N); }
-    case 1u: { return _sampleDirSlot1(worldPos, N); }
+    case 0u: { return _sampleDirSlot0(worldPos, N, camDist); }
+    case 1u: { return _sampleDirSlot1(worldPos, N, camDist); }
     default: { return 1.0; }
   }
 }

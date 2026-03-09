@@ -7,6 +7,9 @@ import type { ProjectFileSystem } from './project-fs.js';
 import type { MaterialManager } from './material-manager.js';
 import type { ProjectSettingsManager } from './project-settings.js';
 
+export type EditorTool = 'select' | 'treeBrush';
+export type BrushMode = 'tree' | 'detail' | 'texture';
+
 export type EditorEvent =
   | 'selectionChanged'
   | 'sceneChanged'
@@ -20,7 +23,8 @@ export type EditorEvent =
   | 'projectChanged'
   | 'materialSelected'
   | 'wireframeChanged'
-  | 'settingsChanged';
+  | 'settingsChanged'
+  | 'toolChanged';
 
 type Listener = () => void;
 
@@ -37,6 +41,8 @@ export class EditorState {
   settingsManager: ProjectSettingsManager | null = null;
   selectedMaterialPath: string | null = null;
   wireframeEnabled = false;
+  tool: EditorTool = 'select';
+  brushMode: BrushMode = 'tree';
   private _sceneName = _getSessionItem('atmos:sceneName') ?? 'main';
 
   get sceneName(): string { return this._sceneName; }
@@ -181,6 +187,12 @@ export class EditorState {
   setSettingsManager(sm: ProjectSettingsManager): void {
     this.settingsManager = sm;
     this._emit('settingsChanged');
+  }
+
+  setTool(tool: EditorTool): void {
+    if (this.tool === tool) return;
+    this.tool = tool;
+    this._emit('toolChanged');
   }
 
   on(event: EditorEvent, fn: Listener): () => void {

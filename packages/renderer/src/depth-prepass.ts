@@ -21,6 +21,7 @@ export class DepthPrepass {
   private _height = 0;
 
   get depthView(): GPUTextureView { return this._depthView; }
+  get vpBindGroup(): GPUBindGroup { return this._vpBindGroup; }
 
   constructor(device: GPUDevice, objectBindGroupLayout: GPUBindGroupLayout, w: number, h: number) {
     this._device = device;

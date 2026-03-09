@@ -91,3 +91,4 @@ export { generateCustomFragmentShader, generateCustomVertexShader, generateCusto
 export { createCustomPipeline } from './custom-pipeline.js';
 export type { CustomPipelineResources } from './custom-pipeline.js';
 export { SCENE_STRUCTS_WGSL, PBR_FUNCTIONS_WGSL, LIGHT_LOOP_WGSL, FOG_WGSL } from './pbr-wgsl.js';
+export { SkyPass } from './sky-pass.js';

@@ -10,6 +10,8 @@ import { InspectorPanel } from './inspector-panel.js';
 import { AssetBrowserPanel } from './asset-browser-panel.js';
 import { ProjectGate } from './project-gate.js';
 import { PostProcessPanel } from './post-process-panel.js';
+import { TreeBrushPanel } from './tree-brush-panel.js';
+import type { TreeBrushConfig, DetailBrushConfig, TextureBrushConfig } from './tree-brush-panel.js';
 import { SettingsPanel } from './settings-panel.js';
 import { useSplitter } from './use-splitter.js';
 import type { GizmoMode } from '../gizmo-state.js';
@@ -35,6 +37,9 @@ interface EditorShellProps {
   onDropPrefab?: (path: string, parent: GameObject | null) => void;
   onLoadPrefab?: (entry: AssetEntry) => void;
   renderSystem?: import('@certe/atmos-renderer').RenderSystem;
+  onBrushConfigChange?: (config: TreeBrushConfig) => void;
+  onDetailBrushConfigChange?: (config: DetailBrushConfig) => void;
+  onTextureBrushConfigChange?: (config: TextureBrushConfig) => void;
 }
 
 /* ── Layout ─────────────────────────────────────────── */
@@ -155,10 +160,34 @@ export function EditorShell({
   editorState, projectFs, onOpenProject, deserializeContext, componentFactory, componentFilter, componentRemover,
   primitiveFactory, orbitCamera, canvas,
   showAssetBrowser, onAttachScript, onLoadModel, onLoadScene, onDropModel, onDropPrefab, onLoadPrefab, renderSystem,
+  onBrushConfigChange,
+  onDetailBrushConfigChange,
+  onTextureBrushConfigChange,
 }: EditorShellProps) {
   const [, setTick] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [brushConfig, setBrushConfigRaw] = useState<TreeBrushConfig>({
+    radius: 10, density: 0.5, speciesIndex: 0, scaleMin: 0.8, scaleMax: 1.2, eraseMode: false,
+  });
+  const setBrushConfig = useCallback((cfg: TreeBrushConfig) => {
+    setBrushConfigRaw(cfg);
+    onBrushConfigChange?.(cfg);
+  }, [onBrushConfigChange]);
+  const [detailBrushConfig, setDetailBrushConfigRaw] = useState<DetailBrushConfig>({
+    radius: 5, density: 8, typeIndex: 0, scaleMin: 0.7, scaleMax: 1.3, eraseMode: false,
+  });
+  const setDetailBrushConfig = useCallback((cfg: DetailBrushConfig) => {
+    setDetailBrushConfigRaw(cfg);
+    onDetailBrushConfigChange?.(cfg);
+  }, [onDetailBrushConfigChange]);
+  const [textureBrushConfig, setTextureBrushConfigRaw] = useState<TextureBrushConfig>({
+    radius: 10, strength: 0.3, layerIndex: 0,
+  });
+  const setTextureBrushConfig = useCallback((cfg: TextureBrushConfig) => {
+    setTextureBrushConfigRaw(cfg);
+    onTextureBrushConfigChange?.(cfg);
+  }, [onTextureBrushConfigChange]);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -576,6 +605,7 @@ export function EditorShell({
             onDropModel={onDropModel ? (path, go) => onDropModel(path, go) : undefined}
           />
           {renderSystem && <PostProcessPanel renderSystem={renderSystem} editorState={editorState} />}
+          <TreeBrushPanel editorState={editorState} brushConfig={brushConfig} onConfigChange={setBrushConfig} detailBrushConfig={detailBrushConfig} onDetailConfigChange={setDetailBrushConfig} textureBrushConfig={textureBrushConfig} onTextureConfigChange={setTextureBrushConfig} />
         </div>
       </div>
 

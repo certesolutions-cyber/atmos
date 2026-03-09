@@ -9,6 +9,8 @@
     { "path": "packages/assets" },
     { "path": "packages/terrain" },
     { "path": "packages/clipmap-terrain" },
+    { "path": "packages/trees" },
+    { "path": "packages/terrain-detail" },
     { "path": "packages/editor" }
   ]
 }
