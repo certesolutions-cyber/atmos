@@ -31,8 +31,8 @@ export interface TreeSpeciesConfig {
   iterations: number;
   /** Branch angle in degrees. */
   branchAngle: number;
-  /** Random angle variance in degrees. */
-  angleVariance: number;
+  /** Overall variance (0–1). Affects angle, radius, taper, segment length, curvature across variants and within a tree. */
+  variance: number;
 
   // Excurrent-specific
   /** Lateral branch sub-division depth in excurrent mode (1 = simple, higher = more complex). */
@@ -84,7 +84,7 @@ export const DEFAULT_TREE_SPECIES_CONFIG: TreeSpeciesConfig = {
   ],
   iterations: 4,
   branchAngle: 25,
-  angleVariance: 5,
+  variance: 0.3,
   excurrentBranchIterations: 2,
   excurrentBranchScale: 0.5,
   trunkRadius: 0.15,

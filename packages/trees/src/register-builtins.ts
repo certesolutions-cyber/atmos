@@ -16,7 +16,7 @@ const SPECIES_FIELDS: Array<{
 }> = [
   { key: 'iterations', type: 'number', label: 'Iterations', min: 1, max: 8, step: 1 },
   { key: 'branchAngle', type: 'number', label: 'Branch Angle', min: 5, max: 60, step: 1 },
-  { key: 'angleVariance', type: 'number', label: 'Angle Variance', min: 0, max: 30, step: 1 },
+  { key: 'variance', type: 'number', label: 'Variance', min: 0, max: 1, step: 0.05 },
   { key: 'trunkRadius', type: 'number', label: 'Trunk Radius', min: 0.02, max: 10, step: 0.01 },
   { key: 'radiusTaper', type: 'number', label: 'Radius Taper', min: 0.2, max: 0.95, step: 0.01 },
   { key: 'segmentLength', type: 'number', label: 'Segment Length', min: 0.1, max: 50, step: 0.1 },

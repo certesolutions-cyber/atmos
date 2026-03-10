@@ -155,16 +155,33 @@ function emitLeaf(
 }
 
 /**
+ * Look ahead from position `pos` to check if this is a terminal segment —
+ * no more F/G AND no child branches `[` before `]` or end of string.
+ * If child branches sprout from this point, it's a junction, not a tip.
+ */
+function isLastSegment(str: string, pos: number): boolean {
+  for (let j = pos + 1; j < str.length; j++) {
+    const c = str[j];
+    if (c === 'F' || c === 'G') return false; // another segment follows
+    if (c === '[') return false; // child branches sprout here — not a tip
+    if (c === ']') return true;  // branch ends with no continuation
+  }
+  return true; // end of string
+}
+
+/**
  * Convert an L-system output string into trunk and leaf mesh data.
  */
 export function generateTreeMesh(
   lsystemOutput: string,
   config: TreeSpeciesConfig,
+  seedOverride?: number,
 ): TreeMeshData {
-  const rand = mulberry32(config.seed + 7919); // offset from L-system seed
+  const rand = mulberry32((seedOverride ?? config.seed) + 7919);
   const DEG2RAD = Math.PI / 180;
+  const v = config.variance ?? 0.3;
   const baseAngle = config.branchAngle * DEG2RAD;
-  const variance = config.angleVariance * DEG2RAD;
+  const angleVar = v * 15 * DEG2RAD; // variance 0.3 → ±4.5° per segment
 
   const trunkVerts: number[] = [];
   const trunkIndices: number[] = [];
@@ -253,7 +270,7 @@ export function generateTreeMesh(
   const isExcurrent = config.branchMode === 'excurrent';
 
   function angle(): number {
-    let a = baseAngle + (rand() - 0.5) * 2 * variance;
+    let a = baseAngle + (rand() - 0.5) * 2 * angleVar;
     // Excurrent: lower trunk branches droop more (larger angle)
     if (isExcurrent && state.depth === 1) {
       const crownSpan = maxY - crownBaseY;
@@ -271,24 +288,28 @@ export function generateTreeMesh(
     switch (ch) {
       case 'G': // Short forward step (excurrent lateral branches)
       case 'F': {
+        // Per-segment jitter driven by variance
+        const lengthJitter = 1 + (rand() - 0.5) * v * 0.4;  // ±20% at v=1
+        const taperJitter = 1 + (rand() - 0.5) * v * 0.2;   // ±10% at v=1
+
         let stepLength: number;
         if (ch === 'G') {
           // Lateral branch step: taper relative to crown span (not whole trunk)
-          // Bottom of crown → coneTaper=1.0 (full length), top → coneTaper≈0.1
           const crownSpan = maxY - crownBaseY;
           const crownFraction = crownSpan > 0
             ? Math.max(0, Math.min(1, (branchOriginY - crownBaseY) / crownSpan))
             : 0;
           const coneTaper = Math.max(0.1, 1 - crownFraction * 0.7);
-          stepLength = config.segmentLength * (config.excurrentBranchScale ?? 0.5) * coneTaper;
+          stepLength = config.segmentLength * (config.excurrentBranchScale ?? 0.5) * coneTaper * lengthJitter;
         } else {
-          stepLength = config.segmentLength;
+          stepLength = config.segmentLength * lengthJitter;
         }
 
-        // Apply curvature
-        if (config.curvature > 0) {
-          pitch(state, (rand() - 0.5) * config.curvature);
-          yaw(state, (rand() - 0.5) * config.curvature);
+        // Apply curvature (boosted by variance)
+        const curv = config.curvature + v * 0.03;
+        if (curv > 0) {
+          pitch(state, (rand() - 0.5) * curv);
+          yaw(state, (rand() - 0.5) * curv);
         }
 
         // Emit ring at current position (bottom of segment)
@@ -303,8 +324,13 @@ export function generateTreeMesh(
         state.posZ += state.hz * stepLength;
         segmentCount++;
 
-        // Taper radius smoothly per segment
-        state.radius *= segmentTaper;
+        // Taper radius smoothly per segment (jittered by variance)
+        state.radius *= segmentTaper * taperJitter;
+
+        // If this is the last segment before branch end, taper to zero
+        if (isLastSegment(lsystemOutput, i)) {
+          state.radius = 0;
+        }
 
         // Emit ring at new position (top of segment) with tapered radius
         const windW = Math.max(0, Math.min(1, state.posY / maxY));

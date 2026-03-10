@@ -221,11 +221,24 @@ export class TreeSystem extends Component implements RendererPlugin {
     const variantCount = Math.max(1, config.variants ?? 1);
     const resolved = resolveSpeciesRules(config);
     const variants: VariantData[] = [];
+    const v = config.variance ?? 0.3;
 
-    for (let v = 0; v < variantCount; v++) {
-      const variantSeed = config.seed + v;
+    for (let vi = 0; vi < variantCount; vi++) {
+      const variantSeed = config.seed + vi;
+
+      // Per-variant parameter jitter: each variant gets slightly different proportions
+      const vRand = mulberry32(variantSeed + 31337);
+      const jitteredConfig: TreeSpeciesConfig = {
+        ...config,
+        trunkRadius: config.trunkRadius * (1 + (vRand() - 0.5) * v * 0.3),
+        radiusTaper: Math.min(0.95, Math.max(0.2, config.radiusTaper + (vRand() - 0.5) * v * 0.1)),
+        segmentLength: config.segmentLength * (1 + (vRand() - 0.5) * v * 0.3),
+        branchAngle: config.branchAngle + (vRand() - 0.5) * v * 10,
+        curvature: Math.max(0, config.curvature + (vRand() - 0.5) * v * 0.05),
+      };
+
       const lsystemStr = expandLSystem(resolved.axiom, resolved.rules, config.iterations, variantSeed);
-      const meshData = generateTreeMesh(lsystemStr, config);
+      const meshData = generateTreeMesh(lsystemStr, jitteredConfig, variantSeed);
 
       const trunkMesh = createMesh(device, meshData.trunkVertices, meshData.trunkIndices, TREE_VERTEX_STRIDE);
       const leafMesh = createMesh(device, meshData.leafVertices, meshData.leafIndices, TREE_VERTEX_STRIDE);
