@@ -9,10 +9,6 @@ import {
   RenderSystem,
   MeshRenderer,
   SkinnedMeshRenderer,
-  Camera,
-  DirectionalLight,
-  PointLight,
-  SpotLight,
   registerRendererBuiltins,
   resizeGPU,
   createMesh,
@@ -21,11 +17,11 @@ import {
 import type { ModelAsset } from '@certe/atmos-assets';
 import { Vec3 } from '@certe/atmos-math';
 import { parseGltfModel, instantiateModel } from '@certe/atmos-assets';
-import { AnimationMixer, AnimationHandler, registerAnimationBuiltins } from '@certe/atmos-animation';
+import { AnimationMixer, registerAnimationBuiltins } from '@certe/atmos-animation';
 import { registerClipmapTerrainBuiltins } from '@certe/atmos-clipmap-terrain';
 import { registerTreeBuiltins, TreeSystem, TreeBrush } from '@certe/atmos-trees';
 import { registerDetailBuiltins, DetailSystem, DetailBrush } from '@certe/atmos-terrain-detail';
-import { ClipmapTerrain, ClipmapMeshRenderer } from '@certe/atmos-clipmap-terrain';
+import { ClipmapTerrain } from '@certe/atmos-clipmap-terrain';
 import { mountEditor } from '../editor-mount.js';
 import type { EditorState } from '../editor-state.js';
 import { ProjectFileSystem } from '../project-fs.js';
@@ -646,29 +642,6 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
   cleanups.push(unsubScene);
 
   engine.paused = true;
-
-  // Skip GPU-owning and physics components when cycling play/pause lifecycle.
-  // Name fallbacks handle Vite HMR module duplication where instanceof may fail.
-  const ENGINE_COMPONENT_NAMES = new Set([
-    'MeshRenderer', 'SkinnedMeshRenderer', 'Camera',
-    'DirectionalLight', 'PointLight', 'SpotLight',
-    'AnimationMixer', 'AnimationHandler',
-    'TreeSystem', 'DetailSystem',
-    'ClipmapTerrain', 'ClipmapMeshRenderer',
-  ]);
-  const isEngineComponent = (c: import('@certe/atmos-core').Component) =>
-    ENGINE_COMPONENT_NAMES.has(c.constructor.name)
-    || c instanceof MeshRenderer || c instanceof SkinnedMeshRenderer
-    || c instanceof Camera || c instanceof DirectionalLight
-    || c instanceof PointLight || c instanceof SpotLight
-    || c instanceof AnimationMixer
-    || c instanceof AnimationHandler
-    || c instanceof TreeSystem
-    || c instanceof DetailSystem
-    || c instanceof ClipmapTerrain
-    || c instanceof ClipmapMeshRenderer
-    || (config.physics?.isPhysicsComponent(c) ?? false)
-    || (config.isEngineComponent?.(c) ?? false);
 
   cleanups.push(editorState.on('pauseChanged', () => {
     engine.paused = editorState.paused;
