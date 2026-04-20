@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-trees",
   "description": "Procedural tree generation with GPU instancing and wind animation for the Atmos Engine",
-  "version": "0.8.10",
+  "version": "0.8.14",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -33,9 +33,9 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.8.10",
-    "@certe/atmos-math": "^0.8.10",
-    "@certe/atmos-renderer": "^0.8.10"
+    "@certe/atmos-core": "^0.8.14",
+    "@certe/atmos-math": "^0.8.14",
+    "@certe/atmos-renderer": "^0.8.14"
   },
   "scripts": {
     "test": "vitest run"

@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-clipmap-terrain",
   "description": "GPU-driven geometry clipmap terrain for the Atmos Engine",
-  "version": "0.8.8",
+  "version": "0.8.14",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -32,9 +32,9 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.8.8",
-    "@certe/atmos-math": "^0.8.8",
-    "@certe/atmos-renderer": "^0.8.8"
+    "@certe/atmos-core": "^0.8.14",
+    "@certe/atmos-math": "^0.8.14",
+    "@certe/atmos-renderer": "^0.8.14"
   },
   "scripts": {
     "test": "vitest run"
