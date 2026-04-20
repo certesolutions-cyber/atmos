@@ -12,7 +12,7 @@ describe('Camera', () => {
     const cam = go.addComponent(Camera);
     expect(cam.fovY).toBeCloseTo(Math.PI / 4);
     expect(cam.near).toBeCloseTo(0.1);
-    expect(cam.far).toBe(100);
+    expect(cam.far).toBe(1000);
     expect(cam.isMainCamera).toBe(false);
   });
 

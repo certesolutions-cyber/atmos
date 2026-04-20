@@ -13,7 +13,7 @@ if [[ "${1:-}" == "--dry-run" ]]; then
 fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PACKAGES=(math core renderer physics animation assets terrain editor)
+PACKAGES=(math core renderer physics animation assets terrain clipmap-terrain trees terrain-detail editor)
 
 # Bump patch version across all packages
 CURRENT=$(node -e "console.log(require('./packages/math/package.json').version)")
