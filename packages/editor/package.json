@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-editor",
   "description": "Browser-based Unity-style editor for the Atmos Engine — hierarchy, inspector, gizmos",
-  "version": "0.8.12",
+  "version": "0.8.13",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -69,14 +69,14 @@
     }
   },
   "dependencies": {
-    "@certe/atmos-animation": "^0.8.12",
-    "@certe/atmos-clipmap-terrain": "^0.8.12",
-    "@certe/atmos-trees": "^0.8.12",
-    "@certe/atmos-terrain-detail": "^0.8.12",
-    "@certe/atmos-assets": "^0.8.12",
-    "@certe/atmos-core": "^0.8.12",
-    "@certe/atmos-math": "^0.8.12",
-    "@certe/atmos-renderer": "^0.8.12",
+    "@certe/atmos-animation": "^0.8.13",
+    "@certe/atmos-clipmap-terrain": "^0.8.13",
+    "@certe/atmos-trees": "^0.8.13",
+    "@certe/atmos-terrain-detail": "^0.8.13",
+    "@certe/atmos-assets": "^0.8.13",
+    "@certe/atmos-core": "^0.8.13",
+    "@certe/atmos-math": "^0.8.13",
+    "@certe/atmos-renderer": "^0.8.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
