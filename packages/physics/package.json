@@ -1,7 +1,7 @@
 {
   "name": "@certe/atmos-physics",
   "description": "Rapier-based physics integration for the Atmos Engine — rigid bodies, colliders, joints",
-  "version": "0.8.10",
+  "version": "0.8.11",
   "repository": {
     "type": "git",
     "url": "https://github.com/certesolutions-cyber/atmos.git",
@@ -32,8 +32,8 @@
     "LICENCE"
   ],
   "dependencies": {
-    "@certe/atmos-core": "^0.8.10",
-    "@certe/atmos-math": "^0.8.10",
+    "@certe/atmos-core": "^0.8.11",
+    "@certe/atmos-math": "^0.8.11",
     "@dimforge/rapier3d-compat": "^0.14.0"
   },
   "scripts": {
