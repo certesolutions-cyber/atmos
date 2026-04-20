@@ -1,9 +1,10 @@
 /**
- * Captures a procedural tree species into a billboard texture by rendering
- * it to an offscreen RGBA target with an orthographic camera.
+ * Captures a procedural tree species from multiple angles into an impostor
+ * atlas texture. 6 angles at 60° intervals around the Y axis give good
+ * coverage from any horizontal viewing direction.
  *
- * The result is a GPUTextureHandle with premultiplied alpha that can be
- * used directly as the billboard texture for LOD rendering.
+ * The result is a GPUTextureHandle (6×CAPTURE_SIZE wide, CAPTURE_SIZE tall)
+ * with premultiplied alpha, used as the billboard texture for LOD rendering.
  */
 
 import type { GPUTextureHandle } from '@certe/atmos-renderer';
@@ -11,8 +12,11 @@ import { TREE_VERTEX_STRIDE_BYTES } from './types.js';
 import type { TreeMeshData } from './types.js';
 import { TREE_VERTEX_STRIDE } from './types.js';
 
-// Billboard capture resolution
+// Billboard capture resolution per column
 const CAPTURE_SIZE = 256;
+
+/** Number of angles in the impostor atlas. */
+export const IMPOSTOR_ANGLES = 6;
 
 /* ── Minimal shaders for offscreen capture (no instancing, no wind) ── */
 
@@ -141,6 +145,33 @@ function ortho(
   return m;
 }
 
+/** Multiply two column-major 4×4 matrices: out = a × b. */
+function mat4Mul(a: Float32Array, b: Float32Array): Float32Array {
+  const out = new Float32Array(16);
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      out[col * 4 + row] =
+        a[row]! * b[col * 4]! +
+        a[4 + row]! * b[col * 4 + 1]! +
+        a[8 + row]! * b[col * 4 + 2]! +
+        a[12 + row]! * b[col * 4 + 3]!;
+    }
+  }
+  return out;
+}
+
+/** Create a Y-axis rotation matrix (column-major). */
+function rotateYMat(angle: number): Float32Array {
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const m = new Float32Array(16);
+  m[0] = c;   m[2] = s;
+  m[5] = 1;
+  m[8] = -s;  m[10] = c;
+  m[15] = 1;
+  return m;
+}
+
 /** Cached capture pipelines per device (lazy). */
 interface CapturePipelines {
   trunkPipeline: GPURenderPipeline;
@@ -235,33 +266,41 @@ export interface BillboardSizing {
   dim: number;
   /** Y offset for the billboard bottom edge (usually slightly negative). */
   yOffset: number;
-  /** AABB center X — both billboard quads use this offset so the trunk root aligns. */
+  /** AABB center X — billboard quad uses this offset so the trunk root aligns. */
   centerX: number;
 }
 
 /**
- * Compute billboard mesh dimensions that match the capture's ortho projection.
- * Also returns centerX/centerZ so the cross-quads can be offset to align
- * the trunk base, preventing "double trunk" artifacts on curved trees.
+ * Compute billboard mesh dimensions for the impostor atlas.
+ * Uses maximum radial extent (any viewing angle) and full Y range.
  */
 export function computeBillboardSizing(meshData: TreeMeshData): BillboardSizing {
-  const trunkAABB = computeAABB(meshData.trunkVertices, TREE_VERTEX_STRIDE);
-  const leafAABB = computeAABB(meshData.leafVertices, TREE_VERTEX_STRIDE);
-  const minX = Math.min(trunkAABB.min[0], leafAABB.min[0]);
-  const minY = Math.min(trunkAABB.min[1], leafAABB.min[1]);
-  const maxX = Math.max(trunkAABB.max[0], leafAABB.max[0]);
-  const maxY = Math.max(trunkAABB.max[1], leafAABB.max[1]);
+  let maxRadial = 0;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (const verts of [meshData.trunkVertices, meshData.leafVertices]) {
+    for (let i = 0; i < verts.length; i += TREE_VERTEX_STRIDE) {
+      const x = verts[i]!;
+      const y = verts[i + 1]!;
+      const z = verts[i + 2]!;
+      const r = Math.sqrt(x * x + z * z);
+      if (r > maxRadial) maxRadial = r;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (!isFinite(minY)) { minY = 0; maxY = 1; maxRadial = 0.5; }
+
   const pad = 0.1;
-  const width = maxX - minX + pad * 2;
+  const width = 2 * (maxRadial + pad);
   const height = maxY - minY + pad * 2;
   const dim = Math.max(width, height);
-
-  const cx = (minX + maxX) * 0.5;
   const cy = (minY + maxY) * 0.5;
-  const halfH = dim * 0.5;
-  const yOffset = cy - halfH; // bottom of ortho range
+  const yOffset = cy - dim * 0.5;
 
-  return { dim, yOffset, centerX: cx };
+  return { dim, yOffset, centerX: 0 };
 }
 
 export interface CaptureOptions {
@@ -271,14 +310,14 @@ export interface CaptureOptions {
   trunkColor?: [number, number, number, number];
   /** Leaf albedo color [r,g,b,a] 0-1. Default green. */
   leafColor?: [number, number, number, number];
-  /** Capture resolution. Default 256. */
+  /** Capture resolution per column. Default 256. */
   size?: number;
 }
 
 /**
- * Render a tree species to an offscreen RGBA texture for use as billboard.
- * Computes AABB of trunk+leaf mesh, frames an orthographic camera on Z axis,
- * and renders both meshes with simple hemisphere lighting.
+ * Render a tree species from 6 angles into an impostor atlas texture.
+ * The atlas is 6×size wide and size tall. Each column is captured from
+ * a different Y-axis rotation (0°, 60°, 120°, 180°, 240°, 300°).
  */
 export function captureTreeBillboard(
   device: GPUDevice,
@@ -286,56 +325,63 @@ export function captureTreeBillboard(
   options?: CaptureOptions,
 ): GPUTextureHandle {
   const size = options?.size ?? CAPTURE_SIZE;
+  const atlasWidth = size * IMPOSTOR_ANGLES;
   const trunkColor = options?.trunkColor ?? [0.45, 0.3, 0.15, 1];
   const leafColor = options?.leafColor ?? [0.3, 0.6, 0.2, 1];
   const pipelines = getCapturePipelines(device);
 
-  // Compute combined AABB of trunk + leaf
-  const trunkAABB = computeAABB(meshData.trunkVertices, TREE_VERTEX_STRIDE);
-  const leafAABB = computeAABB(meshData.leafVertices, TREE_VERTEX_STRIDE);
-  const minX = Math.min(trunkAABB.min[0], leafAABB.min[0]);
-  const minY = Math.min(trunkAABB.min[1], leafAABB.min[1]);
-  const maxX = Math.max(trunkAABB.max[0], leafAABB.max[0]);
-  const maxY = Math.max(trunkAABB.max[1], leafAABB.max[1]);
-  const minZ = Math.min(trunkAABB.min[2], leafAABB.min[2]);
-  const maxZ = Math.max(trunkAABB.max[2], leafAABB.max[2]);
+  // Compute radial extent and Y range across all vertices
+  let maxRadial = 0;
+  let minY = Infinity;
+  let maxY = -Infinity;
 
-  // Frame the tree with some padding
-  const pad = 0.1;
-  const width = maxX - minX + pad * 2;
-  const height = maxY - minY + pad * 2;
-  const cx = (minX + maxX) * 0.5;
-  const cy = (minY + maxY) * 0.5;
-
-  // Orthographic projection looking along -Z
-  const aspect = width / height;
-  let orthoW: number, orthoH: number;
-  if (aspect > 1) {
-    orthoW = width;
-    orthoH = width; // square texture, keep wider extent
-  } else {
-    orthoW = height;
-    orthoH = height;
+  for (const verts of [meshData.trunkVertices, meshData.leafVertices]) {
+    for (let i = 0; i < verts.length; i += TREE_VERTEX_STRIDE) {
+      const x = verts[i]!;
+      const y = verts[i + 1]!;
+      const z = verts[i + 2]!;
+      const r = Math.sqrt(x * x + z * z);
+      if (r > maxRadial) maxRadial = r;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
   }
-  const halfW = orthoW * 0.5;
-  const halfH = orthoH * 0.5;
-  const depth = maxZ - minZ + 2;
-  // Flip Y: billboard UVs have v=0 at bottom, v=1 at top, but framebuffer row 0 is
-  // the top of the texture (sampled at v=0). Swapping bottom/top flips the render
-  // so tree-bottom lands at texel row 0 (v=0) → correct billboard orientation.
-  const viewProj = ortho(cx - halfW, cx + halfW, cy + halfH, cy - halfH, -depth, depth);
 
-  // Create uniform buffer
-  const uniformBuf = device.createBuffer({
-    size: 64,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(uniformBuf, 0, viewProj as GPUAllowSharedBufferSource);
+  if (!isFinite(minY)) { minY = 0; maxY = 1; maxRadial = 0.5; }
 
-  const uniformBG = device.createBindGroup({
-    layout: pipelines.uniformBGL,
-    entries: [{ binding: 0, resource: { buffer: uniformBuf } }],
-  });
+  const pad = 0.1;
+  const width = 2 * (maxRadial + pad);
+  const height = maxY - minY + pad * 2;
+  const dim = Math.max(width, height);
+  const halfDim = dim * 0.5;
+  const cy = (minY + maxY) * 0.5;
+  const maxDepth = maxRadial + 1;
+
+  // Base ortho centered on (0, cy), Y-flipped for correct UV orientation
+  const baseOrtho = ortho(-halfDim, halfDim, cy + halfDim, cy - halfDim, -maxDepth, maxDepth);
+
+  // Create per-angle uniform buffers and bind groups
+  const uniformBufs: GPUBuffer[] = [];
+  const uniformBGs: GPUBindGroup[] = [];
+  for (let col = 0; col < IMPOSTOR_ANGLES; col++) {
+    // Negate angle: column i should show the tree as seen from +i*60°,
+    // so rotate vertices by -i*60° (equivalent to camera orbiting +i*60°)
+    const angle = -(col * (Math.PI * 2 / IMPOSTOR_ANGLES));
+    const rot = rotateYMat(angle);
+    const viewProj = mat4Mul(baseOrtho, rot);
+
+    const buf = device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(buf, 0, viewProj as GPUAllowSharedBufferSource);
+    uniformBufs.push(buf);
+
+    uniformBGs.push(device.createBindGroup({
+      layout: pipelines.uniformBGL,
+      entries: [{ binding: 0, resource: { buffer: buf } }],
+    }));
+  }
 
   // Material UBOs
   const trunkMatBuf = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
@@ -405,62 +451,66 @@ export function captureTreeBillboard(
   });
   device.queue.writeBuffer(leafIB, 0, meshData.leafIndices as GPUAllowSharedBufferSource);
 
-  // Create render targets
+  // Create render targets: atlas-wide color + depth
   const colorTex = device.createTexture({
-    size: [size, size],
+    size: [atlasWidth, size],
     format: 'rgba8unorm',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_SRC,
   });
   const depthTex = device.createTexture({
-    size: [size, size],
+    size: [atlasWidth, size],
     format: 'depth24plus',
     usage: GPUTextureUsage.RENDER_ATTACHMENT,
   });
 
-  // Render
+  // Render each angle into its atlas column
   const encoder = device.createCommandEncoder();
-  const pass = encoder.beginRenderPass({
-    colorAttachments: [{
-      view: colorTex.createView(),
-      clearValue: { r: 0, g: 0, b: 0, a: 0 },
-      loadOp: 'clear',
-      storeOp: 'store',
-    }],
-    depthStencilAttachment: {
-      view: depthTex.createView(),
-      depthClearValue: 1.0,
-      depthLoadOp: 'clear',
-      depthStoreOp: 'store',
-    },
-  });
 
-  pass.setViewport(0, 0, size, size, 0, 1);
+  for (let col = 0; col < IMPOSTOR_ANGLES; col++) {
+    const pass = encoder.beginRenderPass({
+      colorAttachments: [{
+        view: colorTex.createView(),
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        loadOp: col === 0 ? 'clear' : 'load',
+        storeOp: 'store',
+      }],
+      depthStencilAttachment: {
+        view: depthTex.createView(),
+        depthClearValue: 1.0,
+        depthLoadOp: 'clear',
+        depthStoreOp: 'store',
+      },
+    });
 
-  // Draw trunk
-  if (meshData.trunkIndices.length > 0) {
-    pass.setPipeline(pipelines.trunkPipeline);
-    pass.setBindGroup(0, uniformBG);
-    pass.setBindGroup(1, trunkMatBG);
-    pass.setVertexBuffer(0, trunkVB);
-    pass.setIndexBuffer(trunkIB, 'uint32');
-    pass.drawIndexed(meshData.trunkIndices.length);
+    pass.setViewport(col * size, 0, size, size, 0, 1);
+
+    // Draw trunk
+    if (meshData.trunkIndices.length > 0) {
+      pass.setPipeline(pipelines.trunkPipeline);
+      pass.setBindGroup(0, uniformBGs[col]!);
+      pass.setBindGroup(1, trunkMatBG);
+      pass.setVertexBuffer(0, trunkVB);
+      pass.setIndexBuffer(trunkIB, 'uint32');
+      pass.drawIndexed(meshData.trunkIndices.length);
+    }
+
+    // Draw leaves
+    if (meshData.leafIndices.length > 0) {
+      pass.setPipeline(pipelines.leafPipeline);
+      pass.setBindGroup(0, uniformBGs[col]!);
+      pass.setBindGroup(1, leafMatBG);
+      pass.setVertexBuffer(0, leafVB);
+      pass.setIndexBuffer(leafIB, 'uint32');
+      pass.drawIndexed(meshData.leafIndices.length);
+    }
+
+    pass.end();
   }
 
-  // Draw leaves
-  if (meshData.leafIndices.length > 0) {
-    pass.setPipeline(pipelines.leafPipeline);
-    pass.setBindGroup(0, uniformBG);
-    pass.setBindGroup(1, leafMatBG);
-    pass.setVertexBuffer(0, leafVB);
-    pass.setIndexBuffer(leafIB, 'uint32');
-    pass.drawIndexed(meshData.leafIndices.length);
-  }
-
-  pass.end();
   device.queue.submit([encoder.finish()]);
 
   // Clean up temp buffers
-  uniformBuf.destroy();
+  for (const buf of uniformBufs) buf.destroy();
   trunkMatBuf.destroy();
   leafMatBuf.destroy();
   trunkVB.destroy();

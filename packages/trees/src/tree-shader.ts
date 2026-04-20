@@ -238,6 +238,114 @@ fn main(input: FragmentInput) -> @location(0) vec4<f32> {
 }
 `;
 
+/* ── Impostor billboard vertex shader ───────────────────────────────── */
+
+export const TREE_BILLBOARD_VERTEX_SHADER = /* wgsl */`
+struct DrawUniforms {
+  viewProj: mat4x4<f32>,
+  cameraPos: vec4<f32>,
+  windDirection: vec4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> draw: DrawUniforms;
+
+struct VertexInput {
+  // Per-vertex (slot 0)
+  @location(0) position: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+  @location(2) uv: vec2<f32>,
+  @location(3) windWeight: f32,
+  @location(4) branchLevel: f32,
+  // Per-instance (slot 1)
+  @location(5) instPos: vec3<f32>,
+  @location(6) instRotY: f32,
+  @location(7) instScale: f32,
+  @location(8) windPhase: f32,
+};
+
+struct VertexOutput {
+  @builtin(position) clipPosition: vec4<f32>,
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) uv: vec2<f32>,
+  @location(2) viewAngle: f32,
+};
+
+` + WIND_WGSL + /* wgsl */`
+
+const BB_TWO_PI: f32 = 6.28318530718;
+
+@vertex
+fn main(input: VertexInput) -> VertexOutput {
+  // Direction from instance to camera in XZ plane
+  let dx = draw.cameraPos.x - input.instPos.x;
+  let dz = draw.cameraPos.z - input.instPos.z;
+  let lenXZ = length(vec2(dx, dz));
+  var facingAngle = 0.0;
+  if (lenXZ > 0.001) {
+    facingAngle = atan2(dx, dz);
+  }
+
+  // Rotate quad to face camera (Y-axis billboard)
+  let cosR = cos(facingAngle);
+  let sinR = sin(facingAngle);
+
+  var localPos = input.position * input.instScale;
+  let rx = localPos.x * cosR - localPos.z * sinR;
+  let rz = localPos.x * sinR + localPos.z * cosR;
+  localPos = vec3(rx, localPos.y, rz);
+
+  var worldPos = localPos + input.instPos;
+
+  // Wind displacement
+  let time = draw.cameraPos.w;
+  let phase = time + input.windPhase;
+  let windDir = normalize(draw.windDirection.xyz);
+  let windStrength = draw.windDirection.w;
+  worldPos = worldPos + computeWind(worldPos, input.windWeight, input.branchLevel, windDir, windStrength, phase, input.instPos.x);
+
+  // View angle relative to tree's own rotation (for atlas column selection)
+  var relAngle = facingAngle - input.instRotY;
+  relAngle = relAngle - floor(relAngle / BB_TWO_PI) * BB_TWO_PI;
+
+  var output: VertexOutput;
+  output.clipPosition = draw.viewProj * vec4(worldPos, 1.0);
+  output.worldPosition = worldPos;
+  output.uv = input.uv;
+  output.viewAngle = relAngle;
+  return output;
+}
+`;
+
+/* ── Impostor billboard fragment shader ────────────────────────────── */
+
+export const TREE_BILLBOARD_FRAGMENT_SHADER = /* wgsl */`
+const BB_TWO_PI: f32 = 6.28318530718;
+const IMPOSTOR_ANGLES: f32 = 6.0;
+
+@group(1) @binding(2) var albedoTexture: texture_2d<f32>;
+@group(1) @binding(3) var albedoSampler: sampler;
+
+struct FragmentInput {
+  @location(0) worldPosition: vec3<f32>,
+  @location(1) uv: vec2<f32>,
+  @location(2) viewAngle: f32,
+};
+
+@fragment
+fn main(input: FragmentInput) -> @location(0) vec4<f32> {
+  // Select atlas column based on view angle
+  let anglePerCol = BB_TWO_PI / IMPOSTOR_ANGLES;
+  let colF = floor(input.viewAngle / anglePerCol + 0.5);
+  let col = u32(colF) % u32(IMPOSTOR_ANGLES);
+  let atlasU = (input.uv.x + f32(col)) / IMPOSTOR_ANGLES;
+
+  let texColor = textureSample(albedoTexture, albedoSampler, vec2(atlasU, input.uv.y));
+  if (texColor.a < 0.3) { discard; }
+
+  return vec4<f32>(texColor.rgb, texColor.a);
+}
+`;
+
 /* ── Shadow vertex shader (trunk) ───────────────────────────────────── */
 
 export const TREE_SHADOW_VERTEX_SHADER = /* wgsl */`

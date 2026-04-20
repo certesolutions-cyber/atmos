@@ -23,6 +23,8 @@ export {
   TREE_TRUNK_FRAGMENT_SHADER,
   TREE_LEAF_VERTEX_SHADER,
   TREE_LEAF_FRAGMENT_SHADER,
+  TREE_BILLBOARD_VERTEX_SHADER,
+  TREE_BILLBOARD_FRAGMENT_SHADER,
   TREE_SHADOW_VERTEX_SHADER,
   TREE_LEAF_SHADOW_VERTEX_SHADER,
   TREE_LEAF_SHADOW_FRAGMENT_SHADER,
@@ -31,7 +33,7 @@ export { createTreePipeline } from './tree-pipeline.js';
 export type { TreePipelineResources } from './tree-pipeline.js';
 export { TreeSystem } from './tree-system.js';
 export type { SpeciesTextures, TextureLoaderFn } from './tree-system.js';
-export { captureTreeBillboard, computeBillboardSizing } from './billboard-capture.js';
+export { captureTreeBillboard, computeBillboardSizing, IMPOSTOR_ANGLES } from './billboard-capture.js';
 export type { CaptureOptions, BillboardSizing } from './billboard-capture.js';
 export { TreeBrush } from './tree-brush.js';
 export { registerTreeBuiltins } from './register-builtins.js';

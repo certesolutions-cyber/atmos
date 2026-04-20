@@ -18,6 +18,8 @@ import {
   TREE_TRUNK_FRAGMENT_SHADER,
   TREE_LEAF_VERTEX_SHADER,
   TREE_LEAF_FRAGMENT_SHADER,
+  TREE_BILLBOARD_VERTEX_SHADER,
+  TREE_BILLBOARD_FRAGMENT_SHADER,
   TREE_SHADOW_VERTEX_SHADER,
 } from './tree-shader.js';
 
@@ -123,18 +125,21 @@ export function createTreePipeline(device: GPUDevice): TreePipelineResources {
     depthStencil: { depthWriteEnabled: true, depthCompare: 'less', format: 'depth24plus' },
   });
 
-  // Billboard pipeline: same as leaf (double-sided, alpha test)
+  // Billboard pipeline: impostor atlas with camera-facing quad
+  const bbVertModule = device.createShaderModule({ code: TREE_BILLBOARD_VERTEX_SHADER });
+  const bbFragModule = device.createShaderModule({ code: TREE_BILLBOARD_FRAGMENT_SHADER });
+
   const billboardPipeline = device.createRenderPipeline({
     layout: pipelineLayout,
-    vertex: { module: leafVertModule, entryPoint: 'main', buffers },
+    vertex: { module: bbVertModule, entryPoint: 'main', buffers },
     fragment: {
-      module: leafFragModule,
+      module: bbFragModule,
       entryPoint: 'main',
       targets: [{
         format: HDR_FORMAT,
         blend: {
-          color: { srcFactor: 'one', dstFactor: 'zero', operation: 'add' },
-          alpha: { srcFactor: 'one', dstFactor: 'zero', operation: 'add' },
+          color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+          alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
         },
       }],
     },
