@@ -271,10 +271,6 @@ export class MeshRenderer extends Component {
     this.customMaterialBindGroup = null;
     this.customShadowBindGroup = null;
     this.customPipelineResources = null;
-    if (this.material?.customUniformBuffer) {
-      this.material.customUniformBuffer.destroy();
-      this.material.customUniformBuffer = null;
-    }
   }
 
   /** Destroy owned GPU mesh buffers (vertex + index). */

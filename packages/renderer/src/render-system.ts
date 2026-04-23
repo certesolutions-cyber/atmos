@@ -499,44 +499,45 @@ export class RenderSystem implements Renderer {
       const depthPluginDraw = this._makeSceneDepthPluginDraw();
       this._sceneDepthPass.execute(this._encoder, vpMatrix, opaqueForDepth, skinnedRenderers, terrainRenderers, depthPluginDraw);
 
-      // Copy entire depth texture to staging buffer (WebGPU requires full-subresource copy for depth formats)
-      const depthW = this._sceneDepthPass.width;
-      const depthH = this._sceneDepthPass.height;
-      // bytesPerRow must be aligned to 256
-      const bytesPerRow = Math.ceil(depthW * 4 / 256) * 256;
-      const bufferSize = bytesPerRow * depthH;
-      const staging = device.createBuffer({ size: bufferSize, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
-      this._encoder.copyTextureToBuffer(
-        { texture: this._sceneDepthPass.depthTexture },
-        { buffer: staging, bytesPerRow },
-        { width: depthW, height: depthH },
-      );
+      // Copy depth to staging only when there are pending readback requests
+      if (this._pendingReadbacks.length > 0) {
+        const depthW = this._sceneDepthPass.width;
+        const depthH = this._sceneDepthPass.height;
+        const bytesPerRow = Math.ceil(depthW * 4 / 256) * 256;
+        const bufferSize = bytesPerRow * depthH;
+        const staging = device.createBuffer({ size: bufferSize, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+        this._encoder.copyTextureToBuffer(
+          { texture: this._sceneDepthPass.depthTexture },
+          { buffer: staging, bytesPerRow },
+          { width: depthW, height: depthH },
+        );
 
-      const validReqs: PendingReadback[] = [];
-      for (const req of this._pendingReadbacks) {
-        const px = Math.round(req.x);
-        const py = Math.round(req.y);
-        if (px < 0 || px >= canvasW || py < 0 || py >= canvasH) {
-          req.resolve(null);
-        } else {
-          validReqs.push(req);
+        const validReqs: PendingReadback[] = [];
+        for (const req of this._pendingReadbacks) {
+          const px = Math.round(req.x);
+          const py = Math.round(req.y);
+          if (px < 0 || px >= canvasW || py < 0 || py >= canvasH) {
+            req.resolve(null);
+          } else {
+            validReqs.push(req);
+          }
         }
-      }
-      this._pendingReadbacks.length = 0;
+        this._pendingReadbacks.length = 0;
 
-      if (validReqs.length > 0) {
-        this._activeFullReadback = {
-          staging, bytesPerRow, depthW, depthH,
-          requests: validReqs.map(req => ({
-            px: Math.round(req.x), py: Math.round(req.y),
-            nearClip: req.nearClip, resolve: req.resolve,
-          })),
-          invVP: new Float32Array(this._invVPMatrix as Float32Array),
-          eyeX: cameraEye[0]!, eyeY: cameraEye[1]!, eyeZ: cameraEye[2]!,
-          canvasW, canvasH,
-        };
-      } else {
-        staging.destroy();
+        if (validReqs.length > 0) {
+          this._activeFullReadback = {
+            staging, bytesPerRow, depthW, depthH,
+            requests: validReqs.map(req => ({
+              px: Math.round(req.x), py: Math.round(req.y),
+              nearClip: req.nearClip, resolve: req.resolve,
+            })),
+            invVP: new Float32Array(this._invVPMatrix as Float32Array),
+            eyeX: cameraEye[0]!, eyeY: cameraEye[1]!, eyeZ: cameraEye[2]!,
+            canvasW, canvasH,
+          };
+        } else {
+          staging.destroy();
+        }
       }
     }
 

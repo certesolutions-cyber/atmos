@@ -31,7 +31,7 @@ fn displaceVertex(position: vec3<f32>, normal: vec3<f32>, uv: vec2<f32>) -> vec3
         var contribution = radiance * NdotL;
         let dirSlot = shadow.dirLightToSlot[i];
         if (dirSlot != 0xFFFFFFFFu) {
-            contribution = contribution * sampleDirShadow(dirSlot, input.worldPosition, N);
+            contribution = contribution * sampleDirShadow(dirSlot, input.worldPosition, N, length(input.worldPosition - scene.cameraPos.xyz));
         }
         diffuse = diffuse + contribution;
     }

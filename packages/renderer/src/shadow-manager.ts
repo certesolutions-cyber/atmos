@@ -150,8 +150,9 @@ export class ShadowManager {
     for (let i = 0; i < MAX_DIR_SHADOW_SLOTS; i++) {
       const dl = slots[i]; const pair = this._dirPairs[i];
       if (!dl || !pair) continue;
-      cascadeVP(this._dirVP0[i]!, dl, eye, dl.shadowSize, dl.shadowDistance);
-      cascadeVP(this._dirVP1[i]!, dl, eye, dl.shadowFarSize, dl.shadowFarDistance);
+      const depthRange = Math.max(dl.shadowDistance, dl.shadowFarDistance);
+      cascadeVP(this._dirVP0[i]!, dl, eye, dl.shadowSize, depthRange);
+      cascadeVP(this._dirVP1[i]!, dl, eye, dl.shadowFarSize, depthRange);
       pair.execute(enc, scene, this._dirVP0[i]!, this._dirVP1[i]!, extra);
     }
   }
@@ -198,7 +199,8 @@ export class ShadowManager {
       f32.set(this._dirVP0[i]! as Float32Array, b);
       f32.set(this._dirVP1[i]! as Float32Array, b + 16);
       f32[b + 32] = 0.002; u32[b + 33] = 1; f32[b + 34] = dl.shadowIntensity;
-      f32[b + 35] = dl.shadowSize * 0.85; f32[b + 36] = dl.shadowSize * 0.5;
+      f32[b + 35] = dl.shadowSize;
+      f32[b + 36] = dl.shadowSize * 0.4;
       f32[b + 37] = dl.shadowSize * 2.0;       // orthoSize0 (cascade 0 world width)
       f32[b + 38] = dl.shadowFarSize * 2.0;    // orthoSize1 (cascade 1 world width)
       dl.getWorldDirection(_dirLightDirScratch);

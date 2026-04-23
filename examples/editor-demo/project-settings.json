@@ -9,5 +9,5 @@
     "solverIterations": 8,
     "substeps": 1
   },
-  "defaultScene": "main"
+  "defaultScene": "second"
 }

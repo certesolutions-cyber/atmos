@@ -573,6 +573,7 @@ export async function startEditor(config: EditorConfig = {}): Promise<EditorApp>
               if (matData?.customShaderPath === evt.path) {
                 const mat = mm.getCachedMaterial(matPath);
                 if (mat) {
+                  mat.customUniformBuffer?.destroy();
                   mat.customUniformBuffer = null;
                   mat.customDirty = true;
                   mat.textureVersion++;

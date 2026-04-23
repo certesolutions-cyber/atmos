@@ -49,20 +49,15 @@ function genDirSlot(slot: number): string {
   let s = shadow.dirSlots[${slot}];
   let vis0 = _pcfDir0S${slot}(worldPos, N);
   let vis1 = _pcfDir1S${slot}(worldPos, N);
-  // Camera-distance cascade selection using cascadeSplit / blendWidth
-  let splitNear = s.cascadeSplit - s.blendWidth * 0.5;
-  let splitFar = s.cascadeSplit + s.blendWidth * 0.5;
-  let cascadeBlend = smoothstep(splitNear, splitFar, camDist);
-  // UV coverage for outer-edge fade (where no cascade covers the point)
+  // Cascade 0 coverage (never faded — always overrides cascade 1 where it covers)
   let uv0 = _cascadeUV(worldPos, s.cascade0VP);
   let c0 = _cascadeCoverageXY(uv0.xy, 0.05) * smoothstep(0.0, 0.02, uv0.z) * smoothstep(0.0, 0.05, 1.0 - uv0.z);
+  // Cascade 1 coverage, faded near camera so it doesn't bleed over cascade 0
   let uv1 = _cascadeUV(worldPos, s.cascade1VP);
-  let c1 = _cascadeCoverageXY(uv1.xy, 0.25) * smoothstep(0.0, 0.05, uv1.z) * smoothstep(0.0, 0.1, 1.0 - uv1.z);
-  // Fade each cascade at its frustum boundaries
-  let vis0Valid = mix(1.0, vis0, c0);
-  let vis1Valid = mix(1.0, vis1, c1);
-  // Blend by camera distance: near → cascade 0, far → cascade 1
-  let visibility = mix(vis0Valid, vis1Valid, cascadeBlend);
+  let c1raw = _cascadeCoverageXY(uv1.xy, 0.25) * smoothstep(0.0, 0.05, uv1.z) * smoothstep(0.0, 0.1, 1.0 - uv1.z);
+  let c1 = c1raw * smoothstep(s.cascadeSplit - s.blendWidth, s.cascadeSplit, camDist);
+  // Cascade 0 wins where it covers; cascade 1 fills the rest
+  let visibility = mix(mix(1.0, vis1, c1), vis0, c0);
   let result = mix(1.0, visibility, s.intensity);
   return select(1.0, result, s.enabled != 0u);
 }`;

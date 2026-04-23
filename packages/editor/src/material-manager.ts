@@ -198,7 +198,8 @@ export class MaterialManager {
   private async _setupCustomShader(mat: Material, data: MaterialAssetData): Promise<void> {
     mat.shaderType = data.shader;
     mat.customShaderPath = data.customShaderPath ?? null;
-    // Reset custom bind group state when shader changes
+    // Destroy old custom uniform buffer before replacing
+    mat.customUniformBuffer?.destroy();
     mat.customUniformBuffer = null;
     mat.customUniformData = null;
     mat.customTextures.clear();
